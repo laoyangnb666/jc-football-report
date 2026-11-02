@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Generated reports & raw snapshots (belong to a single run, not the skill)
+*.pdf
+data/
+snapshots/
+output/
+*.local.json
+
+# Editor & OS
+.DS_Store
+Thumbs.db
+.idea/
+*.swp
+*~
+
+# Logs
+*.log
+npm-debug.log*
