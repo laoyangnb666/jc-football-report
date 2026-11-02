@@ -1,34 +1,42 @@
-// 竞彩足球分析内核：去水、Dixon-Coles 拟合、EV、串关、逐场判定
-// 可直接 node 运行（内置样例自检），也可整段粘进 Exec 沙盒执行。
+// 竞彩足球分析内核 v2
+// 去水 / Dixon-Coles / 独立强度模型（比率法+收缩）/ 融合 / 逐场综合预测 / 回测校准 / 串关
+// 零依赖，可直接 node 运行（内置自检样例）；也可整段粘进 Exec 沙盒执行。
+//
+// v2 相对 v1 的变化（依据上一轮 33 场回测）：
+//  1. 新增「独立强度模型」：用捷报的主客分离得失球做比率法评级，产出与盘口无关的概率。
+//     v1 的模型是把总进球赔率反解回胜平负，本质是复述盘口，因此偏差恒 <1.5pp，没有预测力。
+//  2. 新增「融合」：λ = (1-k)·λ市场 + k·λ独立，k 随样本量收缩。
+//  3. 新增 predictMatch：一次性输出 比分分布 / 总进球桶 / 胜平负 / 让球 / 双方进球 / 半全场。
+//  4. 比分只输出 top-N 排名分布，不再给「最可能比分」单值——回测 top1 命中 0/7。
+//  5. 判定规则按回测修正：冷端/热端不构成独立下注理由；分歧场次采信去水方向。
+//  6. 新增 backtest：逐市场命中率与「实际 vs 盘口隐含」对比。
 
-const RHO = -0.10;
+const RHO = -0.10;      // Dixon-Coles 低比分相关修正
+const K_SHRINK = 8;     // 强度评级收缩常数：p/(p+K)
+const K_BLEND = 0.35;   // 独立模型与市场模型的默认融合权重
+const SIDE = ['主胜', '平局', '客胜'];
 
-function factorial(n) {
-  let f = 1;
-  for (let i = 2; i <= n; i++) f *= i;
-  return f;
-}
+function factorial(n) { let f = 1; for (let i = 2; i <= n; i++) f *= i; return f; }
+function clamp(x, lo, hi) { return Math.min(hi, Math.max(lo, x)); }
+function num(x) { const v = Number(x); return Number.isFinite(v) ? v : null; }
 
-// 去水：P(i) = (1/odds_i) / sum(1/odds_j)；m 为 margin（小数）
+// ---------- 1. 去水 ----------
+// P(i) = (1/odds_i) / Σ(1/odds_j)；m 为 margin（小数）
 function devig(odds) {
   const inv = odds.map((x) => 1 / x);
   const s = inv.reduce((a, b) => a + b, 0);
   return { p: inv.map((x) => x / s), m: s - 1, overround: s };
 }
 
-// 泊松 + Dixon-Coles 相关修正，返回 12x12 网格
+// ---------- 2. 比分网格 ----------
 function grid(lambdaTotal, w, rho = RHO) {
-  const lh = lambdaTotal * w;
-  const la = lambdaTotal * (1 - w);
-  const N = 12;
-  const ph = [];
-  const pa = [];
+  const lh = lambdaTotal * w, la = lambdaTotal * (1 - w), N = 12;
+  const ph = [], pa = [];
   for (let k = 0; k < N; k++) {
     ph.push(Math.exp(-lh) * Math.pow(lh, k) / factorial(k));
     pa.push(Math.exp(-la) * Math.pow(la, k) / factorial(k));
   }
-  const cells = [];
-  let s = 0;
+  const cells = []; let s = 0;
   for (let i = 0; i < N; i++) {
     for (let j = 0; j < N; j++) {
       let t = 1;
@@ -38,8 +46,7 @@ function grid(lambdaTotal, w, rho = RHO) {
       else if (i === 1 && j === 1) t = 1 - rho;
       let p = ph[i] * pa[j] * t;
       if (p < 0) p = 0;
-      cells.push([i, j, p]);
-      s += p;
+      cells.push([i, j, p]); s += p;
     }
   }
   cells.forEach((c) => (c[2] /= s));
@@ -56,183 +63,379 @@ function summarize(g) {
   return { H, D, A, o25, btts };
 }
 
-function topScores(g, n = 5) {
+function topScores(g, n = 6) {
   return g.cells.slice().sort((a, b) => b[2] - a[2]).slice(0, n);
 }
 
-// 让球盘三项概率：hc 为主队视角让球数（-2 表示让 2 球，+1 表示受让 1 球）
+// 总进球桶：0,1,2,3,4,5,6,7+
+function goalBuckets(g) {
+  const b = new Array(8).fill(0);
+  for (const [i, j, p] of g.cells) b[Math.min(i + j, 7)] += p;
+  return b;
+}
+
+// 总进球区间：0-1 / 2-3 / 4-6 / 7+
+function goalIntervals(g) {
+  const b = goalBuckets(g);
+  return {
+    '0-1': b[0] + b[1],
+    '2-3': b[2] + b[3],
+    '4-6': b[4] + b[5] + b[6],
+    '7+': b[7],
+  };
+}
+
+// 让球盘三项概率：net = 主进球 - 客进球 + hc
 function rqProb(g, hc) {
   let H = 0, D = 0, A = 0;
   for (const [i, j, p] of g.cells) {
     const net = i - j + hc;
-    if (net > 0) H += p;
-    else if (net === 0) D += p;
-    else A += p;
+    if (net > 0) H += p; else if (net === 0) D += p; else A += p;
   }
   return [H, D, A];
 }
 
-// 有总进球赔率时：λ 由 P(0球) 反解，1D 搜索主队份额 w
+// 半全场：上下半场各分一半 λ，枚举上下半场比分后按 9 项归并
+function hafu(g) {
+  const pois = (l, k) => Math.exp(-l) * Math.pow(l, k) / factorial(k);
+  const one = (l) => [pois(l, 0), pois(l, 1), pois(l, 2), 1 - pois(l, 0) - pois(l, 1) - pois(l, 2)];
+  const fh = one(g.lh / 2), sh = one(g.lh / 2);
+  const fa = one(g.la / 2), sa = one(g.la / 2);
+  const out = {};
+  for (let a = 0; a < 4; a++) for (let b = 0; b < 4; b++) for (let c = 0; c < 4; c++) for (let d = 0; d < 4; d++) {
+    const p = fh[a] * fa[b] * sh[c] * sa[d];
+    const r1 = a > b ? 2 : a === b ? 1 : 0;             // 上半场结果
+    const r2 = a + c > b + d ? 2 : a + c === b + d ? 1 : 0;  // 全场结果
+    const key = `${r1}${r2}`;
+    out[key] = (out[key] || 0) + p;
+  }
+  const s = Object.values(out).reduce((x, y) => x + y, 0);
+  for (const k of Object.keys(out)) out[k] /= s;
+  return out;
+}
+
+// ---------- 3. 市场映像：由盘口反解 λ 与 w ----------
 function fitFromZJQ(zjqOdds, spfOdds) {
   const z = devig(zjqOdds.map(Number));
   const lambdaTotal = -Math.log(Math.max(z.p[0], 1e-9));
   const target = devig(spfOdds).p;
   let best = { w: 0.5, sse: Infinity, g: null };
   for (let w = 0.15; w <= 0.85; w += 0.0025) {
-    const g = grid(lambdaTotal, w);
-    const s = summarize(g);
-    const sse = Math.pow(s.H - target[0], 2) + Math.pow(s.D - target[1], 2) + Math.pow(s.A - target[2], 2);
+    const g = grid(lambdaTotal, w), s = summarize(g);
+    const sse = (s.H - target[0]) ** 2 + (s.D - target[1]) ** 2 + (s.A - target[2]) ** 2;
     if (sse < best.sse) best = { w, sse, g };
   }
-  return { lambdaTotal, w: best.w, sse: best.sse, grid: best.g };
+  return { lambdaTotal, w: best.w, sse: best.sse, grid: best.g, source: 'market' };
 }
 
-// 无总进球赔率时：λ 与 w 二维拟合
 function fit2D(spfOdds) {
   const target = devig(spfOdds).p;
   let best = { lambdaTotal: 2.8, w: 0.5, sse: Infinity, g: null };
   for (let lt = 1.6; lt <= 5.2; lt += 0.02) {
     for (let w = 0.2; w <= 0.8; w += 0.01) {
-      const g = grid(lt, w);
-      const s = summarize(g);
-      const sse = Math.pow(s.H - target[0], 2) + Math.pow(s.D - target[1], 2) + Math.pow(s.A - target[2], 2);
+      const g = grid(lt, w), s = summarize(g);
+      const sse = (s.H - target[0]) ** 2 + (s.D - target[1]) ** 2 + (s.A - target[2]) ** 2;
       if (sse < best.sse) best = { lambdaTotal: lt, w, sse, g };
     }
   }
-  return best;
+  return { ...best, source: 'market' };
 }
 
-function ev(p, odds) {
-  return p * odds - 1;
+// ---------- 4. 独立强度模型（比率法 + 收缩） ----------
+// team: {home:{gf,ga,p}, away:{gf,ga,p}}  均为本队视角的主场/客场累计
+// form: {gf,ga,p} 近 6 场（可选）
+function teamStrength(home, away, form) {
+  const rate = (gf, p) => (p > 0 ? gf / p : null);
+  const hg = rate(home.home.gf, home.home.p), hga = rate(home.home.ga, home.home.p);
+  const ag = rate(away.away.gf, away.away.p), aga = rate(away.away.ga, away.away.p);
+  if (hg === null || ag === null) return null;
+
+  // 联赛基准：用「主队主场场均进球」与「客队客场场均失球」互相印证
+  const lgHome = (hg + aga) / 2;
+  const lgAway = (ag + hga) / 2;
+
+  const shrink = (x, p) => 1 + (x - 1) * (p / (p + K_SHRINK));
+  const attH = shrink(hg / lgHome, home.home.p);
+  const defH = shrink(hga / lgAway, home.home.p);
+  const attA = shrink(ag / lgAway, away.away.p);
+  const defA = shrink(aga / lgHome, away.away.p);
+
+  let lamH = lgHome * attH * defA;
+  let lamA = lgAway * attA * defH;
+
+  // 近 6 场状态修正：只作用于总进球，权重 0.15，且必须有样本
+  let formFactor = 1;
+  if (form && form.home && form.away && form.home.p >= 4 && form.away.p >= 4) {
+    const fh = (form.home.gf / form.home.p) * 0.6 + (form.home.ga / form.home.p) * 0.4;
+    const fa = (form.away.gf / form.away.p) * 0.6 + (form.away.ga / form.away.p) * 0.4;
+    const baseH = lgHome * attH * defA, baseA = lgAway * attA * defH;
+    const ratioH = fh / ((home.home.gf / home.home.p) * 0.6 + (home.home.ga / home.home.p) * 0.4 || 1);
+    const ratioA = fa / ((away.away.gf / away.away.p) * 0.6 + (away.away.ga / away.away.p) * 0.4 || 1);
+    formFactor = 1 + 0.15 * (((ratioH + ratioA) / 2) - 1);
+    lamH *= 1 + 0.15 * (ratioH - 1);
+    lamA *= 1 + 0.15 * (ratioA - 1);
+  }
+
+  lamH = clamp(lamH, 0.25, 4.5); lamA = clamp(lamA, 0.2, 4.2);
+  const lamTotal = lamH + lamA, share = lamH / lamTotal;
+  return {
+    lambdaTotal: lamTotal, w: share, lamH, lamA, formFactor, source: 'team',
+    components: { lgHome, lgAway, attH, defH, attA, defA },
+    sample: { home: home.home.p, away: away.away.p },
+  };
 }
 
-// 串关：n 腿联乘，注意 pTyp × odds 恒接近 1/(1+margin)
+// 融合：市场映像与独立模型按权重 k 线性混合 λ，w 以市场为主（市场对强弱分配更准）
+function blendModels(market, team, k = K_BLEND) {
+  if (!market && !team) return null;
+  if (!team) return { ...market, blendK: 0 };
+  if (!market) return { ...team, blendK: 1 };
+  const lam = (1 - k) * market.lambdaTotal + k * team.lambdaTotal;
+  const w = (1 - k * 0.5) * market.w + (k * 0.5) * team.w;
+  return {
+    lambdaTotal: lam, w, blendK: k, source: 'blend',
+    market, team, grid: grid(lam, w),
+  };
+}
+
+// ---------- 5. 逐场综合预测 ----------
+// row: {
+//   no, lg, home, away, kickoff, hc,
+//   spf:[h,d,a] | null, rq:[h,d,a] | null, supSPF:[h,d,a] | null,
+//   zjq:[8] | null, open:[h,d,a] | null,
+//   team:{home:{home:{gf,ga,p}, away:{gf,ga,p}}, away:{...}, form:{home,away}} | null,
+//   panlu:{home:{...}, away:{...}} | null,
+//   bookAvg:{ euOpen, euLive, rqOpen:{h,line,a}, rqLive, ouOpen:{line}, ouLive } | null
+// }
+function predictMatch(row) {
+  const out = { no: row.no, lg: row.lg, home: row.home, away: row.away, hc: row.hc, kickoff: row.kickoff };
+  const mk = row.spf && row.zjq ? fitFromZJQ(row.zjq, row.spf)
+    : row.spf ? fit2D(row.spf) : null;
+  const tm = row.team ? teamStrength(row.team.home, row.team.away, row.team.form) : null;
+  const bl = blendModels(mk, tm, row.blendK === undefined ? K_BLEND : row.blendK);
+  if (!bl) return { ...out, ok: false, reason: '缺少胜平负与总进球赔率，无法拟合 λ' };
+
+  const g = bl.grid || grid(bl.lambdaTotal, bl.w);
+  const s = summarize(g);
+  const buckets = goalBuckets(g);
+  const intervals = goalIntervals(g);
+  const rq = row.hc === null || row.hc === undefined ? null : rqProb(g, row.hc);
+  const eu = row.spf ? devig(row.spf) : null;
+
+  return {
+    ...out, ok: true,
+    lambdaTotal: bl.lambdaTotal, w: bl.w, lamH: g.lh, lamA: g.la,
+    blendK: bl.blendK, modelSource: bl.source,
+    marketLambda: mk ? mk.lambdaTotal : null, marketW: mk ? mk.w : null,
+    teamLambda: tm ? tm.lambdaTotal : null, teamW: tm ? tm.w : null,
+    teamComponents: tm ? tm.components : null, teamSample: tm ? tm.sample : null,
+    probs: {
+      H: s.H, D: s.D, A: s.A, o25: s.o25, btts: s.btts,
+      rq: rq, hafu: hafu(g),
+    },
+    devig: eu ? eu.p : null, margin: eu ? eu.m : null,
+    supSPF: row.supSPF || null,
+    delta: eu && row.supSPF ? row.supSPF.map((x, i) => x - 100 * eu.p[i]) : null,
+    scores: topScores(g, 6).map(([h, a, p]) => ({ h, a, p })),
+    buckets, intervals,
+    // 综合预测：胜平负 → 总进球 → 比分
+    forecast: buildForecast(s, buckets, intervals, g),
+    verdict: verdictFromPrediction(row, s, eu, rq, g, buckets),
+  };
+}
+
+// 综合预测：按可靠度从高到低排列（胜平负 > 总进球区间 > 比分）
+function buildForecast(s, buckets, intervals, g) {
+  const spfPick = s.H >= s.D && s.H >= s.A ? '主胜' : s.D >= s.A ? '平局' : '客胜';
+  const spfP = Math.max(s.H, s.D, s.A);
+  const ivMax = Object.entries(intervals).sort((a, b) => b[1] - a[1])[0];
+  const ouLine = s.o25 >= 0.5 ? '大 2.5' : '小 2.5';
+  const tops = topScores(g, 5);
+  return {
+    spf: spfPick, spfP,
+    goals: ivMax[0], goalsP: ivMax[1],
+    ou: ouLine, ouP: s.o25 >= 0.5 ? s.o25 : 1 - s.o25,
+    btts: s.btts >= 0.5 ? '是' : '否', bttsP: s.btts >= 0.5 ? s.btts : 1 - s.btts,
+    scores: tops.map(([h, a, p]) => ({ s: `${h}-${a}`, p })),
+    scoresCum: tops.slice(0, 5).reduce((x, c) => x + c[2], 0),
+  };
+}
+
+// ---------- 6. 逐场判定（按回测修正） ----------
+// 修正要点：
+//  a) 冷端 Δ ≤ -8pp 不再直接给「小注」——33 场回测显示其实际兑现 30.0%，仅比隐含 26.3% 高 3.7pp，
+//     落在噪声内。只有「模型与去水同向背离人气」才升级。
+//  b) 支持率第一方向 ≠ 去水第一方向 时，一律采信去水方向（回测 3/3）。
+//  c) 热端 Δ ≥ +15pp 仍标回避，但理由是价格不含补偿，不是「会输」。
+function verdictFromPrediction(row, s, eu, rqP, g, buckets) {
+  const no = row.no;
+  const model = [s.H, s.D, s.A];
+  const modelPick = model.indexOf(Math.max(...model));
+
+  // 仅让球盘在售
+  if (!eu) {
+    const d = row.rq ? devig(row.rq) : null;
+    if (!d) return { level: '中性', pick: '不参与', reason: '无可用盘口' };
+    const dl = row.supRQ ? row.supRQ.map((x, i) => x - 100 * d.p[i]) : [0, 0, 0];
+    const mx = Math.max(...dl), fav = dl.indexOf(mx);
+    if (mx >= 15) return { level: '回避', pick: `让球盘 ${SIDE[fav]} ${row.rq[fav].toFixed(2)}`,
+      reason: `人气 +${mx.toFixed(0)}pp，价格无补偿；模型让球 ${(rqP ? rqP[fav] * 100 : NaN).toFixed(1)}%` };
+    if (rqP) {
+      const bi = rqP.indexOf(Math.max(...rqP));
+      const ev = rqP[bi] * row.rq[bi] - 1;
+      if (ev > 0.02) return { level: '关注', pick: `让球盘 ${SIDE[bi]} ${row.rq[bi].toFixed(2)}`,
+        reason: `模型 ${(rqP[bi] * 100).toFixed(1)}% vs 隐含 ${(d.p[bi] * 100).toFixed(1)}%，EV +${(ev * 100).toFixed(1)}%` };
+    }
+    return { level: '观望', pick: '不参与',
+      reason: `仅让球盘在售，模型 ${(rqP ? Math.max(...rqP) * 100 : d.p[0] * 100).toFixed(1)}% 对隐含 ${(d.p[0] * 100).toFixed(1)}%` };
+  }
+
+  const dl = row.supSPF ? row.supSPF.map((x, i) => x - 100 * eu.p[i]) : [0, 0, 0];
+  const md = model.map((p, i) => (p - eu.p[i]) * 100);
+  const devPick = eu.p.indexOf(Math.max(...eu.p));
+  const supPick = row.supSPF ? row.supSPF.indexOf(Math.max(...row.supSPF)) : devPick;
+  const diverge = row.supSPF && devPick !== supPick;
+
+  // 分歧：采信去水方向
+  if (diverge) {
+    const gap = Math.abs(dl[supPick]);
+    return { level: '关注', pick: `${SIDE[devPick]} ${row.spf[devPick].toFixed(2)}`,
+      reason: `资金在${SIDE[supPick]}（Δ${dl[supPick] >= 0 ? '+' : ''}${dl[supPick].toFixed(0)}pp）与定价相反，回测中此类场次定价方 3/3 命中，采信定价` };
+  }
+
+  const mx = Math.max(...dl);
+  const hotIdx = dl.indexOf(mx), coldIdx = dl.indexOf(Math.min(...dl));
+  const maxMd = Math.max(...md.map(Math.abs));
+
+  // 热端 + 模型不支撑 → 回避
+  if (mx >= 15 && modelPick !== hotIdx) {
+    return { level: '回避', pick: `${SIDE[hotIdx]} ${row.spf[hotIdx].toFixed(2)}`,
+      reason: `人气 +${mx.toFixed(0)}pp，模型仅 ${(model[hotIdx] * 100).toFixed(1)}% 低于去水 ${(eu.p[hotIdx] * 100).toFixed(1)}%，价格不含补偿` };
+  }
+  // 冷端 + 模型同向 → 关注
+  if (dl[coldIdx] <= -8 && modelPick === coldIdx && maxMd >= 2) {
+    const ev = model[coldIdx] * row.spf[coldIdx] - 1;
+    return { level: '关注', pick: `${SIDE[coldIdx]} ${row.spf[coldIdx].toFixed(2)}`,
+      reason: `缺口 ${dl[coldIdx].toFixed(0)}pp 且模型同向（${(model[coldIdx] * 100).toFixed(1)}% vs 去水 ${(eu.p[coldIdx] * 100).toFixed(1)}%），EV ${(ev * 100 >= 0 ? '+' : '')}${(ev * 100).toFixed(1)}%` };
+  }
+  // 定价有效
+  if (maxMd <= 3) {
+    return { level: '观望', pick: '不参与',
+      reason: `模型与去水偏差 ${maxMd.toFixed(1)}pp，定价有效；人气最大偏离 ${mx >= 0 ? '+' : ''}${mx.toFixed(0)}pp` };
+  }
+  return { level: '中性', pick: '不参与',
+    reason: `模型偏差 ${maxMd.toFixed(1)}pp（${SIDE[modelPick]} 方向），人气 Δ ${mx.toFixed(0)}pp，无结构性错价` };
+}
+
+// ---------- 7. 回测校准 ----------
+// preds: predictMatch 的输出数组；results: { 编号: [主进球, 客进球] }
+function backtest(preds, results) {
+  const acc = {
+    n: 0, noData: 0,
+    spf_model: [0, 0], spf_devig: [0, 0], spf_sup: [0, 0],
+    ou: [0, 0], rq: [0, 0], btts: [0, 0],
+    goalsBucket: [0, 0], goalsInterval: [0, 0],
+    scoreTop1: [0, 0], scoreTop3: [0, 0], scoreTop5: [0, 0],
+    expDevig: 0, expModel: 0,
+  };
+  const rows = [];
+  for (const p of preds) {
+    const r = results[p.no];
+    if (!r) { acc.noData++; continue; }
+    const [gh, ga] = r;
+    const act = gh > ga ? 0 : gh === ga ? 1 : 2;
+    const tot = gh + ga;
+    acc.n++;
+    const mIdx = [p.probs.H, p.probs.D, p.probs.A].indexOf(Math.max(p.probs.H, p.probs.D, p.probs.A));
+    const dIdx = p.devig.indexOf(Math.max(...p.devig));
+    acc.spf_model[mIdx === act ? 0 : 1]++;
+    acc.spf_devig[dIdx === act ? 0 : 1]++;
+    acc.expDevig += p.devig[dIdx];
+    acc.expModel += [p.probs.H, p.probs.D, p.probs.A][mIdx];
+    if (p.supSPF) {
+      const sIdx = p.supSPF.indexOf(Math.max(...p.supSPF));
+      acc.spf_sup[sIdx === act ? 0 : 1]++;
+    }
+    const ouPick = p.probs.o25 >= 0.5 ? 1 : 0;
+    acc.ou[(tot > 2.5 ? 1 : 0) === ouPick ? 0 : 1]++;
+    const bPick = p.probs.btts >= 0.5 ? 1 : 0;
+    acc.btts[(gh > 0 && ga > 0 ? 1 : 0) === bPick ? 0 : 1]++;
+    if (p.probs.rq && p.hc !== null && p.hc !== undefined) {
+      const net = gh + p.hc - ga;
+      const ra = net > 0 ? 0 : net === 0 ? 1 : 2;
+      const rp = p.probs.rq.indexOf(Math.max(...p.probs.rq));
+      acc.rq[rp === ra ? 0 : 1]++;
+    }
+    const bIdx = Math.min(tot, 7);
+    acc.goalsBucket[p.buckets.indexOf(Math.max(...p.buckets)) === bIdx ? 0 : 1]++;
+    const ivMax = Object.entries(p.intervals).sort((a, b) => b[1] - a[1])[0][0];
+    const hitIv = (ivMax === '0-1' && tot <= 1) || (ivMax === '2-3' && tot >= 2 && tot <= 3)
+      || (ivMax === '4-6' && tot >= 4 && tot <= 6) || (ivMax === '7+' && tot >= 7);
+    acc.goalsInterval[hitIv ? 0 : 1]++;
+    const sc = `${gh}-${ga}`;
+    acc.scoreTop1[p.scores[0] && `${p.scores[0].h}-${p.scores[0].a}` === sc ? 0 : 1]++;
+    acc.scoreTop3[p.scores.slice(0, 3).some((x) => `${x.h}-${x.a}` === sc) ? 0 : 1]++;
+    acc.scoreTop5[p.scores.slice(0, 5).some((x) => `${x.h}-${x.a}` === sc) ? 0 : 1]++;
+    rows.push({ no: p.no, score: sc, act: SIDE[act], tot,
+      model: SIDE[mIdx], devig: SIDE[dIdx], force: act === mIdx, ou: ouPick === (tot > 2.5 ? 1 : 0) });
+  }
+  const rate = (a) => (a[0] + a[1] > 0 ? a[0] / (a[0] + a[1]) : null);
+  return {
+    rows, n: acc.n,
+    hit: {
+      spf_model: rate(acc.spf_model), spf_devig: rate(acc.spf_devig), spf_sup: rate(acc.spf_sup),
+      ou: rate(acc.ou), rq: rate(acc.rq), btts: rate(acc.btts),
+      goalsBucket: rate(acc.goalsBucket), goalsInterval: rate(acc.goalsInterval),
+      scoreTop1: rate(acc.scoreTop1), scoreTop3: rate(acc.scoreTop3), scoreTop5: rate(acc.scoreTop5),
+    },
+    counts: acc,
+    devigCalibration: { meanImplied: acc.expDevig / (acc.n || 1), meanModel: acc.expModel / (acc.n || 1) },
+  };
+}
+
+// ---------- 8. EV 与串关 ----------
+function ev(p, odds) { return p * odds - 1; }
+
+// 串关：n 腿联乘。注意 p × odds 恒接近 1/(1+margin)
 function combo(legs) {
   const p = legs.reduce((a, l) => a * l.p, 1);
   const odds = legs.reduce((a, l) => a * l.odds, 1);
   return { odds, p, ev: p * odds - 1 };
 }
 
-// ---------- 逐场判定 ----------
-const SIDE = ['主胜', '平局', '客胜'];
-
-function verdictOne(row) {
-  const no = row[0], hc = row[5], spf = row[6], rq = row[7], sSPF = row[8], sRQ = row[9];
-
-  // 未开售胜平负：只对让球盘给判断
-  if (!spf) {
-    const d = devig(rq);
-    const dl = sRQ.map((s, i) => s - 100 * d.p[i]);
-    const mx = Math.max(...dl), mn = Math.min(...dl);
-    const fav = dl.indexOf(mx);
-    let level = '观望', pick = '';
-    if (mx >= 15) { level = '回避'; pick = `让球盘 ${SIDE[fav]} ${rq[fav].toFixed(2)}`; }
-    else if (mn <= -15) { level = '小注'; pick = `让球盘 ${SIDE[dl.indexOf(mn)]} ${rq[dl.indexOf(mn)].toFixed(2)}`; }
-    else if (mn <= -8) { level = '关注'; pick = `让球盘 ${SIDE[dl.indexOf(mn)]} ${rq[dl.indexOf(mn)].toFixed(2)}`; }
-    else { pick = `让球盘 不参与`; }
-    return {
-      no, level, pick,
-      line: `${no}｜${level}｜${pick}｜Δ ${mx >= 0 ? '+' : ''}${mx.toFixed(0)}pp / ${mn.toFixed(0)}pp｜margin ${(d.m * 100).toFixed(2)}%`,
-      dev: d.p, delta: dl, margin: d.m * 100, note: '胜平负未开售，按让球盘判定',
-    };
-  }
-
-  const d = devig(spf);
-  const dl = sSPF.map((s, i) => s - 100 * d.p[i]);
-  const mx = Math.max(...dl), mn = Math.min(...dl);
-  const hiIdx = dl.indexOf(mx), loIdx = dl.indexOf(mn);
-
-  // 定价偏差：有总进球用 1D 拟合，否则 2D；缺数据则跳过模型
-  let model = null, bias = null, g0 = null, rqEV = null;
-  if (row[10]) {
-    const f = fitFromZJQ(row[10], spf);
-    const s = summarize(f.grid);
-    model = [(s.H * 100).toFixed(1), (s.D * 100).toFixed(1), (s.A * 100).toFixed(1)];
-    bias = Math.max(...[s.H - d.p[0], s.D - d.p[1], s.A - d.p[2]].map(Math.abs)) * 100;
-    g0 = f.grid;
-  }
-
-  // 让球盘 EV：让球的一侧是否还留有边际
-  if (g0 && rq) {
-    const rp = rqProb(g0, parseInt(hc, 10));
-    rqEV = rp.map((p, i) => ev(p, rq[i]));
-  }
-
-  const pricingValid = bias !== null && bias <= 1.5;
-
-  let level, pick, reason;
-  if (mx >= 15) {
-    level = '回避';
-    pick = `${SIDE[hiIdx]} ${spf[hiIdx].toFixed(2)}`;
-    reason = `人气溢价 +${mx.toFixed(0)}pp，价格不含补偿`;
-  } else if (mn <= -15 && spf[loIdx] >= 2.5) {
-    level = '小注';
-    pick = `${SIDE[loIdx]} ${spf[loIdx].toFixed(2)}`;
-    reason = `缺口 ${mn.toFixed(0)}pp，高赔冷门仅限小仓`;
-  } else if (mn <= -8) {
-    level = '关注';
-    pick = `${SIDE[loIdx]} ${spf[loIdx].toFixed(2)}`;
-    reason = `缺口 ${mn.toFixed(0)}pp，需基本面无反向佐证`;
-  } else if (pricingValid) {
-    level = '观望';
-    pick = '不参与';
-    reason = `定价有效，模型偏差 ${bias.toFixed(1)}pp，Δ ${dl.map((x) => x.toFixed(0)).join('/')}`;
-  } else {
-    level = '中性';
-    pick = '不参与';
-    reason = `无缺口无冲突${bias !== null ? `，模型偏差 ${bias.toFixed(1)}pp` : '，仅胜平负盘'}`;
-  }
-
-  // 胜平负无缺口时，让球盘是否还有边际：有正 EV 就升级为关注
-  if (rqEV && (level === '观望' || level === '中性')) {
-    const bi = rqEV.indexOf(Math.max(...rqEV));
-    if (rqEV[bi] > 0.02) {
-      level = '关注';
-      pick = `让球盘 ${SIDE[bi]} ${rq[bi].toFixed(2)}`;
-      reason += `；让球盘 ${SIDE[bi]} EV +${(rqEV[bi] * 100).toFixed(1)}%`;
-    } else {
-      reason += `；让球盘各侧 EV ${rqEV.map((e) => (e * 100).toFixed(1)).join('/')}%，${SIDE[bi]} 侧最好仍为 ${(rqEV[bi] * 100).toFixed(1)}%，无边际`;
-    }
-  }
-
-  const evBest = spf.map((o, i) => `${SIDE[i]} EV ${(ev(d.p[i], o) * 100).toFixed(1)}%`).join(' / ');
-
-  return {
-    no, level, pick,
-    line: `${no}｜${level}｜${pick}｜${reason}`,
-    dev: d.p, delta: dl, margin: d.m * 100, model, bias, rqEV, evText: evBest,
-    note: reason,
-  };
-}
-
-function verdictAll(rows) {
-  return rows.map(verdictOne);
-}
-
-// 自检样例：虚构对阵，仅用于验证函数可运行，不代表任何真实赛事
+// ---------- 自检样例（虚构对阵，仅验证函数可运行） ----------
 if (typeof module !== 'undefined' && require.main === module) {
-  const s1 = ['示例A', '示例联赛', '主队甲', '客队乙', '11-15 22:00', '-1',
-    [2.10, 3.55, 3.40], [4.20, 3.80, 1.60], [29, 29, 42], [30, 30, 40],
-    [12, 5.5, 3.6, 3.5, 4.6, 8.5, 15, 22], null];
-  const s2 = ['示例B', '示例联赛', '主队丙', '客队丁', '11-16 01:00', '+1',
-    [1.60, 3.80, 5.50], [1.75, 3.60, 3.60], [30, 25, 45], [55, 25, 20],
-    null, null];
+  const demo = {
+    no: '示例A', lg: '示例联赛', home: '主队甲', away: '客队乙', kickoff: '11-15 22:00', hc: -1,
+    spf: [2.10, 3.55, 3.40], rq: [4.20, 3.80, 1.60],
+    supSPF: [29, 29, 42], supRQ: [30, 30, 40], open: null,
+    zjq: [12, 5.5, 3.6, 3.5, 4.6, 8.5, 15, 22],
+    team: {
+      home: { home: { gf: 12, ga: 6, p: 6 }, away: { gf: 7, ga: 11, p: 6 } },
+      away: { home: { gf: 9, ga: 8, p: 6 }, away: { gf: 8, ga: 9, p: 6 } },
+      form: { home: { gf: 8, ga: 5, p: 5 }, away: { gf: 6, ga: 7, p: 5 } },
+    },
+  };
+  const p = predictMatch(demo);
+  console.log('== 综合预测 ==', p.no, `${p.home} vs ${p.away}`);
+  console.log('λ', p.lambdaTotal.toFixed(2), 'w', p.w.toFixed(3), '来源', p.modelSource,
+    '| 市场λ', p.marketLambda && p.marketLambda.toFixed(2), '独立λ', p.teamLambda && p.teamLambda.toFixed(2));
+  console.log('胜平负', [p.probs.H, p.probs.D, p.probs.A].map((x) => (x * 100).toFixed(1) + '%').join(' / '),
+    '| 去水', p.devig ? p.devig.map((x) => (x * 100).toFixed(1) + '%').join(' / ') : '-');
+  console.log('总进球区间', Object.entries(p.intervals).map(([k, v]) => `${k}:${(v * 100).toFixed(1)}%`).join(' '));
+  console.log('比分 top5', p.forecast.scores.map((s) => `${s.s} ${(s.p * 100).toFixed(1)}%`).join(' | '));
+  console.log('判定', p.verdict.level, p.verdict.pick, '|', p.verdict.reason);
 
-  [s1, s2].forEach((row) => {
-    const v = verdictOne(row);
-    console.log(v.line);
-    if (row[10]) {
-      const f = fitFromZJQ(row[10], row[6]);
-      const s = summarize(f.grid);
-      console.log('  λ=', f.lambdaTotal.toFixed(2), 'w=', f.w.toFixed(3),
-        'model=', [(s.H * 100).toFixed(1), (s.D * 100).toFixed(1), (s.A * 100).toFixed(1)].join('/'),
-        'bias=', v.bias === null ? '-' : v.bias.toFixed(2) + 'pp');
-      console.log('  top5=', topScores(f.grid).map((c) => `${c[0]}-${c[1]} ${(c[2] * 100).toFixed(1)}%`).join(' '));
-      console.log('  rqEV=', v.rqEV === null ? '-' : v.rqEV.map((e) => (e * 100).toFixed(1)).join('/'));
-    }
-  });
-  console.log('devig 校验=', devig([2.0, 3.4, 4.0]).m.toFixed(4),
-    'combo2=', JSON.stringify(combo([{ p: 0.60, odds: 1.46 }, { p: 0.55, odds: 1.60 }])));
+  const bt = backtest([p], { '示例A': [2, 1] });
+  console.log('== 回测 ==', JSON.stringify(bt.hit));
+  console.log('去吧', devig([2.0, 3.4, 4.0]).m.toFixed(4),
+    '两串', JSON.stringify(combo([{ p: 0.6, odds: 1.46 }, { p: 0.55, odds: 1.6 }])));
 }
 
-module.exports = { devig, grid, summarize, topScores, rqProb, fitFromZJQ, fit2D, ev, combo, verdictOne, verdictAll, RHO };
+module.exports = {
+  RHO, K_SHRINK, K_BLEND, SIDE,
+  devig, grid, summarize, topScores, goalBuckets, goalIntervals, rqProb, hafu,
+  fitFromZJQ, fit2D, teamStrength, blendModels,
+  predictMatch, buildForecast, verdictFromPrediction,
+  backtest, ev, combo,
+};
