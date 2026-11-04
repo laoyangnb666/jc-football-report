@@ -215,16 +215,22 @@ function predictMatch(row) {
   const bl = blendModels(mk, tm, row.blendK === undefined ? K_BLEND : row.blendK);
   if (!bl) return { ...out, ok: false, reason: '缺少胜平负与总进球赔率，无法拟合 λ' };
 
-  const g = bl.grid || grid(bl.lambdaTotal, bl.w);
+  // v3：伤停修正（人工情报裁定，报告必须披露依据）
+  const adj = row.injuryAdj || { home: 0, away: 0 };
+  const lamH = clamp(bl.lambdaTotal * bl.w + (adj.home || 0), 0.2, 4.8);
+  const lamA = clamp(bl.lambdaTotal * (1 - bl.w) + (adj.away || 0), 0.15, 4.5);
+  const lamTotal = lamH + lamA, w = lamH / lamTotal;
+  const g = grid(lamTotal, w);
   const s = summarize(g);
   const buckets = goalBuckets(g);
   const intervals = goalIntervals(g);
   const rq = row.hc === null || row.hc === undefined ? null : rqProb(g, row.hc);
   const eu = row.spf ? devig(row.spf) : null;
 
-  return {
+  const res = {
     ...out, ok: true,
-    lambdaTotal: bl.lambdaTotal, w: bl.w, lamH: g.lh, lamA: g.la,
+    lambdaTotal: lamTotal, w, lamH, lamA,
+    injuryAdj: adj,
     blendK: bl.blendK, modelSource: bl.source,
     marketLambda: mk ? mk.lambdaTotal : null, marketW: mk ? mk.w : null,
     teamLambda: tm ? tm.lambdaTotal : null, teamW: tm ? tm.w : null,
@@ -238,10 +244,11 @@ function predictMatch(row) {
     delta: eu && row.supSPF ? row.supSPF.map((x, i) => x - 100 * eu.p[i]) : null,
     scores: topScores(g, 6).map(([h, a, p]) => ({ h, a, p })),
     buckets, intervals,
-    // 综合预测：胜平负 → 总进球 → 比分
     forecast: buildForecast(s, buckets, intervals, g),
     verdict: verdictFromPrediction(row, s, eu, rq, g, buckets),
+    rec: buildRecommendation(row, s, eu, rq, buckets),
   };
+  return res;
 }
 
 // 综合预测：按可靠度从高到低排列（胜平负 > 总进球区间 > 比分）
@@ -325,6 +332,114 @@ function verdictFromPrediction(row, s, eu, rqP, g, buckets) {
   }
   return { level: '中性', pick: '不参与',
     reason: `模型偏差 ${maxMd.toFixed(1)}pp（${SIDE[modelPick]} 方向），人气 Δ ${mx.toFixed(0)}pp，无结构性错价` };
+}
+
+// ---------- 6b. 购买方案层（v3 新增） ----------
+// 每场输出：级别（主推/小注/观察/回避）+ 具体玩法/选项/赔率/仓位 + 焦点标记
+// 规则依据两轮回测：
+//  - 超短赔（去水第一方向概率 ≥66%）跨两轮 11/12=91.7% 对隐含 67% → 唯一可主推信号
+//  - 但伤停反向修正 ≥0.15 的超短赔必须降级（周一004 亚特兰大 1.30 爆冷的教训）
+//  - 让球盘模型 EV > 2% 可小注（跨轮 3/4）
+//  - 人气 Δ ≥ +15pp 且模型不支持 → 回避
+//  - 比分只做娱乐仓，仓位 ≤0.5%/注
+function buildRecommendation(row, s, eu, rqP, buckets) {
+  const SIDE3 = ['主胜', '平局', '客胜'];
+  const modelP = [s.H, s.D, s.A];
+  const modelPick = modelP.indexOf(Math.max(...modelP));
+  const devPick = eu ? eu.p.indexOf(Math.max(...eu.p)) : null;
+  const devProb = eu ? eu.p[devPick] : null;
+  const supPick = row.supSPF ? row.supSPF.indexOf(Math.max(...row.supSPF)) : null;
+  const div = row.supSPF && devPick !== supPick && row.supSPF[supPick] - row.supSPF[devPick] >= 8;
+  const adj = row.injuryAdj || {};
+  const favAdj = devPick === 0 ? (adj.home || 0) : (adj.away || 0);
+  const favOdds = eu ? row.spf[devPick] : null;
+  const delta = eu && row.supSPF ? row.supSPF.map((x, i) => x - 100 * eu.p[i]) : null;
+  const deltaMax = delta ? Math.max(...delta) : 0;
+  const hotIdx = delta ? delta.indexOf(deltaMax) : -1;
+
+  // 焦点场：人气极端 / λ 极端 / 重大伤停 / 价格大幅移动
+  const bookAvg = row.bookAvg || {};
+  const priceMove = (bookAvg.euOpen && bookAvg.euLive && bookAvg.euOpen[0] && bookAvg.euLive[0])
+    ? Math.abs(bookAvg.euLive[0] - bookAvg.euOpen[0]) : 0;
+  const focus = deltaMax >= 15 || s.H + s.D + s.A === 0 || Math.max(0, ...(row.injuryAdj ? [Math.abs(row.injuryAdj.home || 0), Math.abs(row.injuryAdj.away || 0)] : [0])) >= 0.2 || priceMove >= 0.15;
+
+  const plays = [];
+  let level = '观察';
+  const notes = [];
+
+  // 让球盘 EV（所有场次都算）
+  let rqBest = null;
+  if (rqP && row.rq) {
+    const evs = rqP.map((p, i) => p * row.rq[i] - 1);
+    const bi = evs.indexOf(Math.max(...evs));
+    rqBest = { side: SIDE3[bi], odds: row.rq[bi], ev: evs[bi], p: rqP[bi], impl: (1 / row.rq[bi]) / (row.rq.reduce((a, x) => a + 1 / x, 0)) };
+  }
+
+  if (!eu) {
+    // 仅让球盘在售
+    if (rqBest && rqBest.ev > 0.02) {
+      level = '小注';
+      plays.push({ play: '让球胜平负', pick: rqBest.side, odds: rqBest.odds, p: rqBest.p, ev: rqBest.ev, stake: '小注（0.5–1%）' });
+      notes.push(`仅让球盘在售，模型 ${(rqBest.p * 100).toFixed(1)}% 对隐含 ${(rqBest.impl * 100).toFixed(1)}%，EV +${(rqBest.ev * 100).toFixed(1)}%`);
+    } else {
+      level = '回避';
+      notes.push(rqBest ? `仅让球盘在售，最好一侧 EV ${(rqBest.ev * 100).toFixed(1)}% 仍为负` : '无可用盘口');
+    }
+  } else if (devProb >= 0.66) {
+    // 超短赔区：边际来自跨轮回测经验概率（11/12=91.7%），不是模型概率
+    const EMP = 0.917;
+    if (modelPick === devPick && favAdj >= -0.15 && !div) {
+      level = '主推';
+      plays.push({ play: '胜平负（单关）', pick: SIDE3[devPick], odds: favOdds, p: EMP, pSrc: '回测经验（12 样本）', ev: EMP * favOdds - 1, stake: '标准仓（计划资金 1–2%）' });
+      notes.push(`超短赔区：去水 ${(devProb * 100).toFixed(1)}%，模型同向 ${(modelP[devPick] * 100).toFixed(1)}%；方案概率采用跨轮回测经验值 ${EMP * 100}%（11/12），非模型输出`);
+      // 深度让球提示
+      if (row.hc !== null && row.hc <= -2 && rqBest) {
+        plays.push({ play: '让球胜平负', pick: `谨慎：让 ${row.hc} 需净胜 ${Math.abs(row.hc) + 1} 球`, odds: rqBest.odds, p: rqBest.p, ev: rqBest.ev, stake: '不建议' });
+        notes.push(`让 ${row.hc} 球需净胜 ${Math.abs(row.hc) + 1} 球以上，模型仅 ${(rqP[0] * 100).toFixed(1)}%，让球盘无值`);
+      }
+    } else {
+      level = '观察';
+      if (div) notes.push(`超短赔但资金方向相反（支持率 ${SIDE3[supPick]} ${row.supSPF[supPick]}% vs 定价 ${SIDE3[devPick]}），回测分歧规则采信定价但仓位归零`);
+      if (favAdj < -0.15) notes.push(`超短赔但该侧伤停修正 ${favAdj.toFixed(2)}（周一004 亚特兰大 1.30 爆冷同型），等首发确认`);
+      if (modelPick !== devPick) notes.push(`模型 ${SIDE3[modelPick]} 与去水第一方向 ${SIDE3[devPick]} 不同向`);
+      plays.push({ play: '胜平负', pick: SIDE3[devPick], odds: favOdds, p: devProb, ev: modelP[devPick] * favOdds - 1, stake: '暂不买，等临场' });
+    }
+  } else if (deltaMax >= 15 && modelPick !== hotIdx) {
+    level = '回避';
+    notes.push(`人气 +${deltaMax.toFixed(0)}pp 堆在 ${SIDE3[hotIdx]}，模型仅 ${(modelP[hotIdx] * 100).toFixed(1)}%，价格不含补偿`);
+  } else if (rqBest && rqBest.ev > 0.02) {
+    level = '小注';
+    plays.push({ play: '让球胜平负', pick: rqBest.side, odds: rqBest.odds, p: rqBest.p, ev: rqBest.ev, stake: '小注（0.5–1%）' });
+    notes.push(`让球盘 ${rqBest.side}：模型 ${(rqBest.p * 100).toFixed(1)}% 对隐含 ${(rqBest.impl * 100).toFixed(1)}%，EV +${(rqBest.ev * 100).toFixed(1)}%`);
+  } else {
+    level = '观察';
+    notes.push(`无结构性边际：去水第一方向 ${SIDE3[devPick]} ${(devProb * 100).toFixed(1)}%，模型偏差 ${(Math.max(...modelP.map((p, i) => Math.abs(p - eu.p[i]))) * 100).toFixed(1)}pp`);
+  }
+
+  // 大小球建议（仅当模型与盘路同向且概率足够偏）
+  if (row.panlu && row.panlu.home && row.panlu.away) {
+    const ovH = (row.panlu.home['总'] || {})['over%'], ovA = (row.panlu.away['总'] || {})['over%'];
+    if (ovH !== undefined && ovA !== undefined) {
+      const panluBig = (ovH + ovA) / 2;
+      if (s.o25 >= 0.60 && panluBig >= 50) {
+        plays.push({ play: '总进球', pick: '大 2.5', odds: null, p: s.o25, ev: null, stake: '小注（0.5–1%）' });
+      } else if (s.o25 <= 0.40 && panluBig <= 50) {
+        plays.push({ play: '总进球', pick: '小 2.5', odds: null, p: 1 - s.o25, ev: null, stake: '小注（0.5–1%）' });
+      }
+    }
+  }
+
+  // 比分娱乐仓（仅焦点场）
+  if (focus && eu) {
+    const t2 = (row.scoresHint || []);
+    notes.push('焦点场：如需博比分，仅限娱乐仓 ≤0.5%/注，见比分分布');
+  }
+
+  const summary = plays.length
+    ? `${level}：${plays.filter(p => p.stake !== '不建议').map(p => `${p.play} ${p.pick}${p.odds ? ' @' + p.odds.toFixed(2) : ''}（${p.stake}）`).join('；')}`
+    : `${level}：本场不参与`;
+
+  return { level, focus, plays, notes, summary, rqBest };
 }
 
 // ---------- 7. 回测校准 ----------
@@ -436,6 +551,6 @@ module.exports = {
   RHO, K_SHRINK, K_BLEND, SIDE,
   devig, grid, summarize, topScores, goalBuckets, goalIntervals, rqProb, hafu,
   fitFromZJQ, fit2D, teamStrength, blendModels,
-  predictMatch, buildForecast, verdictFromPrediction,
+  predictMatch, buildForecast, verdictFromPrediction, buildRecommendation,
   backtest, ev, combo,
 };

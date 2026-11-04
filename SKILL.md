@@ -26,7 +26,7 @@ description: Build institutional-grade China sports lottery football analysis re
 1. **回测上一轮**：拿到已完赛比分，用 `backtest(preds, results)` 跑出逐市场命中率，与 [references/model-and-calibration.md](references/model-and-calibration.md) 的待验证清单核对。**这一步在采集新数据之前做。**
 2. **采集**：竞彩官网在售场次（胜平负/让球/总进球/比分/半全场 + 支持率 + 官方概率），捷报逐场（主客分离得失球、盘路、18 家初盘与即时亚盘/水位、大小球、天气），直播吧与搜索补齐伤停/动机/裁判。口径见 [references/data-collection.md](references/data-collection.md)。
 3. **建模**：`scripts/analyze.js` 的 `predictMatch(row)` 一次产出 λ（市场 + 独立 + 融合）、比分分布、总进球桶与区间、胜平负、让球、双方进球、半全场、判定。数据以对象传入，字段见脚本文档头。
-4. **判定**：`verdict` 字段已按回测修正的规则生成，**不要手改阈值**；规则与理由见下文。
+4. **判定与方案**：`verdict` 字段给简明判定，`rec` 字段（`buildRecommendation`）给完整购买方案——级别（主推/小注/观察/回避）+ 玩法 + 选项 + 赔率 + 概率/隐含 + EV + 仓位 + 否决条件。**不要手改阈值**；规则与理由见下文与 [references/model-and-calibration.md](references/model-and-calibration.md)。
 5. **补齐逻辑**：按 [references/analysis-framework.md](references/analysis-framework.md) 八节检查表逐项过，标出进模型 / 进文字 / 因缺数据降级。
 6. **组装**：按 [references/report-template.md](references/report-template.md) 的六层 + 综合预测层写 HTML。
 7. **渲染**：`mcp_qieman_RenderHtmlToPdf`（A4、printBackground、margin 0），PowerShell 两步法下载并改中文名。
@@ -49,11 +49,12 @@ description: Build institutional-grade China sports lottery football analysis re
 | max\|md\| ≤ 3pp | 观望 | `模型与去水偏差 1.5pp，定价有效；人气最大偏离 +10pp` |
 | 其余 | 中性 | `模型偏差 3.1pp（客胜方向），人气 Δ 5pp，无结构性错价` |
 
-**与 v1 的三处关键差异：**
+**与 v2 的关键差异（v3，依第二轮回测）：**
 
-1. **取消了「Δ ≤ −8pp 即小注」。** 回测显示冷端选项实际兑现 30.0%、盘口隐含 26.3%，+3.7pp 落在 8pp 标准误内。冷端不是买入理由。
-2. **热端不是卖出理由。** 热端兑现 59.1% 对隐含 49.2%，同样在噪声内。热端标「回避」只因价格不含补偿，不预测会输。
-3. **新增分歧规则。** 资金与定价方向相反时一律采信定价（回测 3/3）。
+1. **新增超短赔主推规则**：去水第一方向概率 ≥66% + 模型同向 + 该侧伤停修正 ≥−0.15 + 资金方向无分歧 → 主推单关（两轮 11/12=91.7% 对隐含 67%）。方案概率用回测经验值并加星号注明，任何一条不满足即降级为观察。
+2. **新增 injuryAdj 伤停修正**：λ 叠加人工裁定修正值（披露制 + 否决条件）。亚特兰大 10 人伤 0-3 爆冷是直接教训。
+3. **新增购买方案层**：每场必须给完整方案（买什么/买多少/何时放弃），不允许只写「关注/观望」结束。
+4. **总进球区间降级**（两轮 43.8%）：只给方向 + 8 桶分布。
 
 **判定必须绑定综合预测。** 例如不能写「主胜 2.10 关注」却不写总进球区间——两个市场的判断要互相自洽。
 
@@ -74,16 +75,10 @@ description: Build institutional-grade China sports lottery football analysis re
 
 ## 报告骨架
 
-七层 + 全量表 + 执行层，缺一不可：
+**两篇式**（v3 起）：第一篇只摆事实（数据分析），第二篇只给结论（预测与购买方案），读者只看第二篇能做决策、只看第一篇能核查依据。结构详见 [references/report-template.md](references/report-template.md)。
 
-1. **回测校准**：上一轮逐市场命中率、实际 vs 盘口隐含、待验证项状态
-2. 核心定价引擎：margin、去水、λ 三来源（市场/独立/融合）、比分矩阵、总进球逐桶 EV
-3. 基本面情报：伤停、动机、赛程、xG 与进球背离、盘路
-4. 市场情报：初盘到现价（欧赔 + 亚盘 + 大小球）、聪明钱、人气税热冷两端
-5. 细分市场：让球盘 EV、大小球、比分与半全场原则
-6. **逐场综合预测**：每场 比分 top-5 → 总进球区间 → 胜平负，外加让球与双方进球
-7. 数据卫生：八条检查项逐条给状态
-8. 执行层：价值池与串关测算
+第一篇 数据分析：1 回测校准 → 2 定价引擎 → 3 基本面情报 → 4 市场情报 → 5 数据卫生
+第二篇 预测方案：6 逐场综合预测卡 → 7 逐场购买方案 → 8 全量总表 → 9 执行层（串关+资金管理）→ 10 风险披露
 
 全量表必须含「综合预测」与「判断」两列。表后另附逐场清单，每场一行，格式：
 
