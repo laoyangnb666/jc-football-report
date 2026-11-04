@@ -306,10 +306,10 @@
       s += `<div class="sline"><span>投注笔数</span><b>${slip.length}</b></div>`;
       s += `<div class="sline"><span>合计投注</span><b>${fmt(total)}</b></div>`;
       s += `<div class="sline"><span>期望回报（模型口径）</span><b class="${expProfit>=0?'g':'r'}">${fmt(expRet)}</b></div>`;
-      s += `<div class="sline total"><span>期望盈亏</span><b class="${expProfit>=0?'g':'r'}">${(expProfit>=0?'+':'') + fmt(expProfit).replace('¥','¥')}</b></div>`;
+      s += `<div class="sline total"><span>期望盈亏</span><b class="${expProfit>=0?'g':'r'}">${(expProfit>=0?'+':'')}${fmt(expProfit)}</b></div>`;
       s += `<div class="sline" style="font-size:11.5px;color:var(--muted);padding-top:6px">
-        单关返还率 = 每注 p × odds 的加权和 ÷ 投注额 =
-        <b>${total ? ((expRet/total)*100).toFixed(1) : '—'}%</b>（竞彩理论值 86.1%）</div>`;
+        单关返还率 = 每注（p × odds）的加权和 ÷ 投注额，此处 p 为<b>模型概率</b>，所以可能高于竞彩 86.1% 的抽水线；
+        若换成盘口去水概率，每注恒等于 86.1%。当前 <b>${total ? ((expRet/total)*100).toFixed(1) : '—'}%</b>。</div>`;
       if (slip.length > 1) {
         s += `<div class="sline" style="font-size:11.5px;color:var(--muted)">切成串关会怎样 → 切换到「串关」查看</div>`;
       }
