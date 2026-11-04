@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>模拟投注 · jc-football-report</title>
+<meta name="description" content="用本轮 11 场真实赔率与模型概率做模拟投注：自己算边际、看串关的乘方损耗。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/site.css">
+</head>
+<body>
+<script>document.documentElement.className += ' js';</script>
+
+<div class="nav-wrap">
+  <nav class="nav">
+    <a class="brand" href="index.html">
+      <span class="mark">JC</span>
+      <span><b>jc-football-report</b><small>Simulator</small></span>
+    </a>
+    <div class="nav-links">
+      <a href="index.html">首页</a>
+      <a href="skill.html">Skill 文档</a>
+      <a href="simulator.html" class="on">模拟投注</a>
+      <a href="index.html#backtest">回测</a>
+      <a href="https://github.com/laoyangnb666/jc-football-report" target="_blank" rel="noopener">仓库</a>
+    </div>
+    <a class="btn btn-dark" href="https://github.com/laoyangnb666/jc-football-report" target="_blank" rel="noopener">GitHub 仓库</a>
+  </nav>
+</div>
+
+<main class="sim">
+  <div class="wrap">
+    <div class="kicker"><i></i>Simulator · 2026-11-04 快照</div>
+    <h1 style="font-size:clamp(30px,4.2vw,50px);line-height:1.1;letter-spacing:-.04em;font-weight:500;margin-bottom:12px">
+      自己算一遍<span class="serif" style="color:var(--green)">边际。</span>
+    </h1>
+    <p style="color:#41453F;font-size:15px;max-width:660px;line-height:1.78;margin-bottom:16px">
+      用本轮 11 场的真实赔率与模型概率做模拟。左边选比赛与玩法，右边看资金敞口与串关损耗。
+      所有 EV 都是模型口径，不构成任何建议。
+    </p>
+    <div class="warnbox" style="margin-bottom:26px;max-width:660px">
+      <b>这是模拟器。</b>用虚拟资金，不连接任何真实账户。竞彩统一抽水约 13.9%，意味着任何单注在开赛前就背负 12 个百分点的成本——
+      你能看到的大部分 EV 都是负的，这正是重点。
+    </div>
+
+    <div class="sim-grid">
+      <!-- 左：选场 + 盘口 -->
+      <div class="panel">
+        <h3>本轮在售 <span id="mCount"></span></h3>
+        <div class="match-list" id="matchList"></div>
+
+        <div class="market" id="market">
+          <div class="empty" id="mktEmpty">请选择一场比赛</div>
+        </div>
+      </div>
+
+      <!-- 右：资金 + 投注单 -->
+      <div>
+        <div class="bank">
+          <div class="lb">模拟资金池</div>
+          <div class="v" id="bankLeft">¥10,000</div>
+          <div class="bar"><i class="s1" id="barSingle"></i><i class="s2" id="barParlay"></i></div>
+          <div class="lg">
+            <span><i style="background:#2F7A4F"></i>单关 <b id="lgSingle" style="font-family:ui-monospace,monospace">¥0</b></span>
+            <span><i style="background:#92600A"></i>串关 <b id="lgParlay" style="font-family:ui-monospace,monospace">¥0</b></span>
+            <span id="lgExpo" style="margin-left:auto">敞口 0.0%</span>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h3>投注单 <span><span class="mode" style="font-size:11px"><button data-mode="single" class="on">单关</button><button data-mode="parlay">串关</button></span></span></h3>
+          <div class="bet-list" id="slip"></div>
+
+          <div class="stake-row">
+            <input type="number" id="stake" value="100" min="1" step="10">
+            <div class="quick">
+              <button data-v="50">50</button>
+              <button data-v="100">100</button>
+              <button data-v="300">300</button>
+              <button data-v="500">500</button>
+            </div>
+            <button class="btn btn-ghost btn-sm" id="clear" style="margin-left:auto">清空</button>
+          </div>
+
+          <div class="settle" id="settle"></div>
+          <div id="riskWarn"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-grid">
+      <div class="brand" style="gap:11px">
+        <span class="mark">JC</span>
+        <span><b>jc-football-report</b><small>Institutional pricing · Open source</small></span>
+      </div>
+      <div class="foot-links">
+        <a href="index.html">首页</a>
+        <a href="skill.html">Skill 文档</a>
+        <a href="https://github.com/laoyangnb666/jc-football-report" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://github.com/laoyangnb666/jc-football-report/blob/main/LICENSE" target="_blank" rel="noopener">MIT License</a>
+      </div>
+    </div>
+    <p class="disclaimer">
+      本页面为统计方法的模拟演示，使用虚拟资金，不涉及任何真实交易。<b>不构成投注建议</b>。所有概率均为模型与盘口的推算值，
+      竞彩实际抽水约 13.9%，长期期望为负。博彩具有极高风险，参与即可能损失全部本金；请遵守所在地区法律法规，未满 18 周岁禁止参与。
+    </p>
+  </div>
+</footer>
+
+<script src="assets/data.js"></script>
+<script>
+(function(){
+  const D = window.JC_DATA, M = D.matches;
+  const SIDE = ['主胜','平局','客胜'];
+  const STOCK = 10000;
+  const SNAP = D.snapshot;
+
+  let cur = M.findIndex(m => m.recLevel === '主推'); if (cur < 0) cur = 0;
+  let mode = 'single';
+  let slip = [];   // {id, no, home, away, market, pick, odds, p, stake}
+
+  const $ = id => document.getElementById(id);
+  const fmt = n => '¥' + Math.round(n).toLocaleString('zh-CN');
+  const pct = (x, d = 1) => x == null ? '—' : (x * 100).toFixed(d) + '%';
+  const sgn = x => (x >= 0 ? '+' : '') + (x * 100).toFixed(1) + '%';
+
+  function intervals(m){
+    const b = m.buckets;
+    return [['0-1', b[0]+b[1]], ['2-3', b[2]+b[3]], ['4-6', b[4]+b[5]+b[6]], ['7+', b[7]]];
+  }
+
+  /* ---------- 比赛列表 ---------- */
+  $('mCount').textContent = M.length + ' 场 · ' + SNAP;
+  $('matchList').innerHTML = M.map((m, i) => {
+    const p = m.probs, pv = [p.H, p.D, p.A], bi = pv.indexOf(Math.max(...pv));
+    return `<div class="mrow" data-i="${i}">
+      <div class="t">${m.home} vs ${m.away}
+        <small>${m.no} · ${m.lg} · ${m.kickoff.slice(5,16)}</small></div>
+      <div class="lam"><b>λ ${m.lam.toFixed(2)}</b>${SIDE[bi]} ${(pv[bi]*100).toFixed(0)}%</div>
+    </div>`;
+  }).join('');
+
+  $('matchList').addEventListener('click', e => {
+    const row = e.target.closest('.mrow'); if (!row) return;
+    cur = +row.dataset.i; renderMarket();
+    document.querySelectorAll('.mrow').forEach(r => r.classList.toggle('on', +r.dataset.i === cur));
+  });
+
+  /* ---------- 盘口区 ---------- */
+  function renderMarket(){
+    const m = M[cur];
+    const p = m.probs;
+    const dv = m.devig || [null,null,null];
+
+    let h = `<h4>胜平负　<span style="color:var(--muted);letter-spacing:0;text-transform:none;font-size:11px">
+      margin ${m.spf ? ((m.spf.reduce((s,x)=>s+1/x,0)-1)*100).toFixed(2)+'%' : '—'}</span></h4>`;
+    h += '<div class="opts">';
+    if (m.spf) {
+      m.spf.forEach((o, i) => {
+        const pp = [p.H, p.D, p.A][i];
+        const ev = pp * o - 1;
+        h += `<button class="opt" data-k="spf" data-i="${i}" data-o="${o}" data-p="${pp}">
+          <span class="l">${SIDE[i]}</span><span class="o">${o.toFixed(2)}</span>
+          <span class="p">模型 ${(pp*100).toFixed(1)}%</span>
+          <span class="p" style="color:${ev>=0?'var(--green)':'var(--red)'}">EV ${sgn(ev)}</span>
+        </button>`;
+      });
+    } else {
+      h += '<div class="empty" style="grid-column:1/-1">该场未开售胜平负</div>';
+    }
+    h += '</div>';
+
+    if (m.rq) {
+      h += `<h4>让球胜平负（${m.hc > 0 ? '主队受让 ' + m.hc : '主队让 ' + Math.abs(m.hc)} 球）　
+        <span style="color:var(--muted);letter-spacing:0;text-transform:none;font-size:11px">
+        margin ${m.marginRq != null ? (m.marginRq*100).toFixed(2)+'%' : '—'}</span></h4><div class="opts">`;
+      m.rq.forEach((o, i) => {
+        const pp = p.rq ? p.rq[i] : 0;
+        const ev = pp * o - 1;
+        h += `<button class="opt" data-k="rq" data-i="${i}" data-o="${o}" data-p="${pp}">
+          <span class="l">${SIDE[i]}</span><span class="o">${o.toFixed(2)}</span>
+          <span class="p">模型 ${(pp*100).toFixed(1)}%</span>
+          <span class="p" style="color:${ev>=0?'var(--green)':'var(--red)'}">EV ${sgn(ev)}</span>
+        </button>`;
+      });
+      h += '</div>';
+    }
+
+    if (m.zjq) {
+      h += '<h4>总进球（8 桶）</h4><div class="opts big">';
+      m.zjq.forEach((o, i) => {
+        const pp = m.buckets[i];
+        const ev = pp * o - 1;
+        h += `<button class="opt" data-k="zjq" data-i="${i}" data-o="${o}" data-p="${pp}">
+          <span class="l">${i === 7 ? '7+' : i} 球</span><span class="o">${o.toFixed(2)}</span>
+          <span class="p">模型 ${(pp*100).toFixed(1)}%</span>
+          <span class="p" style="color:${ev>=0?'var(--green)':'var(--red)'}">EV ${sgn(ev)}</span>
+        </button>`;
+      });
+      h += '</div>';
+    } else {
+      h += '<h4>总进球</h4><div class="empty">本场总进球赔率未采集</div>';
+    }
+
+    // 比分只展示概率，不提供下单（本轮未抓比分盘逐项赔率）
+    h += '<h4>比分概率（仅展示，未抓比分盘赔率）</h4><div class="opts">';
+    m.scores.slice(0, 6).forEach(s => {
+      h += `<div class="opt" style="cursor:default">
+        <span class="l">${s.s}</span><span class="o">${(s.p*100).toFixed(1)}%</span></div>`;
+    });
+    h += '</div>';
+
+    h += `<h4 style="text-transform:none;letter-spacing:0;font-size:11px;color:#959889">伤停修正 / λ 来源</h4>
+      <div style="font-size:12.2px;color:var(--muted);line-height:1.7">
+        融合 λ <b style="color:var(--ink);font-family:ui-monospace,monospace">${m.lam.toFixed(2)}</b>
+        （市场 ${m.lamMkt ? m.lamMkt.toFixed(2) : '—'} ＋ 独立 ${m.lamTeam ? m.lamTeam.toFixed(2) : '—'}），
+        伤停修正 ${m.adj[0].toFixed(2)} / ${m.adj[1].toFixed(2)}。
+        ${m.note ? '<br>' + m.note : ''}
+      </div>
+      <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+        ${m.plays.map(x => `<span class="chip a"><b>${x.play}</b>${x.pick}${x.odds ? ' @' + x.odds.toFixed(2) : ''}</span>`).join('')}
+        ${m.plays.length ? '' : '<span class="chip">本场不参与</span>'}
+      </div>`;
+
+    $('market').innerHTML = h;
+    document.querySelectorAll('#market .opt[data-k]').forEach(b => {
+      b.addEventListener('click', () => addBet(m, b.dataset));
+    });
+  }
+
+  /* ---------- 加注 ---------- */
+  const ZK = ['0 球','1 球','2 球','3 球','4 球','5 球','6 球','7+ 球'];
+
+  function addBet(m, d){
+    const i = +d.i;
+    let market, pick;
+    if (d.k === 'spf') { market = '胜平负'; pick = SIDE[i]; }
+    else if (d.k === 'rq') { market = '让球'; pick = SIDE[i] + '（主' + (m.hc > 0 ? '+' : '') + m.hc + '）'; }
+    else { market = '总进球'; pick = ZK[i]; }
+
+    const odds = +d.o, p = +d.p;
+    if (!odds || !p) return;
+    const stake = Math.max(1, +$('stake').value || 100);
+
+    slip.push({ id: Date.now() + Math.random(), no: m.no, home: m.home, away: m.away,
+                market, pick, odds, p, stake });
+
+    const left = bankLeft();
+    if (stake > left) { slip.pop(); flash('资金不足'); return; }
+    renderSlip();
+  }
+
+  function flash(msg){
+    const w = $('riskWarn');
+    w.innerHTML = `<div class="warnbox">${msg}</div>`;
+    setTimeout(() => { if (w.innerHTML.includes(msg)) w.innerHTML = ''; }, 2600);
+  }
+
+  /* ---------- 结算 ---------- */
+  function bankLeft(){
+    return STOCK - slip.reduce((s, b) => s + b.stake, 0);
+  }
+
+  function renderSlip(){
+    const box = $('slip');
+    if (!slip.length) {
+      box.innerHTML = '<div class="empty">还没有投注。左边点任意赔率加入。</div>';
+    } else {
+      box.innerHTML = slip.map(b => {
+        const ev = b.p * b.odds - 1;
+        return `<div class="bet ${mode === 'single' ? 'on' : ''}">
+          <div>${b.home} vs ${b.away}<small>${b.market} · ${b.pick} @${b.odds.toFixed(2)} · 模型 ${(b.p*100).toFixed(1)}% · EV ${sgn(ev)}</small></div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <b class="mono" style="font-size:12.5px">${fmt(b.stake)}</b>
+            <button class="x" data-id="${b.id}">×</button>
+          </div>
+        </div>`;
+      }).join('');
+      box.querySelectorAll('.x').forEach(x => x.addEventListener('click', () => {
+        slip = slip.filter(b => String(b.id) !== x.dataset.id); renderSlip();
+      }));
+    }
+
+    const total = slip.reduce((s, b) => s + b.stake, 0);
+    const expRet = slip.reduce((s, b) => s + b.stake * b.odds * b.p, 0);
+    const expProfit = expRet - total;
+    const left = STOCK - total;
+
+    $('bankLeft').textContent = fmt(left);
+    $('lgSingle').textContent = mode === 'single' ? fmt(total) : '¥0';
+    $('lgParlay').textContent = mode === 'parlay' ? fmt(total) : '¥0';
+    const expo = total / STOCK;
+    $('lgExpo').textContent = '敞口 ' + (expo * 100).toFixed(1) + '%';
+    $('barSingle').style.width = (mode === 'single' ? expo * 100 : 0) + '%';
+    $('barParlay').style.width = (mode === 'parlay' ? expo * 100 : 0) + '%';
+
+    // 结算区
+    let s = '';
+    if (mode === 'single') {
+      s += `<div class="sline"><span>投注笔数</span><b>${slip.length}</b></div>`;
+      s += `<div class="sline"><span>合计投注</span><b>${fmt(total)}</b></div>`;
+      s += `<div class="sline"><span>期望回报（模型口径）</span><b class="${expProfit>=0?'g':'r'}">${fmt(expRet)}</b></div>`;
+      s += `<div class="sline total"><span>期望盈亏</span><b class="${expProfit>=0?'g':'r'}">${(expProfit>=0?'+':'') + fmt(expProfit).replace('¥','¥')}</b></div>`;
+      s += `<div class="sline" style="font-size:11.5px;color:var(--muted);padding-top:6px">
+        单关返还率 = 每注 p × odds 的加权和 ÷ 投注额 =
+        <b>${total ? ((expRet/total)*100).toFixed(1) : '—'}%</b>（竞彩理论值 86.1%）</div>`;
+      if (slip.length > 1) {
+        s += `<div class="sline" style="font-size:11.5px;color:var(--muted)">切成串关会怎样 → 切换到「串关」查看</div>`;
+      }
+    } else {
+      if (slip.length >= 2) {
+        const odds = slip.reduce((x, b) => x * b.odds, 1);
+        const p = slip.reduce((x, b) => x * b.p, 1);
+        const ev = p * odds - 1;
+        // 每腿 p×odds 的乘积，等于串关返还率
+        const ret = slip.reduce((x, b) => x * (b.p * b.odds), 1);
+        s += `<div class="sline"><span>腿数</span><b>${slip.length}</b></div>`;
+        s += `<div class="sline"><span>串关倍率</span><b>${odds.toFixed(2)}</b></div>`;
+        s += `<div class="sline"><span>联合概率（模型）</span><b>${(p*100).toFixed(2)}%</b></div>`;
+        s += `<div class="sline"><span>合计投注</span><b>${fmt(total)}</b></div>`;
+        s += `<div class="sline"><span>命中回报</span><b>${fmt(total * odds)}</b></div>`;
+        s += `<div class="sline total"><span>期望盈亏</span><b class="${ev>=0?'g':'r'}">${sgn(ev)}</b></div>`;
+        s += `<div class="sline" style="font-size:11.5px;color:var(--muted);padding-top:6px">
+          这两腿连乘的实测返还率 <b>${(ret*100).toFixed(1)}%</b>。
+          若两腿都按竞彩标准盘 86.1% 计，${slip.length} 串理论值 = 0.861<sup>${slip.length}</sup> = ${(Math.pow(0.861, slip.length)*100).toFixed(1)}%。
+          <b>倍率越高，抽水被复利得越多。</b></div>`;
+      } else {
+        s += '<div class="sline" style="color:var(--muted)">串关至少需要 2 腿。</div>';
+      }
+    }
+    $('settle').innerHTML = s;
+
+    // 风险提示
+    let w = '';
+    if (expo > 0.06) w += `<div class="warnbox">当前敞口 ${(expo*100).toFixed(1)}%，已超过本方法的当日上限 6%。回测规则里，单场 ≤2%、当日 ≤6%。</div>`;
+    if (slip.length && Math.max(...slip.map(b => b.stake)) / STOCK > 0.02)
+      w += `<div class="warnbox">存在单注超过资金池 2% 的仓位。超短赔主推的标准仓是 1–2%。</div>`;
+    if (mode === 'parlay' && slip.length >= 3 && !w)
+      w += `<div class="warnbox">3 腿以上串关的结构性返还率已低于 64%，任何「找好腿」的努力都改变不了这个乘积。</div>`;
+    $('riskWarn').innerHTML = w;
+
+    document.querySelectorAll('.bet').forEach(b => b.classList.toggle('on', mode === 'single'));
+  }
+
+  /* ---------- 交互 ---------- */
+  $('stake').addEventListener('input', () => {
+    const v = Math.max(1, +$('stake').value || 100);
+    slip.forEach(b => b.stake = v);
+    renderSlip();
+  });
+  document.querySelectorAll('.quick button').forEach(b => b.addEventListener('click', () => {
+    $('stake').value = b.dataset.v;
+    slip.forEach(x => x.stake = +b.dataset.v);
+    renderSlip();
+  }));
+  $('clear').addEventListener('click', () => { slip = []; renderSlip(); });
+  document.querySelectorAll('.mode button').forEach(b => b.addEventListener('click', () => {
+    mode = b.dataset.mode;
+    document.querySelectorAll('.mode button').forEach(x => x.classList.toggle('on', x === b));
+    renderSlip();
+  }));
+
+  // 初始化
+  document.querySelectorAll('.mrow').forEach(r => r.classList.toggle('on', +r.dataset.i === cur));
+  renderMarket();
+  renderSlip();
+})();
+</script>
+</body>
+</html>
