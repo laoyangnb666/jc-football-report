@@ -1,4 +1,8 @@
-# 竞彩足球机构级分析报告
+<p align="center">
+  <img src="docs/assets/logo.png" width="96" alt="jc-football-report logo">
+</p>
+
+<h1 align="center">竞彩足球机构级分析报告</h1>
 
 > 一个把中国体育彩票「竞彩足球」盘口还原成概率、并与公众资金流对比、找出结构性定价偏离的分析 Skill。
 > 产出可复算的 PDF 报告，**每一场在售比赛都给出明确判断**。

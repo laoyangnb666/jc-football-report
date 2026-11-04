@@ -33,6 +33,8 @@ body::before{
 .brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink)}
 .mark{width:30px;height:30px;border-radius:9px;background:var(--ink);color:#F6F3EC;display:grid;place-items:center;
   font-size:11px;font-weight:600;letter-spacing:.02em;flex:none;position:relative}
+.logo-mark{width:32px;height:32px;border-radius:9px;flex:none;display:block;object-fit:cover;
+  box-shadow:0 2px 7px rgba(20,30,25,.22);background:#030a12}
 .mark::after{content:"";position:absolute;right:-3px;bottom:-3px;width:9px;height:9px;border-radius:50%;
   background:var(--green-mid);border:2px solid rgba(255,255,255,.92)}
 .brand b{font-weight:600;font-size:14.5px;letter-spacing:-.01em;text-transform:none}
