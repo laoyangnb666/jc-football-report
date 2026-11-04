@@ -6,6 +6,9 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 ![Node](https://img.shields.io/badge/Node.js-%3E%3D14-brightgreen)
 ![Skill](https://img.shields.io/badge/type-Agent%20Skill-blue)
+[![官网](https://img.shields.io/badge/%E5%AE%98%E7%BD%91-live-2F7A4F)](https://laoyangnb666.github.io/jc-football-report/)
+
+**项目官网：[laoyangnb666.github.io/jc-football-report](https://laoyangnb666.github.io/jc-football-report/)**　（源码见 [docs/](docs/)）
 
 ---
 
