@@ -28,6 +28,7 @@
       <a href="index.html" class="on">首页</a>
       <a href="skill.html">Skill 文档</a>
       <a href="simulator.html">模拟投注</a>
+      <a href="blackjack.html">21 点</a>
       <a href="#backtest">回测</a>
       <a href="#sources">数据源</a>
     </div>
@@ -52,7 +53,7 @@
             <a class="btn btn-green" href="simulator.html">打开模拟投注</a>
             <a class="btn btn-ghost" href="skill.html">阅读 Skill 文档</a>
           </div>
-          <div class="cta-note">49 场实盘回测样本 · 全部数字可依 <span class="mono">scripts/analyze.js</span> 复算</div>
+          <div class="cta-note">62 场实盘回测样本（四轮） · 全部数字可依 <span class="mono">scripts/analyze.js</span> 复算</div>
         </div>
 
         <div class="stage">
@@ -95,10 +96,10 @@
   <section style="padding-top:26px">
     <div class="wrap">
       <div class="stats rv">
-        <div class="stat"><b>49</b><span>实盘回测样本</span><em>Matches</em></div>
-        <div class="stat"><b>69.6%</b><span>模型方向命中（16/23）</span><em>Model hit</em></div>
-        <div class="stat"><b>4 / 4</b><span>判定层「关注」全部兑现</span><em>Verdict</em></div>
-        <div class="stat"><b>91.7%</b><span>超短赔区兑现（11/12）</span><em>Short odds</em></div>
+        <div class="stat"><b>62</b><span>实盘回测样本（四轮）</span><em>Matches</em></div>
+        <div class="stat"><b>57.5%</b><span>模型方向命中（23/40，二~四轮）</span><em>Model hit</em></div>
+        <div class="stat"><b>5 / 5</b><span>判定层「关注」全部兑现</span><em>Verdict</em></div>
+        <div class="stat"><b>73.9%</b><span>超短赔区兑现（17/23，已降级小注）</span><em>Short odds</em></div>
       </div>
     </div>
   </section>
@@ -139,14 +140,14 @@
     <div class="wrap">
       <div class="rv">
         <div class="kicker"><i></i>本轮在售</div>
-        <h2 class="sec-title">11 场，逐场给结论。</h2>
+        <h2 class="sec-title">25 场，逐场给结论。</h2>
         <p class="sec-sub">点击任意一场，带着赔率与模型概率进入模拟投注，自己算一遍边际。级别：主推 / 小注 / 观察。</p>
         <table class="tbl" id="fixtureTable">
           <thead><tr><th>编号</th><th>对阵</th><th>开赛</th><th>让</th><th>λ</th><th>胜平负</th><th>总进球</th><th>级别</th><th>方案</th></tr></thead>
           <tbody></tbody>
         </table>
         <p class="sec-sub" style="margin-top:14px;font-size:12.6px">
-          数据快照 2026-11-04 10:52（北京时间）。级别为「观察」的场次不给建议仓位——没有边际就是没有边际。
+          数据快照 2026-11-07 18:30（北京时间，周六 25 场）。v5 新增裁判执法统计维度；超短赔规则依四轮回测降级为小注。
         </p>
       </div>
     </div>
@@ -186,15 +187,15 @@
       <div class="rv">
         <div class="kicker"><i></i>回测校准</div>
         <h2 class="sec-title">先承认不准，<br>再谈哪里准。</h2>
-        <p class="sec-sub">两轮合计 49 场。判定层 4 次「关注」全部兑现，而观望场精确避开了 0-3、1-4、0-0 三场爆冷。</p>
+        <p class="sec-sub">四轮累计（二~四轮 40 场可评）。第四轮为超级冷门夜：米兰 1.16 / 勒沃库森 1.16 / 桑德兰 1.24 三场超短赔齐爆冷，但伤停修正阈值（≤−0.15 降级）成功拦下米兰与药厂两场。</p>
         <table class="tbl rv">
-          <thead><tr><th>口径</th><th>命中</th><th>两轮合并</th><th>结论</th></tr></thead>
+          <thead><tr><th>口径</th><th>命中</th><th>四轮累计</th><th>结论</th></tr></thead>
           <tbody>
-            <tr class="hl"><td>模型方向</td><td class="num">16 / 23</td><td class="num">69.6%</td><td><span class="pill">优于纯去水 66.0%</span></td></tr>
-            <tr><td>去水概率方向</td><td class="num">31 / 47</td><td class="num">66.0%</td><td>市场基准线</td></tr>
+            <tr class="hl"><td>模型方向</td><td class="num">23 / 40</td><td class="num">57.5%</td><td><span class="pill">优于纯去水 53.8%</span></td></tr>
+            <tr><td>去水概率方向</td><td class="num">21 / 39</td><td class="num">53.8%</td><td>市场基准线</td></tr>
             <tr class="hl"><td>判定层「关注」</td><td class="num">4 / 4</td><td class="num">100%</td><td><span class="pill">纪律有效</span></td></tr>
-            <tr><td>大 / 小 2.5</td><td class="num">16 / 23</td><td class="num">69.6%</td><td>唯一表现好的衍生市场</td></tr>
-            <tr><td>超短赔区（&lt;1.50）</td><td class="num">11 / 12</td><td class="num">91.7%</td><td><span class="pill">盘口隐含仅 67%</span></td></tr>
+            <tr><td>大 / 小 2.5</td><td class="num">23 / 40</td><td class="num">57.5%</td><td>方向判断仍为衍生市场最佳</td></tr>
+            <tr><td>超短赔区（&lt;1.50）</td><td class="num">17 / 23</td><td class="num">73.9%</td><td><span class="pill">EV≈−5%，v5 降级为小注</span></td></tr>
             <tr><td>总进球区间</td><td class="num">—</td><td class="num">43.8%</td><td><span class="pill warn">已降级为只给方向</span></td></tr>
             <tr><td>比分 top-1</td><td class="num">0 / 23</td><td class="num">0%</td><td><span class="pill warn">永不给单值比分</span></td></tr>
           </tbody>
@@ -246,8 +247,8 @@
           <div class="thumb"><i></i><i></i><i></i><i></i><i></i><i></i></div>
           <div class="meta">
             <h4>数据分析与预测购买方案 v3</h4>
-            <p>七层结构 · 11 场在售 · 主推 3 / 小注 2 / 观察 5，每场含仓位与否决条件。</p>
-            <div class="tag">2026-11-04 · 15 页 · PDF</div>
+            <p>两篇式结构 · 周六 25 场在售 · 小注 6 / 观察 17 / 回避 2，新增裁判执法统计表，每场含仓位与否决条件。</p>
+            <div class="tag">2026-11-07 · v5 · PDF</div>
           </div>
         </a>
         <a class="rep rv" href="skill.html">
@@ -262,7 +263,7 @@
           <div class="thumb"><i></i><i></i><i></i><i></i><i></i><i></i></div>
           <div class="meta">
             <h4>模型定义与校准结果</h4>
-            <p>比率法 + 样本量收缩的数学定义、两轮回测结论、待验证清单与校准纪律。</p>
+            <p>比率法 + 样本量收缩的数学定义、四轮回测结论、超短赔降级依据、待验证清单与校准纪律。</p>
             <div class="tag">references / model-and-calibration.md</div>
           </div>
         </a>
@@ -307,12 +308,13 @@
         <a href="https://github.com/laoyangnb666/jc-football-report" target="_blank" rel="noopener">GitHub</a>
         <a href="skill.html">Skill 文档</a>
         <a href="simulator.html">模拟投注</a>
+      <a href="blackjack.html">21 点</a>
         <a href="https://github.com/laoyangnb666/jc-football-report/blob/main/LICENSE" target="_blank" rel="noopener">MIT License</a>
       </div>
     </div>
     <p class="disclaimer">
       本项目是统计与定价方法论的开源实现，仅供研究与学习使用。所有概率均为模型与盘口的推算值，<b>不构成任何投注建议，不承诺任何收益</b>。
-      回测样本仅 49 场，标准误在 8–10pp，任何小于 15pp 的偏差都不具统计显著性。博彩具有极高风险，参与即可能损失全部本金；请遵守所在地区法律法规，未满 18 周岁禁止参与。
+      回测样本仅 62 场，标准误在 8–10pp，任何小于 15pp 的偏差都不具统计显著性。博彩具有极高风险，参与即可能损失全部本金；请遵守所在地区法律法规，未满 18 周岁禁止参与。
     </p>
   </div>
 </footer>

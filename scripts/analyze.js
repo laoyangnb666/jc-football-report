@@ -145,6 +145,7 @@ function fit2D(spfOdds) {
 // team: {home:{gf,ga,p}, away:{gf,ga,p}}  均为本队视角的主场/客场累计
 // form: {gf,ga,p} 近 6 场（可选）
 function teamStrength(home, away, form) {
+  if (!home || !away || !home.home || !away.away) return null;
   const rate = (gf, p) => (p > 0 ? gf / p : null);
   const hg = rate(home.home.gf, home.home.p), hga = rate(home.home.ga, home.home.p);
   const ag = rate(away.away.gf, away.away.p), aga = rate(away.away.ga, away.away.p);
@@ -386,12 +387,15 @@ function buildRecommendation(row, s, eu, rqP, buckets) {
       notes.push(rqBest ? `仅让球盘在售，最好一侧 EV ${(rqBest.ev * 100).toFixed(1)}% 仍为负` : '无可用盘口');
     }
   } else if (devProb >= 0.66) {
-    // 超短赔区：边际来自跨轮回测经验概率（11/12=91.7%），不是模型概率
-    const EMP = 0.917;
+    // 超短赔区：四轮回测 17/23=73.9% 对隐含 67% 已无显著优势（EV≈−5%），v5 起主推降级为小注
+    // 第三轮教训（利物浦 1.33 翻车）与第四轮教训（桑德兰 1.27 爆冷）：
+    // 「伤停为替补级」的单一来源判断不可信，伤修 ≤ −0.15 必须降级（第四轮 −0.20/−0.30 两场爆冷被阈值成功拦下）
+    const EMP = 0.739;
     if (modelPick === devPick && favAdj >= -0.15 && !div) {
-      level = '主推';
-      plays.push({ play: '胜平负（单关）', pick: SIDE3[devPick], odds: favOdds, p: EMP, pSrc: '回测经验（12 样本）', ev: EMP * favOdds - 1, stake: '标准仓（计划资金 1–2%）' });
-      notes.push(`超短赔区：去水 ${(devProb * 100).toFixed(1)}%，模型同向 ${(modelP[devPick] * 100).toFixed(1)}%；方案概率采用跨轮回测经验值 ${EMP * 100}%（11/12），非模型输出`);
+      level = '小注';
+      plays.push({ play: '胜平负（单关）', pick: SIDE3[devPick], odds: favOdds, p: EMP, pSrc: '回测经验（23 样本）', ev: EMP * favOdds - 1, stake: '小注（0.5–1%）' });
+      notes.push(`超短赔区：去水 ${(devProb * 100).toFixed(1)}%，模型同向 ${(modelP[devPick] * 100).toFixed(1)}%；方案概率采用跨轮回测经验值 ${EMP * 100}%（17/23），非模型输出；四轮 EV≈−5%，只给小注`);
+      if (favAdj <= -0.2) notes.push(`重伤修 ${favAdj.toFixed(2)}：热门侧爆冷风险高（第四轮 −0.20/−0.30 两场全部爆冷），仅观察`);
       // 深度让球提示
       if (row.hc !== null && row.hc <= -2 && rqBest) {
         plays.push({ play: '让球胜平负', pick: `谨慎：让 ${row.hc} 需净胜 ${Math.abs(row.hc) + 1} 球`, odds: rqBest.odds, p: rqBest.p, ev: rqBest.ev, stake: '不建议' });

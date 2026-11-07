@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>21 点模拟器（澳门规则） · jc-football-report</title>
+<meta name="description" content="澳门规则 21 点模拟器：6 副牌、S17、BJ 赔 3:2、任意两张加倍、DAS、无投降、可买保险。内置基本策略引擎与 Hi-Lo 计数展示。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link rel="icon" href="assets/favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="stylesheet" href="assets/site.css">
+<style>
+/* ===== 21 点专用 ===== */
+.bj-table{background:linear-gradient(160deg,#0E4B3A 0%,#0A3A2C 60%,#082E23 100%);border-radius:18px;padding:26px 22px;color:#EDE8DA;min-height:430px;position:relative;overflow:hidden}
+.bj-table::before{content:"";position:absolute;inset:14px;border:1.5px solid rgba(232,227,216,.22);border-radius:12px;pointer-events:none}
+.bj-semicircle{position:absolute;top:52%;left:50%;transform:translate(-50%,-50%);width:420px;height:210px;border:1.5px solid rgba(232,227,216,.18);border-radius:0 0 210px 210px;border-top:none;display:flex;align-items:flex-end;justify-content:center;padding-bottom:18px;font-family:serif;font-size:13px;letter-spacing:4px;color:rgba(232,227,216,.5);pointer-events:none}
+.bj-row{position:relative;z-index:2;margin-bottom:20px}
+.bj-row .who{font-size:11px;letter-spacing:2.5px;color:rgba(232,227,216,.66);margin-bottom:9px;display:flex;gap:12px;align-items:center}
+.bj-row .who b{font-size:12px;color:#EDE8DA}
+.bj-cards{display:flex;gap:9px;min-height:104px;align-items:center;flex-wrap:wrap}
+.hand{display:flex;gap:8px;align-items:center;padding:8px 10px;border-radius:10px;border:1px solid transparent}
+.hand.active{border-color:rgba(214,178,94,.85);background:rgba(214,178,94,.10)}
+.hand .tag{font-size:10px;color:#D6B25E;writing-mode:vertical-rl;letter-spacing:2px;margin-right:2px}
+.card{width:66px;height:94px;border-radius:7px;background:#F7F4EC;color:#17202A;box-shadow:0 3px 9px rgba(0,0,0,.45);position:relative;font-family:Georgia,serif;padding:6px 7px;user-select:none;animation:deal .32s ease-out}
+.card.red{color:#B0332E}
+.card .v{font-size:20px;font-weight:600;line-height:1}
+.card .s{font-size:16px;position:absolute;bottom:5px;right:7px}
+.card .c{font-size:26px;position:absolute;bottom:8px;left:7px;opacity:.92}
+.card.back{background:repeating-linear-gradient(45deg,#274272 0 6px,#1D3459 6px 12px);color:transparent}
+@keyframes deal{from{transform:translateY(-16px) rotate(-4deg);opacity:0}to{transform:none;opacity:1}}
+.bj-total{display:inline-block;background:rgba(0,0,0,.42);border-radius:20px;padding:3px 13px;font-family:monospace;font-size:14px;margin-left:8px}
+.bj-total.bust{color:#E77}
+.bj-total.bj21{color:#D6B25E}
+.bj-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:4px;position:relative;z-index:2}
+.bbtn{background:rgba(232,227,216,.10);border:1px solid rgba(232,227,216,.32);color:#EDE8DA;padding:9px 18px;border-radius:9px;font-size:13.5px;cursor:pointer;font-family:inherit;transition:.15s}
+.bbtn:hover:not(:disabled){background:rgba(232,227,216,.22)}
+.bbtn:disabled{opacity:.32;cursor:not-allowed}
+.bbtn.primary{background:#D6B25E;border-color:#D6B25E;color:#17202A;font-weight:600}
+.bbtn.primary:hover:not(:disabled){background:#E4C577}
+.bj-msg{position:relative;z-index:2;min-height:26px;font-size:14px;color:#F2D98B;margin-top:10px}
+.bj-msg .big{font-family:serif;font-size:19px;letter-spacing:1px}
+/* 侧栏 */
+.bj-side .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}
+.bj-side .stat{background:#F1EDE2;border:1px solid #E0DACB;border-radius:9px;padding:9px 11px}
+.bj-side .stat small{display:block;font-size:9.5px;color:#6B6355;letter-spacing:1.4px}
+.bj-side .stat b{font-family:monospace;font-size:17px;font-variant-numeric:tabular-nums}
+.count-box{background:#17202A;color:#D8E6DC;border-radius:10px;padding:12px 14px;margin:10px 0;font-family:monospace;font-size:12.5px;line-height:2}
+.count-box .hl{color:#D6B25E;font-size:17px}
+.chips{display:flex;gap:7px;flex-wrap:wrap;margin:9px 0}
+.chip{width:52px;height:52px;border-radius:50%;border:3px dashed rgba(255,255,255,.55);display:flex;align-items:center;justify-content:center;font-family:monospace;font-size:12px;font-weight:700;cursor:pointer;color:#fff;box-shadow:0 2px 6px rgba(0,0,0,.35);transition:.15s}
+.chip:hover{transform:translateY(-3px)}
+.chip.sel{outline:3px solid #17202A;outline-offset:2px}
+.chip.c10{background:#1B4F8A}.chip.c50{background:#138A4E}.chip.c100{background:#17202A}.chip.c500{background:#8A3B1B}
+.rule-card{background:#F1EDE2;border:1px solid #E0DACB;border-radius:10px;padding:13px 15px;font-size:12.5px;line-height:2;margin:10px 0}
+.rule-card b{color:#14532D}
+.strat-tip{background:#FBF7EA;border:1px solid #D6B25E;border-radius:9px;padding:9px 12px;font-size:12.5px;margin-top:9px}
+.strat-tip b{color:#92600A}
+.bank-curve{width:100%;height:96px;margin-top:8px}
+.sugg{display:inline-block;background:#17202A;color:#F2D98B;border-radius:7px;padding:2px 10px;font-family:monospace;font-size:12.5px;margin-left:6px}
+</style>
+</head>
+<body>
+<script>document.documentElement.className += ' js';</script>
+
+<div class="nav-wrap">
+  <nav class="nav">
+    <a class="brand" href="index.html">
+      <img class="logo-mark" src="assets/logo.png" alt="jc-football-report" width="32" height="32">
+      <span><b>jc-football-report</b><small>Blackjack</small></span>
+    </a>
+    <div class="nav-links">
+      <a href="index.html">首页</a>
+      <a href="skill.html">Skill 文档</a>
+      <a href="simulator.html">模拟投注</a>
+      <a href="blackjack.html" class="on">21 点</a>
+      <a href="index.html#backtest">回测</a>
+      <a href="https://github.com/laoyangnb666/jc-football-report" target="_blank" rel="noopener">仓库</a>
+    </div>
+    <a class="btn btn-dark" href="https://github.com/laoyangnb666/jc-football-report" target="_blank" rel="noopener">GitHub 仓库</a>
+  </nav>
+</div>
+
+<main class="sim">
+  <div class="wrap">
+    <div class="kicker"><i></i>Blackjack · 澳门规则 · 模拟器</div>
+    <h1 style="font-size:clamp(30px,4.2vw,50px);line-height:1.1;letter-spacing:-.04em;font-weight:500;margin-bottom:12px">
+      21 点：<span class="serif" style="color:var(--green)">唯一有正 EV 玩法</span>的赌桌。
+    </h1>
+    <p style="color:#41453F;font-size:15px;max-width:700px;line-height:1.78;margin-bottom:16px">
+      澳门规则：6 副牌、庄家软 17 停牌（S17）、Blackjack 赔 3:2、任意两张可加倍、加倍后可分牌（DAS）、
+      无投降、可买保险。基本策略下庄家优势只剩约 <b>0.5%</b>——是竞彩 13.9% 抽水的 1/28；
+      配合计牌，优势甚至可以反转为正。这就是为什么它值得单独做一个模拟器。
+    </p>
+    <div class="warnbox" style="margin-bottom:26px;max-width:700px">
+      <b>这是模拟器。</b>虚拟资金、不连接任何真实账户。目的：演示「规则差异 → 庄家优势 → 基本策略 → 计数优势」
+      这条完整的数学链路。真实赌场禁止计牌，本页仅用于教学。
+    </div>
+
+    <div class="sim-grid">
+      <!-- 牌桌 -->
+      <div>
+        <div class="bj-table" id="table">
+          <div class="bj-semicircle">BLACKJACK PAYS 3 TO 2 · 澳门规则</div>
+          <div class="bj-row">
+            <div class="who"><b>庄家</b> <span id="dealerInfo" style="font-size:11px;color:rgba(232,227,216,.6)"></span><span class="bj-total" id="dealerTotal"></span></div>
+            <div class="bj-cards" id="dealerCards"></div>
+          </div>
+          <div class="bj-row">
+            <div class="who"><b>玩家</b> <span id="playerInfo" style="font-size:11px;color:rgba(232,227,216,.6)"></span></div>
+            <div class="bj-cards" id="playerHands"></div>
+          </div>
+          <div class="bj-msg" id="msg">选择注码，点击「发牌」开始。</div>
+          <div class="bj-actions" id="actions">
+            <button class="bbtn primary" id="btnDeal" onclick="BJ.deal()">发牌</button>
+            <button class="bbtn" id="btnHit" onclick="BJ.hit()" disabled>要牌</button>
+            <button class="bbtn" id="btnStand" onclick="BJ.stand()" disabled>停牌</button>
+            <button class="bbtn" id="btnDouble" onclick="BJ.double()" disabled>加倍</button>
+            <button class="bbtn" id="btnSplit" onclick="BJ.split()" disabled>分牌</button>
+            <button class="bbtn" id="btnInsurance" onclick="BJ.insurance()" disabled>买保险</button>
+            <button class="bbtn" id="btnNoIns" onclick="BJ.declineInsurance()" disabled>不买</button>
+          </div>
+        </div>
+
+        <div style="margin-top:14px" class="panel">
+          <h3>注码 <span style="float:right;font-size:12px;color:#6B6355">余额 <b class="mono" id="bankTop">¥10,000</b></span></h3>
+          <div class="chips" id="chips">
+            <div class="chip c10" data-v="10">10</div>
+            <div class="chip c50" data-v="50">50</div>
+            <div class="chip c100 sel" data-v="100">100</div>
+            <div class="chip c500" data-v="500">500</div>
+          </div>
+          <div style="font-size:12px;color:#6B6355;margin-top:6px">
+            当前注码 <b class="mono" id="betView">¥100</b> · 本局总注 <b class="mono" id="betTotalView">¥0</b>
+          </div>
+          <svg class="bank-curve" id="curve" preserveAspectRatio="none"></svg>
+          <div style="font-size:11px;color:#6B6355">资金曲线（每局结束更新）</div>
+        </div>
+      </div>
+
+      <!-- 侧栏 -->
+      <div class="bj-side">
+        <div class="panel">
+          <h3>Hi-Lo 计数 <span id="countToggle" style="float:right;cursor:pointer;font-size:11px;color:#92600A;text-decoration:underline">隐藏</span></h3>
+          <div class="count-box" id="countBox">
+            <div>流水数 Running&nbsp;&nbsp;<span class="hl" id="rc">0</span></div>
+            <div>真数 True&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="hl" id="tc">0.00</span></div>
+            <div>剩余 / 总&nbsp;&nbsp;&nbsp;&nbsp;<span id="shoeInfo">312 / 312</span></div>
+            <div>切牌点&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span id="penInfo">234（75%）</span></div>
+          </div>
+          <div style="font-size:11.5px;color:#6B6355;line-height:1.8">
+            2–6 计 <b>+1</b>，7–9 计 <b>0</b>，10–A 计 <b>−1</b>；真数 = 流水数 ÷ 剩余副数。
+            真数 ≥ +2 时玩家优势转正，策略上该加注——这是 21 点唯一的「正 EV 来源」。
+          </div>
+        </div>
+
+        <div class="panel" style="margin-top:14px">
+          <h3>基本策略提示 <span style="float:right;cursor:pointer;font-size:11px;color:#92600A;text-decoration:underline" id="tipToggle">关闭</span></h3>
+          <div class="strat-tip" id="stratTip">发牌后显示推荐动作（6 副牌 S17 · DAS · 无投降标准策略表）。</div>
+        </div>
+
+        <div class="panel" style="margin-top:14px">
+          <h3>战绩统计</h3>
+          <div class="stat-grid">
+            <div class="stat"><small>局数</small><b id="stRounds">0</b></div>
+            <div class="stat"><small>胜率（含 BJ）</small><b id="stWin">—</b></div>
+            <div class="stat"><small>胜 / 负 / 平</small><b id="stWDL">0/0/0</b></div>
+            <div class="stat"><small>Blackjack</small><b id="stBJ">0</b></div>
+            <div class="stat"><small>实际损益</small><b id="stPL">¥0</b></div>
+            <div class="stat"><small>每局实际 EV</small><b id="stEV">—</b></div>
+          </div>
+          <div style="font-size:11px;color:#6B6355;line-height:1.8">
+            理论参考：基本策略 S17·6 副牌下庄家优势 ≈ <b>0.46%</b>（每 100 注输 0.46 注）；
+            对比：竞彩足球抽水 13.9%，轮盘 2.7%，百家乐 1.06%（庄家注）。
+          </div>
+        </div>
+
+        <div class="panel" style="margin-top:14px">
+          <h3>澳门规则卡</h3>
+          <div class="rule-card">
+            <b>牌靴</b>：6 副牌 312 张，切牌点 75%（约 234 张），过切点重洗<br>
+            <b>庄家</b>：软 17 停牌（S17），16 点或以下必须要牌<br>
+            <b>Blackjack</b>：首两张 A+10 赔 <b>3:2</b>；分牌后凑成不算 BJ<br>
+            <b>加倍</b>：任意两张可加倍（Double Any Two），加倍后只能拿一张<br>
+            <b>分牌</b>：可再分（Re-split，最多 4 手）；<b>DAS</b> 分牌后可加倍；分 A 各发一张即停；A+10 分后不算 BJ<br>
+            <b>保险</b>：庄家明 A 可买，赔 <b>2:1</b>（基本策略：真数 ≥ +3 才值得买）<br>
+            <b>平局</b>：Push 退注；<b>爆牌</b>：即输；<b>无投降</b>（No Surrender）
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer style="border-top:1px solid #E2DACA;padding:26px 0 40px;text-align:center;color:#6B6355;font-size:12px">
+  <p>jc-football-report · 21 点模拟器仅用于规则与策略教学 · 虚拟资金无真实价值 · 未成年人禁止参与赌博</p>
+</footer>
+
+<script>
+/* ================= 澳门规则 21 点 ================= */
+const BJ = (() => {
+  const DECKS = 6, PEN = 0.75;
+  const SUITS = ['♠','♥','♦','♣'], RANKS = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+  let shoe = [], runningCount = 0, dealt = 0, penPoint = Math.floor(DECKS*52*PEN);
+  let bank = 10000, baseBet = 100, curve = [10000];
+  let dealer = [], hands = [], active = -1, phase = 'bet'; // bet|insurance|player|done
+  let st = { rounds:0, w:0, l:0, d:0, bj:0, pl:0 };
+  let showCount = true, showTip = true, insuranceBet = 0, awaitingInsurance = false;
+
+  const $ = id => document.getElementById(id);
+  const el = {
+    dealerCards: $('dealerCards'), playerHands: $('playerHands'), msg: $('msg'),
+    dealerTotal: $('dealerTotal'), dealerInfo: $('dealerInfo'), playerInfo: $('playerInfo'),
+    rc: $('rc'), tc: $('tc'), shoeInfo: $('shoeInfo'), penInfo: $('penInfo'),
+    bankTop: $('bankTop'), betView: $('betView'), betTotalView: $('betTotalView'),
+    stRounds: $('stRounds'), stWin: $('stWin'), stWDL: $('stWDL'), stBJ: $('stBJ'),
+    stPL: $('stPL'), stEV: $('stEV'), curve: $('curve'), stratTip: $('stratTip'),
+    countBox: $('countBox'),
+    btn: { deal:$('btnDeal'), hit:$('btnHit'), stand:$('btnStand'), dbl:$('btnDouble'),
+           split:$('btnSplit'), ins:$('btnInsurance'), noins:$('btnNoIns') },
+  };
+
+  /* ---------- 鞋与计数 ---------- */
+  function buildShoe(){
+    shoe = [];
+    for (let d = 0; d < DECKS; d++)
+      for (const s of SUITS) for (const r of RANKS) shoe.push({ r, s });
+    // 洗牌
+    for (let i = shoe.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shoe[i], shoe[j]] = [shoe[j], shoe[i]];
+    }
+    runningCount = 0; dealt = 0; penPoint = Math.floor(DECKS*52*PEN);
+  }
+  function draw(){
+    if (dealt >= penPoint) { buildShoe(); el.msg.innerHTML = '<span class="big">过切牌点，重洗牌靴。</span>'; }
+    const c = shoe.pop(); dealt++;
+    // Hi-Lo
+    const v = c.r;
+    if (['2','3','4','5','6'].includes(v)) runningCount += 1;
+    else if (['10','J','Q','K','A'].includes(v)) runningCount -= 1;
+    updateCount();
+    return c;
+  }
+  function decksLeft(){ return Math.max(0.5, (shoe.length) / 52); }
+  function updateCount(){
+    el.rc.textContent = (showCount ? (runningCount > 0 ? '+' : '') + runningCount : '***');
+    el.tc.textContent = showCount ? (runningCount / decksLeft()).toFixed(2) : '***';
+    el.shoeInfo.textContent = shoe.length + ' / ' + DECKS*52;
+    el.penInfo.textContent = penPoint + '（75%）';
+  }
+
+  /* ---------- 点数 ---------- */
+  function cardVal(r){ return r === 'A' ? 11 : (['10','J','Q','K'].includes(r) ? 10 : +r); }
+  function handVal(cards){
+    let t = 0, aces = 0;
+    for (const c of cards){ t += cardVal(c.r); if (c.r === 'A') aces++; }
+    while (t > 21 && aces > 0){ t -= 10; aces--; }
+    return { total: t, soft: aces > 0 && t <= 21 && cards.some(c => c.r === 'A') };
+  }
+  const isBJ = h => h.cards.length === 2 && h.val.total === 21 && !h.fromSplit;
+
+  /* ---------- 渲染 ---------- */
+  function cardHTML(c, hide){
+    if (hide) return `<div class="card back"><div class="v">?</div></div>`;
+    const red = (c.s === '♥' || c.s === '♦');
+    return `<div class="card ${red ? 'red' : ''}"><div class="v">${c.r}</div><div class="s">${c.s}</div><div class="c">${c.s}</div></div>`;
+  }
+  function render(){
+    // 庄家
+    const holeHidden = phase === 'player' || phase === 'insurance';
+    el.dealerCards.innerHTML = dealer.map((c, i) => cardHTML(c, holeHidden && i === 1)).join('');
+    const dv = dealer.length ? (holeHidden ? handVal([dealer[0]]) : handVal(dealer)) : null;
+    el.dealerTotal.textContent = dv ? (holeHidden ? dv.total + ' + ?' : dv.total) : '';
+    el.dealerTotal.className = 'bj-total' + (dv && !holeHidden && dv.total > 21 ? ' bust' : '');
+    el.dealerInfo.textContent = '';
+    // 玩家
+    el.playerHands.innerHTML = hands.map((h, i) => `
+      <div class="hand ${phase === 'player' && i === active ? 'active' : ''}">
+        ${hands.length > 1 ? `<span class="tag">手${i+1}</span>` : ''}
+        ${h.cards.map(c => cardHTML(c, false)).join('')}
+        <span class="bj-total ${h.val.total > 21 ? 'bust' : (h.val.total === 21 ? 'bj21' : '')}">${h.val.total}${h.val.soft ? '软' : ''}</span>
+        <span style="font-size:10px;color:#D6B25E">注${h.bet}</span>
+      </div>`).join('');
+    el.playerInfo.textContent = phase === 'player' && hands.length > 1 ? `当前操作：第 ${active + 1} 手` : '';
+    el.bankTop.textContent = '¥' + bank.toLocaleString();
+    el.betView.textContent = '¥' + baseBet;
+    el.betTotalView.textContent = '¥' + hands.reduce((a, h) => a + h.bet, 0);
+    // 按钮
+    const inPlay = phase === 'player';
+    const h = hands[active];
+    el.btn.deal.disabled = !(phase === 'bet');
+    el.btn.hit.disabled = !inPlay;
+    el.btn.stand.disabled = !inPlay;
+    el.btn.dbl.disabled = !(inPlay && h && h.cards.length === 2 && bank >= h.bet);
+    el.btn.split.disabled = !(inPlay && h && h.cards.length === 2
+      && cardVal(h.cards[0].r) === cardVal(h.cards[1].r) && hands.length < 4 && bank >= h.bet);
+    el.btn.ins.disabled = !awaitingInsurance;
+    el.btn.noins.disabled = !awaitingInsurance;
+    renderStats(); renderCurve();
+    if (inPlay && showTip) renderTip();
+  }
+  function renderStats(){
+    el.stRounds.textContent = st.rounds;
+    el.stWin.textContent = st.rounds ? Math.round((st.w / st.rounds) * 100) + '%' : '—';
+    el.stWDL.textContent = `${st.w}/${st.l}/${st.d}`;
+    el.stBJ.textContent = st.bj;
+    el.stPL.textContent = (st.pl >= 0 ? '+¥' : '-¥') + Math.abs(st.pl).toLocaleString();
+    el.stEV.textContent = st.rounds ? (st.pl / st.rounds >= 0 ? '+' : '') + (st.pl / st.rounds).toFixed(1) + ' 注' : '—';
+  }
+  function renderCurve(){
+    const svg = el.curve, pts = curve;
+    const w = svg.clientWidth || 520, hgt = 96;
+    svg.setAttribute('viewBox', `0 0 ${w} ${hgt}`);
+    const min = Math.min(...pts), max = Math.max(...pts), rng = Math.max(1, max - min);
+    const path = pts.map((v, i) => {
+      const x = pts.length === 1 ? 0 : (i / (pts.length - 1)) * (w - 6) + 3;
+      const y = hgt - 6 - ((v - min) / rng) * (hgt - 14);
+      return (i ? 'L' : 'M') + x.toFixed(1) + ',' + y.toFixed(1);
+    }).join(' ');
+    const last = pts[pts.length - 1];
+    const up = last >= pts[0];
+    svg.innerHTML = `<path d="${path}" fill="none" stroke="${up ? '#2FA36B' : '#B0332E'}" stroke-width="1.8"/>
+      <line x1="3" y1="${hgt - 6 - ((10000 - min) / rng) * (hgt - 14)}" x2="${w - 3}" y2="${hgt - 6 - ((10000 - min) / rng) * (hgt - 14)}" stroke="#C9C2B4" stroke-dasharray="3 3" stroke-width="1"/>`;
+  }
+
+  /* ---------- 基本策略（6 decks · S17 · DAS · No Surrender） ---------- */
+  function basicStrategy(hands_, active_, dealerUp, canDouble, canSplit){
+    const h = hands_[active_], v = h.val, up = cardVal(dealerUp.r); // A=11
+    const cards = h.cards;
+    // 分牌
+    if (canSplit && cards.length === 2 && cardVal(cards[0].r) === cardVal(cards[1].r)) {
+      const r = cards[0].r;
+      if (r === 'A') return { act: 'SPLIT', why: 'A,A 永远分' };
+      if (cardVal(r) === 10) return { act: 'STAND', why: '10,10 停牌（20 不要拆）' };
+      if (r === '9') return (up >= 2 && up <= 9 && up !== 7) ? { act: 'SPLIT', why: '9,9 分（对 7 例外停牌）' } : { act: 'STAND', why: '9,9 对 7/10/A 停牌' };
+      if (r === '8') return { act: 'SPLIT', why: '8,8 永远分（16 是最差硬牌）' };
+      if (r === '7') return up <= 7 ? { act: 'SPLIT', why: '7,7 对 2–7 分' } : { act: 'HIT', why: '7,7 对大牌要牌' };
+      if (r === '6') return (up >= 2 && up <= 6) ? { act: 'SPLIT', why: '6,6 对 2–6 分（DAS）' } : { act: 'HIT', why: '6,6 对大牌要牌' };
+      if (r === '4') return (up === 5 || up === 6) ? { act: 'SPLIT', why: '4,4 对 5/6 分（DAS）' } : { act: 'HIT', why: '4,4 要牌' };
+      if (r === '3' || r === '2') return up <= 7 ? { act: 'SPLIT', why: `${r},${r} 对 2–7 分（DAS）` } : { act: 'HIT', why: `${r},${r} 对大牌要牌` };
+      if (r === '5') { /* 落到硬10逻辑 */ }
+    }
+    // 软牌
+    if (v.soft && v.total <= 21) {
+      if (v.total >= 19) return { act: 'STAND', why: '软 19+ 停牌（S17）' };
+      if (v.total === 18) {
+        if (up >= 3 && up <= 6) return { act: 'DOUBLE', why: '软 18 对 3–6 加倍（否则停）' };
+        if (up === 2 || up === 7 || up === 8) return { act: 'STAND', why: '软 18 对 2/7/8 停牌' };
+        return { act: 'HIT', why: '软 18 对 9/10/A 要牌' };
+      }
+      if (v.total === 17) return (up >= 3 && up <= 6) ? { act: 'DOUBLE', why: '软 17 对 3–6 加倍' } : { act: 'HIT', why: '软 17 要牌' };
+      if (v.total === 16 || v.total === 15) return (up >= 4 && up <= 6) ? { act: 'DOUBLE', why: '软 15/16 对 4–6 加倍' } : { act: 'HIT', why: '软 15/16 要牌' };
+      return (up >= 5 && up <= 6) ? { act: 'DOUBLE', why: '软 13/14 对 5–6 加倍' } : { act: 'HIT', why: '软 13/14 要牌' };
+    }
+    // 硬牌
+    const t = v.total;
+    if (t >= 17) return { act: 'STAND', why: '硬 17+ 停牌' };
+    if (t === 16) return (up >= 2 && up <= 6) ? { act: 'STAND', why: '硬 16 对 2–6 停牌' } : { act: 'HIT', why: '硬 16 对 7+ 要牌（无投降）' };
+    if (t === 15) return (up >= 2 && up <= 6) ? { act: 'STAND', why: '硬 15 对 2–6 停牌' } : { act: 'HIT', why: '硬 15 对 7+ 要牌' };
+    if (t >= 13) return (up >= 2 && up <= 6) ? { act: 'STAND', why: `硬 ${t} 对 2–6 停牌` } : { act: 'HIT', why: `硬 ${t} 对大牌要牌` };
+    if (t === 12) return (up >= 4 && up <= 6) ? { act: 'STAND', why: '硬 12 对 4–6 停牌' } : { act: 'HIT', why: '硬 12 对 2/3/7+ 要牌' };
+    if (t === 11) return (canDouble && up <= 10) ? { act: 'DOUBLE', why: '硬 11 对 2–10 加倍（S17 对 A 要牌）' } : { act: 'HIT', why: '硬 11 对 A 要牌' };
+    if (t === 10) return (canDouble && up <= 9) ? { act: 'DOUBLE', why: '硬 10 对 2–9 加倍' } : { act: 'HIT', why: '硬 10 对 10/A 要牌' };
+    if (t === 9) return (canDouble && up >= 3 && up <= 6) ? { act: 'DOUBLE', why: '硬 9 对 3–6 加倍' } : { act: 'HIT', why: '硬 9 其他要牌' };
+    return { act: 'HIT', why: `硬 ${t} 要牌` };
+  }
+  function renderTip(){
+    if (phase !== 'player') { el.stratTip.innerHTML = '发牌后显示推荐动作。'; return; }
+    const s = basicStrategy(hands, active, dealer[0], hands[active].cards.length === 2 && bank >= hands[active].bet,
+                            hands[active].cards.length === 2 && cardVal(hands[active].cards[0].r) === cardVal(hands[active].cards[1].r) && hands.length < 4);
+    const zh = { HIT: '要牌', STAND: '停牌', DOUBLE: '加倍', SPLIT: '分牌' };
+    el.stratTip.innerHTML = `推荐 <b>${zh[s.act]}</b> <span class="sugg">${s.act}</span><br><span style="color:#6B6355">${s.why}</span>`;
+  }
+
+  /* ---------- 流程 ---------- */
+  function newHand(bet){
+    return { cards: [], bet, val: null, done: false, fromSplit: false, doubled: false };
+  }
+  function settleHand(h){
+    const dv = handVal(dealer).total, pv = h.val.total;
+    const dBJ = dealer.length === 2 && dv === 21 && !dealerFromSplit();
+    if (pv > 21) return -h.bet;                               // 玩家爆
+    if (isBJ(h) && !(dealer.length === 2 && dv === 21)) return h.bet * 1.5;  // BJ 3:2
+    if (dealer.length === 2 && dv === 21) return isBJ(h) ? 0 : -h.bet;       // 庄 BJ
+    if (dv > 21) return +h.bet;                               // 庄爆
+    if (pv > dv) return +h.bet;
+    if (pv < dv) return -h.bet;
+    return 0;
+  }
+  function dealerFromSplit(){ return false; }
+
+  function deal(){
+    if (bank < baseBet) { el.msg.innerHTML = '<span class="big">资金不足，刷新页面重新开始。</span>'; return; }
+    buildIfNeed();
+    dealer = []; hands = [newHand(baseBet)]; active = 0; insuranceBet = 0;
+    bank -= baseBet;
+    hands[0].cards.push(draw(), draw()); hands[0].val = handVal(hands[0].cards);
+    dealer.push(draw(), draw());
+    // 庄家明 A → 保险窗口
+    if (dealer[0].r === 'A') {
+      awaitingInsurance = true; phase = 'insurance';
+      el.msg.innerHTML = `庄家明 A。保险 = 半注 ¥${baseBet/2}，庄 BJ 时赔 2:1。基本策略：真数 ≥ +3 才买。`;
+      render(); return;
+    }
+    phase = 'player';
+    // 玩家 BJ 直接结算（庄家已排除 BJ 可能性：明牌非 A 且非 10 需 peek？澳门规则庄家有 peek）
+    if (isBJ(hands[0]) || (cardVal(dealer[0].r) === 10 && handVal(dealer).total === 21)) { finishRound(); return; }
+    el.msg.textContent = '你的回合。';
+    render();
+  }
+  function buildIfNeed(){ if (shoe.length < 52) buildShoe(); }
+
+  function insurance(){
+    const cost = baseBet / 2;
+    if (bank < cost) return;
+    insuranceBet = cost; bank -= cost; awaitingInsurance = false;
+    // peek 庄 BJ
+    if (handVal(dealer).total === 21) { phase = 'player'; finishRound(); return; }
+    phase = 'player';
+    if (isBJ(hands[0])) { finishRound(); return; }
+    el.msg.textContent = `已买保险 ¥${cost}。庄家非 BJ，保险损失。你的回合。`;
+    render();
+  }
+  function declineInsurance(){
+    awaitingInsurance = false;
+    if (handVal(dealer).total === 21) { phase = 'player'; finishRound(); return; }
+    phase = 'player';
+    if (isBJ(hands[0])) { finishRound(); return; }
+    el.msg.textContent = '不买保险。你的回合。';
+    render();
+  }
+
+  function hit(){
+    const h = hands[active];
+    h.cards.push(draw()); h.val = handVal(h.cards);
+    if (h.val.total > 21) { h.done = true; el.msg.innerHTML = `<span class="big">爆牌（${h.val.total}）。</span>`; nextHand(); return; }
+    if (h.val.total === 21) { h.done = true; nextHand(); return; }
+    render();
+  }
+  function stand(){ hands[active].done = true; nextHand(); }
+  function double(){
+    const h = hands[active];
+    if (bank < h.bet) return;
+    bank -= h.bet; h.bet *= 2; h.doubled = true;
+    h.cards.push(draw()); h.val = handVal(h.cards); h.done = true;
+    if (h.val.total > 21) el.msg.innerHTML = `<span class="big">加倍后爆牌（${h.val.total}）。</span>`;
+    nextHand();
+  }
+  function split(){
+    const h = hands[active];
+    if (bank < h.bet || hands.length >= 4) return;
+    bank -= h.bet;
+    const c2 = h.cards.pop();
+    const nh = newHand(h.bet); nh.cards = [c2]; nh.fromSplit = true; h.fromSplit = true;
+    h.cards.push(draw()); nh.cards.push(draw());
+    h.val = handVal(h.cards); nh.val = handVal(nh.cards);
+    const isAces = c2.r === 'A';
+    hands.splice(active + 1, 0, nh);
+    if (isAces) { h.done = true; nh.done = true; el.msg.innerHTML = '<span class="big">分 A：各发一张即停。</span>'; nextHand(); return; }
+    if (h.val.total === 21) h.done = true;
+    el.msg.textContent = '已分牌。';
+    render();
+  }
+  function nextHand(){
+    while (active < hands.length - 1 && hands[active].done) active++;
+    if (hands.every(x => x.done) || active >= hands.length) { finishRound(); return; }
+    // 跳过已完成
+    if (hands[active].done) { finishRound(); return; }
+    el.msg.textContent = `第 ${active + 1} 手回合。`;
+    render();
+  }
+
+  function finishRound(){
+    phase = 'done';
+    // 庄家补牌（S17：软 17 停牌）
+    if (hands.some(h => h.val.total <= 21)) {
+      while (handVal(dealer).total < 17) dealer.push(draw());
+    }
+    const dBJ = dealer.length === 2 && handVal(dealer).total === 21;
+    // 返还结算：ret = 本金 + 赢利；损益 = ret - 总注 + 保险
+    let ret = 0, msgs = [];
+    for (const h of hands) {
+      const pv = h.val.total, dv = handVal(dealer).total;
+      const hBJ = isBJ(h);
+      if (hBJ && !dBJ) ret += h.bet * 2.5;                 // BJ 3:2（本金 + 1.5）
+      else if (hBJ && dBJ) ret += h.bet;                   // push
+      else if (dBJ) ret += 0;                              // 庄 BJ
+      else if (pv > 21) ret += 0;                          // 玩家爆
+      else if (dv > 21 || pv > dv) ret += h.bet * 2;       // 赢
+      else if (pv === dv) ret += h.bet;                    // push
+      else ret += 0;                                       // 输
+      msgs.push(ret === 0 ? '' : '');
+    }
+    // 逐手结果标注
+    msgs = hands.map(h => {
+      const pv = h.val.total, dv = handVal(dealer).total, hBJ = isBJ(h);
+      let r;
+      if (hBJ && !dBJ) r = h.bet * 1.5;
+      else if (hBJ && dBJ) r = 0;
+      else if (dBJ) r = -h.bet;
+      else if (pv > 21) r = -h.bet;
+      else if (dv > 21 || pv > dv) r = +h.bet;
+      else if (pv === dv) r = 0;
+      else r = -h.bet;
+      return r > 0 ? `<b style="color:#7FE0A8">+¥${r}</b>` : r < 0 ? `<b style="color:#E77">-¥${-r}</b>` : '平';
+    });
+    let pl = ret - hands.reduce((a, h) => a + h.bet, 0);
+    if (insuranceBet > 0) pl += (dBJ ? insuranceBet * 2 : 0) - insuranceBet;
+    bank += ret;
+    st.rounds++; st.pl += pl;
+    if (pl > 0) st.w++; else if (pl < 0) st.l++; else st.d++;
+    curve.push(bank);
+    const insMsg = insuranceBet > 0 ? `　保险${dBJ ? `赢 +¥${insuranceBet * 2}` : `损失 -¥${insuranceBet}`}` : '';
+    el.msg.innerHTML = `<span class="big">${pl > 0 ? '赢' : pl < 0 ? '输' : '平'} ${pl > 0 ? '+' : ''}¥${pl}</span>　${msgs.filter(m => m).join('　')}　庄家 ${handVal(dealer).total}${insMsg}`;
+    active = -1; insuranceBet = 0;
+    setTimeout(() => { phase = 'bet'; render(); }, 1600);
+    render();
+  }
+
+  /* ---------- 事件 ---------- */
+  $('chips').addEventListener('click', e => {
+    const c = e.target.closest('.chip'); if (!c) return;
+    document.querySelectorAll('.chip').forEach(x => x.classList.remove('sel'));
+    c.classList.add('sel'); baseBet = +c.dataset.v; render();
+  });
+  $('countToggle').addEventListener('click', () => {
+    showCount = !showCount;
+    $('countToggle').textContent = showCount ? '隐藏' : '显示';
+    updateCount();
+  });
+  $('tipToggle').addEventListener('click', () => {
+    showTip = !showTip;
+    $('tipToggle').textContent = showTip ? '关闭' : '开启';
+    if (showTip) renderTip(); else el.stratTip.textContent = '提示已关闭。';
+  });
+
+  buildShoe(); render();
+  return { deal, hit, stand, double, split, insurance, declineInsurance };
+})();
+</script>
+</body>
+</html>
