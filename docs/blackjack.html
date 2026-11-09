@@ -409,7 +409,7 @@ body.fsmode .betpanel,body.fsmode .curve-card{display:none!important}
       按澳门现行《“Black Jack”或“二十一点”法定规章》复刻：六门台、每门独立下注与结算、<b>无底牌制</b>
       （庄家只先开一张明牌，全部闲家行动完才补第二张）、软 17 停牌、Blackjack 赔 3:2，
       还原了真实桌面才有的<b>三种附加注</b>、<b>五张牌</b>、<b>早投降</b>、<b>分门与加注遇庄家 Blackjack 只失原注</b>。
-      别的门是别人的牌：你只看得到他们的注码和状态，看不到牌面。
+      同桌闲家一律<b>明牌</b>，所有人的牌你都看得见（这也是能算牌的前提）；只有庄家无底牌，先只开一张。
     </p>
   </div>
 
@@ -802,17 +802,20 @@ const BJ = (() => {
             ${h ? `<span class="totbadge ${v > 21 ? 'bust' : isBJ(h) ? 'bj' : ''}">${v}</span>` : ''}
           </div>`;
       } else if (s.hands.length){
-        // 同桌闲家：只给牌背。牌面与点数都不公开 —— 你在自己的位子上本来也看不到
-        let backs = '', tag = '';
+        // 澳门实桌：闲家一律明牌，所有人都看得见；只有庄家无底牌（先只开一张）
+        let rows = '';
         s.hands.forEach((h, hi) => {
-          backs += `<div class="doorcards others">${h.cards.map((c, ci) =>
-            cardHTML(c, `s${i}h${hi}c${ci}`, 'sm', false)).join('')}</div>`;
-          tag = h.result
+          const v = val(h.cards), bust = v > 21, bj = isBJ(h);
+          const tag = h.result
             ? `<span class="restag ${h.plRes > 0 ? 'w' : h.plRes < 0 ? 'l' : 'p'}">${h.result}</span>`
             : (h.act ? `<span class="acttag">${h.act}</span>` : '');
+          rows += `<div class="doorcards others">${h.cards.map((c, ci) =>
+            cardHTML(c, `s${i}h${hi}c${ci}`, 'sm', true)).join('')}</div>
+            <div class="doorfoot"><span class="betchip">${fmt(h.bet)}</span>
+              <span class="totbadge ${bust ? 'bust' : bj ? 'bj' : ''}">${v}${isSoft(h.cards) && !bust ? '软' : ''}</span>
+              ${tag}</div>`;
         });
-        body = `${backs}
-          <div class="doorfoot"><span class="betchip">${fmt(s.hands[0].bet)}</span>${tag}</div>`;
+        body = rows;
       } else {
         const pending = s.pendingBet;
         body = `<div class="doorcards others"></div>
@@ -1882,7 +1885,7 @@ const BJ = (() => {
     setStage(0);
     render();
     renderLedger();
-    flash('点筹码可以叠加多枚（也可以输入任意金额），再点「开局 · 发牌」。<b>第 3 门是你的</b>，同桌其他门只看得到注码和状态。');
+    flash('点筹码可以叠加多枚（也可以输入任意金额），再点「开局 · 发牌」。<b>第 3 门是你的</b>，同桌闲家都是明牌。');
   }
 
   return {
