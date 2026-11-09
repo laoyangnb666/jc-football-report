@@ -21,18 +21,25 @@ description: Build institutional-grade China sports lottery football analysis re
 10. **先报「可下注场次数」，再谈具体场次。** 竞彩单场抽水 13–15%，跟市场走的模型几乎必然全部负 EV。正常日子的正确答案是「0–2 场可小注，其余不推荐」，不要为了凑内容把负 EV 场次包装成推荐。
 11. **定性修正必须可查源、量化到 λ。** 伤停/动机/首发/赛程等软信息只允许改成明确的 λ 增减（如「客队 λ −0.30」），并在报告中写出依据（直播吧/懂球帝/官方首发等可访问链接）。不接受「感觉他会赢」这类无出处的判断。
 12. **真实实力优先于积分排名。** 球队强弱要参考阵容质量、伤停结构、近期 xG 走势与赛程强度，不能只按联排名次换算赔率——积分榜受运气影响，阵容残缺才是当周的真实强度。
+13. **不用模型猜胜负，用价差找错价。** 五轮累计模型方向 60.9% vs 去水 60.2%，差异在噪声内。买入理由只能是「竞彩价格 vs 海外共识」的价差，不能是「模型看好」。
+14. **EV 必须过 ρ 敏感性闸门。** 同一组 λ 在 ρ ∈ {0, −0.05, −0.10, −0.15} 下复算，凡 EV 符号随 ρ 翻转的选项一律列为禁买（例：0 球档 EV 在 ρ=0 时由 +24.5% 跌至 +0.1%，即模型伪影）。
 
 ## 流程
 
 按顺序执行，不要跳步。
 
 1. **回测上一轮**：拿到已完赛比分，用 `backtest(preds, results)` 跑出逐市场命中率，与 [references/model-and-calibration.md](references/model-and-calibration.md) 的待验证清单核对。**这一步在采集新数据之前做。**
-2. **采集**：竞彩官网在售场次（胜平负/让球/总进球/比分/半全场 + 支持率 + 官方概率），捷报逐场（主客分离得失球、盘路、18 家初盘与即时亚盘/水位、大小球、天气），直播吧与搜索补齐伤停/动机/裁判。口径见 [references/data-collection.md](references/data-collection.md)。
-3. **建模**：`scripts/analyze.js` 的 `predictMatch(row)` 一次产出 λ（市场 + 独立 + 融合）、比分分布、总进球桶与区间、胜平负、让球、双方进球、半全场、判定。数据以对象传入，字段见脚本文档头。
+2. **采集**：竞彩官网在售场次（胜平负/让球/总进球/比分/半全场 + 支持率 + 官方概率），捷报逐场（主客分离得失球、盘路、18 家初盘与即时亚盘/水位、大小球、天气），直播吧与搜索补齐伤停/动机/裁判。口径见 [references/data-collection.md](references/data-collection.md)。**v5 起必须取捷报 16+ 家即时欧赔，用来构造海外共识 λ。**
+3. **建模（v5 四层）**：`scripts/analyze.js` 的 `predictMatch(row)` 一次产出 λ（共识 + 独立 + 融合）、比分分布、总进球桶与区间、胜平负、让球、双方进球、半全场、判定。数据以对象传入，字段见脚本文档头。
+   - **L1 共识 λ**：16–17 家即时欧赔取均值去水，拟合 λ 与偏斜；竞彩只做价格与 EV 基准。
+   - **L2 独立 λ**：捷报主客分离得失球 + `shrink(K=8)` + 近 6 场状态（0.15）。
+   - **L3 盘口位移**：≥4 家且初盘→即时均值位移 ≥0.20 才触发 ±0.10 球。
+   - **L4 裁判层**：捷报 `/info/referee/{id}.htm` 与 api-sports `referee`；未公布即标「未公布」，不进模型。
+   - 融合：`λ = (1−k)·λ_共识 + k·λ_独立`，联赛 k=0.35，杯赛 k=0.25；ρ = −0.10。
 4. **判定与方案**：`verdict` 字段给简明判定，`rec` 字段（`buildRecommendation`）给完整购买方案——级别（主推/小注/观察/回避）+ 玩法 + 选项 + 赔率 + 概率/隐含 + EV + 仓位 + 否决条件。**不要手改阈值**；规则与理由见下文与 [references/model-and-calibration.md](references/model-and-calibration.md)。
 5. **补齐逻辑**：按 [references/analysis-framework.md](references/analysis-framework.md) 八节检查表逐项过，标出进模型 / 进文字 / 因缺数据降级。
 6. **组装**：按 [references/report-template.md](references/report-template.md) 的六层 + 综合预测层写 HTML。
-7. **渲染**：`mcp_qieman_RenderHtmlToPdf`（A4、printBackground、margin 0），PowerShell 两步法下载并改中文名。
+7. **渲染**：`mcp_qieman_RenderHtmlToPdf`（A4、printBackground、margin 0），PowerShell 两步法下载并改中文名。若该工具不可用，用 Edge headless 兜底：`msedge --headless=new --no-pdf-header-footer --print-to-pdf=...`，再用 PyMuPDF 逐页栅格化自查版式（页数、溢出、表格列宽）。
 8. **交付**：`computer://` 链接 + 3 个核心结论。
 
 ## 逐场判定规则（v2，已按回测修正）
@@ -61,6 +68,15 @@ description: Build institutional-grade China sports lottery football analysis re
 
 **判定必须绑定综合预测。** 例如不能写「主胜 2.10 关注」却不写总进球区间——两个市场的判断要互相自洽。
 
+**v5 价差规则（2026-11-09 起，低级别杯赛无支持率时为主规则）：**
+
+| 条件 | 级别 | 说明 |
+|---|---|---|
+| 竞彩某侧赔率 − 共识均赔 ≥ +0.20，模型同侧，且该侧 EV 过 ρ 闸门 | 小注 | 例：布罗姆利主胜 4.11 vs 共识 3.48（+0.63） |
+| 竞彩某侧赔率 − 共识均赔 ≥ +0.35 且 EV ≥ +5% | 主推 | 需同时给出否决条件 |
+| 竞彩赔率低于共识 ≥ 0.15 | 该侧回避 | 价格不含补偿，不追热门 |
+| 单关关闭（single=0） | 只能串关 | 必须计算串关 EV；3 腿以上标注风险 |
+
 ## 数据源
 
 四级 + 扩展，完整口径见 [references/data-collection.md](references/data-collection.md)。
@@ -68,7 +84,8 @@ description: Build institutional-grade China sports lottery football analysis re
 | 层 | 源 | 取什么 | 边界 |
 |---|---|---|---|
 | A | 竞彩官网 `lottery.gov.cn/jc/jsq/zqspf/` | 在售场次、全部玩法赔率、支持率、官方去水概率 | 唯一法定价，定价基准 |
-| B | 捷报 `cp.nowscore.com` + `live.nowscore.com` | **主客分离得失球、盘路（让球胜率/大小球率，主客分开）、18 家初盘与即时欧赔/亚盘水位/大小球、天气场地** | 独立模型的唯一输入来源 |
+| B | 捷报 `cp.nowscore.com` + `live.nowscore.com` | **主客分离得失球、盘路（让球胜率/大小球率，主客分开）、18 家初盘与即时欧赔/亚盘水位/大小球、天气场地、裁判分析页** | 独立模型的唯一输入来源 |
+| B2 | 捷报 16+ 家即时欧赔均值（v5 新增） | **海外共识 1X2 概率**：去水后拟合 L1 共识 λ | 比竞彩少约 8pp 抽水，是价差基准 |
 | C | 直播吧 `zhibo8.com` | 伤停、首发、赛程、动机线索 | 定性，需第二来源确认 |
 | D | 联网搜索 | xG/xGA、官方公告、裁判、联赛形势 | 每个数字能点回原页 |
 
