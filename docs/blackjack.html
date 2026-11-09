@@ -142,7 +142,7 @@
 /* 抵消 site.css 里通用 .card（内容卡片）的底色/圆角，避免牌面外露白边 */
 .bjpage .card{background:transparent;border:0;border-radius:0;padding:0;box-shadow:none}
 .card{position:relative;flex:0 0 auto;perspective:700px}
-.card .ci{position:relative;width:100%;height:100%;transform-style:preserve-3d;transition:transform .001s}
+.card .ci{position:absolute;inset:0;transform-style:preserve-3d}
 .card .cf,.card .cb{position:absolute;inset:0;border-radius:5px;backface-visibility:hidden;-webkit-backface-visibility:hidden}
 .card .cf{background:linear-gradient(168deg,#FFFEF8,#EDE7D6);box-shadow:0 2px 6px rgba(0,0,0,.44),inset 0 0 0 .5px rgba(0,0,0,.1);font-family:Georgia,serif;overflow:hidden}
 .card .cb{background:
@@ -216,6 +216,20 @@
 .c300{background:#0F5C9E}.c500{background:#127A46}.c1k{background:#2B2F33}.c3k{background:#8E3A18}.c10k{background:#6B2A86}
 .betline{display:flex;justify-content:space-between;font-size:12px;color:#5A635E;margin-top:9px;padding-top:8px;border-top:1px dashed #DED7C4}
 .betline b{font-family:"Inter",monospace;color:#0C3A28;font-size:13.5px}
+.betline small{font-family:"Inter",monospace;color:#8A8272;font-size:11px}
+/* 筹码累加 / 自定义金额 */
+.betctl{display:flex;gap:6px;margin-top:9px;align-items:center}
+.betinput{flex:1;min-width:0;font-family:Inter,monospace;font-size:11.5px;padding:6px 8px;border:1px solid #DED7C4;
+  border-radius:7px;background:#fff;color:#1F2A24;outline:none}
+.betinput:focus{border-color:#0C3A28;box-shadow:0 0 0 2px rgba(12,58,40,.1)}
+.btn-mini{font-family:inherit;font-size:11px;padding:5px 9px;border-radius:7px;border:1px solid #DAD3C0;
+  background:#fff;color:#1F2A24;cursor:pointer;white-space:nowrap}
+.btn-mini:hover{border-color:#0C3A28;background:#F6F4EC}
+.btn-mini.ghost{color:#8A5A0A;border-color:#E6D8B8}
+.chip{cursor:pointer}
+.chip:active{transform:translateY(0) scale(.96)}
+.betchips{margin-top:6px;display:flex;gap:3px;flex-wrap:wrap;min-height:12px}
+.betchips i{width:13px;height:13px;border-radius:50%;border:1px dashed rgba(255,255,255,.5);display:block}
 .hint{font-size:10.5px;color:#8A8272;line-height:1.6;margin-top:7px}
 .segrow{display:flex;gap:6px;margin-bottom:6px;align-items:center}
 .segrow .lbl{font-size:10.5px;color:#7C7461;width:52px;flex:0 0 auto}
@@ -298,6 +312,9 @@ body.fsmode .deck-panel .dp-read{display:inline-flex;align-items:baseline;gap:4p
 body.fsmode .deck-panel .dp-read b{font-family:Inter,monospace;color:#EBD98F;line-height:1.3}
 body.fsmode .deck-panel .dp-read.dp-bank b{color:#D9D5CB}
 body.fsmode .deck-panel .dp-hint{margin-left:auto;font-size:10px;color:#7E7767;white-space:nowrap}
+body.fsmode .deck-panel .dp-btn{background:rgba(255,255,255,.06);border:1px solid rgba(235,217,143,.28);
+  color:#D9D5CB;border-radius:7px;padding:4px 9px;font-size:10.5px;font-family:inherit;cursor:pointer;white-space:nowrap}
+body.fsmode .deck-panel .dp-btn:hover{background:rgba(201,162,39,.18);color:var(--gold-lt)}
 body.fsmode .fs-exit{background:rgba(0,0,0,.4);border:1px solid rgba(201,162,39,.5);color:var(--gold-lt);
   border-radius:7px;padding:5px 10px;font-size:10.5px;cursor:pointer;font-family:inherit;white-space:nowrap}
 body.fsmode .fs-exit:hover{background:rgba(201,162,39,.18)}
@@ -449,14 +466,21 @@ body.fsmode .betpanel,body.fsmode .curve-card{display:none!important}
           <h4>原注 <span>余额 <b class="mono" id="bankView">100,000</b></span></h4>
           <div class="chips" id="chips">
             <div class="chip c300" data-v="300"><span>300</span></div>
-            <div class="chip c500 sel" data-v="500"><span>500</span></div>
+            <div class="chip c500" data-v="500"><span>500</span></div>
             <div class="chip c1k" data-v="1000"><span>1K</span></div>
             <div class="chip c3k" data-v="3000"><span>3K</span></div>
             <div class="chip c10k" data-v="10000"><span>10K</span></div>
           </div>
+          <div class="betctl">
+            <input id="betInput" class="betinput" type="number" min="100" max="10000" step="100" placeholder="自定义金额">
+            <button class="btn-mini" id="betAdd">加</button>
+            <button class="btn-mini" id="betUndo">撤回</button>
+            <button class="btn-mini ghost" id="betClear">清空</button>
+          </div>
           <div class="betline"><span>本局原注</span><b id="betView">500</b></div>
+          <div class="betline"><span>筹码构成</span><small id="betBreak">500 × 1</small></div>
           <div class="betline"><span>附加注合计</span><b id="sideView">0</b></div>
-          <div class="hint">分门与加注会成倍放大敞口：500 的门分到四手再加注，就是 3,000 在桌上。</div>
+          <div class="hint">点筹码是<b>累加</b>：初始 500，再点两次 500 就是 1,500；也可以直接输入金额（100–10,000）。「撤回」退最后一枚，「清空」归零。</div>
         </div>
 
         <div class="card-panel">
@@ -479,14 +503,16 @@ body.fsmode .betpanel,body.fsmode .curve-card{display:none!important}
           <span class="dp-lb">注码</span>
           <div class="chips" id="chipsFS">
             <div class="chip c300" data-v="300"><span>300</span></div>
-            <div class="chip c500 sel" data-v="500"><span>500</span></div>
+            <div class="chip c500" data-v="500"><span>500</span></div>
             <div class="chip c1k" data-v="1000"><span>1K</span></div>
             <div class="chip c3k" data-v="3000"><span>3K</span></div>
             <div class="chip c10k" data-v="10000"><span>10K</span></div>
           </div>
           <span class="dp-read">押 <b id="fsBet">500</b></span>
           <span class="dp-read dp-bank">余额 <b id="fsBank">100,000</b></span>
-          <span class="dp-hint">H 搏牌 · S 不搏 · D 加注 · 空格 发牌</span>
+          <button class="dp-btn" data-bet="undo">撤回</button>
+          <button class="dp-btn" data-bet="clear">清空</button>
+          <span class="dp-hint">点筹码累加 · H 搏牌 / S 不搏 / D 加注</span>
           <button class="fs-exit" onclick="BJ.exitFS()">退出全屏 ESC</button>
         </div>
 
@@ -641,6 +667,7 @@ const BJ = (() => {
   const SEAT_NAMES = ['阿强','陈生','你','莎莎','空位','阿明'];
   const HUMAN = 2;
   const CUT_BACK = 30;
+  const MIN_BET = 300, MAX_BET = 10000;
 
   const cv = r => r === 'A' ? 11 : (['10','J','Q','K'].includes(r) ? 10 : +r);
   const sameRank = (a, b) => a === b;   // 对子须点数相同，J 与 Q 不算对子
@@ -652,6 +679,7 @@ const BJ = (() => {
   let phase = 'bet';
   let activeSeat = 0, activeHand = 0;
   let humanBet = 500;
+  let betStack = [500];          // 桌上叠着的筹码面值，累加/撤回都作用在这上面
   let sideBet = { pair: 0, seven: 0, ou: 'none' };
   let insuranceAmt = 0;
   let timer = null, busy = false;
@@ -675,7 +703,7 @@ const BJ = (() => {
      'btnSur','btnFive','btnIns','btnInsFull','btnNoIns','btnEven','btnNoEven','bankView','betView',
      'sideView','stRounds','stWDL','stBJ','stSide','stBank','stPL','simOut','shoeLeft','shoeStack',
      'discN','discStack','cntLeft','cntBurn','cntRC','cntTC','countHint','countBox','deckPanel',
-     'myHands','myLive','ledger','curve','curveTip','curveLegend','cvPeak','cvDD','cvAvg','cvN',
+     'myHands','myLive','ledger','curve','curveTip','curveLegend','cvPeak','cvDD','cvAvg','cvN','betBreak',
      'stageTxt','sg1','sg2','sg3','sg4','sg5'
     ].forEach(k => el[k] = $(k));
   }
@@ -806,10 +834,9 @@ const BJ = (() => {
 
     renderMyHands();
 
-    // 注码选中态（主面板 + 全屏坞同步）
-    document.querySelectorAll('#chips .chip, #chipsFS .chip').forEach(c => {
-      c.classList.toggle('sel', +c.dataset.v === humanBet);
-    });
+    // 注码累加：不选中单个筹码，而是按枚数叠加，显示构成
+    document.querySelectorAll('#chips .chip, #chipsFS .chip').forEach(c => c.classList.remove('sel'));
+    if (el.betBreak) el.betBreak.textContent = stackText();
 
     // 数字
     el.bankView.textContent = fmt(seats[HUMAN].bank);
@@ -866,9 +893,6 @@ const BJ = (() => {
     if (fb) fb.textContent = fmt(humanBet);
     const fk = document.getElementById('fsBank');
     if (fk) fk.textContent = fmt(seats[HUMAN].bank);
-    document.querySelectorAll('#chipsFS .chip').forEach(c => {
-      c.classList.toggle('sel', +c.dataset.v === humanBet);
-    });
     // 按底部操作坞的实际高度（按钮换行会变高）动态让位，避免压住手牌区
     const dock = document.querySelector('.dock');
     const felt = document.querySelector('.felt');
@@ -880,6 +904,41 @@ const BJ = (() => {
 
   const sideBetTotal = () =>
     (sideBet.pair ? humanBet : 0) + (sideBet.seven ? humanBet : 0) + (sideBet.ou !== 'none' ? humanBet : 0);
+
+  /* ---------- 下注：筹码累加 / 撤回 / 自定义 ---------- */
+  function addBet(v){
+    if (phase !== 'bet' || busy) return;
+    v = Math.floor(v);
+    if (!v || v <= 0){ flash('下注金额必须大于 0。'); return; }
+    if (humanBet + v > MAX_BET){
+      flash(`单注上限 <b>${fmt(MAX_BET)}</b>，已押 ${fmt(humanBet)}。`);
+      return;
+    }
+    humanBet += v;
+    betStack.push(v);
+    flash(`加 <b>${fmt(v)}</b>，当前 <b>${fmt(humanBet)}</b>（${betStack.length} 枚）。`);
+    render();
+  }
+  function undoBet(){
+    if (phase !== 'bet' || busy) return;
+    if (!betStack.length){ flash('桌上没有筹码了。'); return; }
+    const v = betStack.pop();
+    humanBet = Math.max(0, humanBet - v);
+    render();
+  }
+  function clearBet(){
+    if (phase !== 'bet' || busy) return;
+    betStack = []; humanBet = 0;
+    render();
+  }
+  function stackText(){
+    if (!betStack.length) return '未下注';
+    const m = new Map();
+    betStack.forEach(v => m.set(v, (m.get(v) || 0) + 1));
+    const parts = [...m.entries()].sort((a, b) => b[0] - a[0])
+      .map(([v, n]) => (v >= 1000 ? (v / 1000) + 'K' : v) + ' × ' + n);
+    return parts.join(' + ') + `（${betStack.length} 枚）`;
+  }
 
   function renderStats(){
     el.stRounds.textContent = st.rounds;
@@ -895,7 +954,7 @@ const BJ = (() => {
     const inPlay = phase === 'player' && seats[activeSeat] && seats[activeSeat].human;
     const h = inPlay ? seats[HUMAN].hands[activeHand] : null;
     const bank = seats[HUMAN].bank;
-    const ready = phase === 'bet' && !busy;
+    const ready = phase === 'bet' && !busy && humanBet >= MIN_BET;
     el.btnDeal.disabled = !ready;
     el.btnHit.disabled = !inPlay;
     el.btnStand.disabled = !inPlay;
@@ -955,6 +1014,7 @@ const BJ = (() => {
   /* ---------- 开局（顺序发牌 + 动画） ---------- */
   async function deal(){
     if (phase !== 'bet' || busy) return;
+    if (humanBet < MIN_BET){ flash(`最低注 <b>${fmt(MIN_BET)}</b>，先点筹码或输入金额。`); return; }
     const me = seats[HUMAN];
     const outlay = humanBet + sideBetTotal();
     if (me.bank < outlay){ flash('<b>余额不足</b>，请调低注码。'); return; }
@@ -1719,17 +1779,27 @@ const BJ = (() => {
   function bind(){
     $('chips').addEventListener('click', e => {
       const c = e.target.closest('.chip');
-      if (!c || phase !== 'bet') return;
-      document.querySelectorAll('#chips .chip').forEach(x => x.classList.remove('sel'));
-      c.classList.add('sel');
-      humanBet = +c.dataset.v;
-      render();
+      if (!c) return;
+      addBet(+c.dataset.v);
     });
     $('chipsFS').addEventListener('click', e => {
       const c = e.target.closest('.chip');
-      if (!c || phase !== 'bet') return;
-      humanBet = +c.dataset.v;
-      render();
+      if (!c) return;
+      addBet(+c.dataset.v);
+    });
+    $('betAdd').addEventListener('click', () => {
+      const v = Math.floor(+$('betInput').value);
+      if (!v || v <= 0){ flash('先输入下注金额（100–10,000）。'); return; }
+      addBet(v);
+      $('betInput').value = '';
+    });
+    $('betInput').addEventListener('keydown', e => {
+      if (e.key === 'Enter'){ e.preventDefault(); $('betAdd').click(); }
+    });
+    $('betUndo').addEventListener('click', undoBet);
+    $('betClear').addEventListener('click', clearBet);
+    document.querySelectorAll('.dp-btn[data-bet]').forEach(b => {
+      b.addEventListener('click', () => b.dataset.bet === 'undo' ? undoBet() : clearBet());
     });
     document.querySelectorAll('.seg[data-side]').forEach(seg => {
       seg.addEventListener('click', e => {
@@ -1784,6 +1854,7 @@ const BJ = (() => {
     $('curveWrap').addEventListener('mouseleave', curveLeave);
 
     document.addEventListener('keydown', e => {
+      if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
       if (e.key === 'f' || e.key === 'F') { if (!document.body.classList.contains('fsmode')) enterFS(); }
       if (e.key === 'Escape' && document.body.classList.contains('fsmode')) exitFS();
       if ((e.code === 'Space' || e.key === ' ') && phase === 'bet' && !busy){ e.preventDefault(); deal(); return; }
@@ -1806,11 +1877,12 @@ const BJ = (() => {
     seats = SEAT_NAMES.map((n, i) => mkSeat(n, i === HUMAN, [30000, 42000, START_BANK, 26000, 0, 21000][i]));
     hist = [{ r: 0, bank: seats[HUMAN].bank }];
     peerHist = seats.map(s => [{ r: 0, bank: s.bank }]);
+    betStack = [humanBet];
     bind();
     setStage(0);
     render();
     renderLedger();
-    flash('先在下方选注码（最低 300），再点「开局 · 发牌」。<b>第 3 门是你的</b>，同桌其他门只看得到注码和状态，看不到牌。');
+    flash('点筹码可以叠加多枚（也可以输入任意金额），再点「开局 · 发牌」。<b>第 3 门是你的</b>，同桌其他门只看得到注码和状态。');
   }
 
   return {
