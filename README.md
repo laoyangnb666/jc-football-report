@@ -220,26 +220,140 @@ jc-football-report/
 
 ## English
 
-**jc-football-report** is an open-source Agent Skill that turns China Sports Lottery football odds into comparable probabilities, then compares model output against market-implied prices and public money flow to surface structural mispricing.
+### What this is
 
-Key ideas:
+**jc-football-report** is an open-source Agent Skill for China Sports Lottery football (竞彩足球). It does not try to "pick the winner". It treats the market as a **pricing problem**: strip the bookmaker's margin out of the odds to recover implied probabilities, build a model that is independent of those odds, then compare model probability, de-vigged probability and public betting support to surface **structural mispricing** — and write that comparison up as a reproducible, per-match verdict plus a PDF report.
+
+Core stance: **calibration over prediction.** Being right on one match means nothing; estimating probabilities well over many matches and knowing exactly where the margin is taken is the whole point.
+
+### Key ideas
 
 - **De-vig everything.** Strip the 13%+ overround before comparing anything.
 - **Price against sharp books.** Use low-margin sharp lines as the probability benchmark, not the high-margin local book.
 - **Build an independent model.** Re-deriving probabilities from the odds is just restating the book. v2 fits a Dixon-Coles strength model from home/away split goal data, then blends it with the market at k=0.35.
+- **Injuries are a disclosed manual override.** v3 applies an explicit λ adjustment for confirmed absences — the basis must be stated in the report, never silently baked in.
+- **Two-part report.** Facts first (data analysis), conclusions second (forecast and stake plan). Read only part two to decide; read only part one to audit.
 - **Forecast in reliability order.** Every match gets 1X2 → total-goals band → top-5 correct-score distribution. **Never a single score** — top1 hit 0/7 in backtest, top5 hit 71.4%.
 - **Backtest first.** Every round starts by scoring the previous round and comparing hit rates against the book's implied probabilities before any new analysis.
 - **Δ is not a signal.** "Back the cold side" was falsified: cold options landed 30.0% vs 26.3% implied — inside an 8pp standard error.
 - **Traceable data.** Every number in the model must trace back to a source. Untraceable numbers stay in prose, marked "unverified".
+- **Parleys are structurally −EV.** Each leg's `p × odds` equals `1/(1+margin)`: with a 13.9% margin a single leg returns 0.878, a two-leg parley 0.771, a three-leg 0.677. The report therefore always concludes **singles first**.
 - **Skill stores method only.** No specific odds, fixtures or conclusions are committed to this repo — those belong to a single report run.
 
-Zero runtime dependencies; requires Node.js only.
+### How a report is built (seven layers)
+
+| Layer | Content |
+|---|---|
+| 1 Backtest calibration | Previous round's per-market hit rate, actual vs. implied, status of open "to verify" items |
+| 2 Pricing engine | Margin, de-vig, three λ sources (market / independent / blended), score matrix, per-bucket total-goals EV |
+| 3 Fundamentals | Official injuries and suspensions, head-to-head, recent form, weather and pitch |
+| 4 Market intelligence | Opening → current line (1X2 + Asian handicap + O/U), local vs. international pricing gap, popularity tax |
+| 5 Sub-markets | Handicap EV, over/under, score and half-time/full-time principles |
+| 6 Per-match forecast | For each fixture: top-5 scores → total-goals band and buckets → 1X2 → handicap → verdict |
+| 7 Data hygiene | Eight checks with per-item status, source list, missing fields, model-change log |
+
+### Quick start
+
+Zero runtime dependencies; requires Node.js only (>= 14).
 
 ```bash
-git clone https://github.com/laoyangnb666/jc-football-report.git
+# install as an agent skill (Trae / Claude Code global skills dir)
+git clone https://github.com/laoyangnb666/jc-football-report.git \
+  ~/.trae-cn/skills/jc-football-report
+
+# or just run the built-in self-check
 node jc-football-report/scripts/analyze.js
 ```
 
-See [SKILL.md](SKILL.md) for the workflow, [references/model-and-calibration.md](references/model-and-calibration.md) for the model math and the 33-match backtest, and [references/data-collection.md](references/data-collection.md) for the source list.
+The directory name must be `jc-football-report`, matching the `name` field in the `SKILL.md` frontmatter.
 
-**Disclaimer:** For research and educational purposes only. Not betting advice. No guaranteed returns. Gambling carries a high risk of losing all capital. Comply with local laws; 18+ only.
+Use it as a library:
+
+```js
+const { predictMatch, backtest } = require('./scripts/analyze.js');
+
+const p = predictMatch({
+  no: 'Mon004', lg: 'Serie A', home: 'Atalanta', away: 'Parma',
+  kickoff: '2026-11-03 03:45', hc: -1,          // handicap line
+  spf: [1.30, 4.65, 6.45], rq: [2.07, 3.40, 2.76],
+  supSPF: [78, 13, 9],                          // public support (%)
+  zjq: [17, 7, 4.25, 3.10, 4.20, 7.20, 15, 20], // total-goals odds
+  team: {                                       // home/away split goals
+    home: { home: { gf: 15, ga: 6, p: 5 }, away: { gf: 8, ga: 9, p: 5 } },
+    away: { home: { gf: 7, ga: 10, p: 5 }, away: { gf: 5, ga: 13, p: 5 } },
+    form: { home: { gf: 9, ga: 6, p: 5 }, away: { gf: 4, ga: 12, p: 5 } },
+  },
+});
+
+console.log(p.lambdaTotal, p.w);        // blended λ and home share
+console.log(p.probs.H, p.probs.D, p.probs.A);
+console.log(p.forecast.spf, p.forecast.spfP);   // 1X2 pick + probability
+console.log(p.forecast.goals, p.forecast.goalsP); // total-goals band
+console.log(p.forecast.scores);         // top-5 scoreline distribution
+console.log(p.verdict.level, p.verdict.reason);
+
+// backtest: score predictions against actual scores
+const bt = backtest([p], { Mon004: [3, 1] });
+console.log(bt.hit);                    // per-market hit rate
+```
+
+### Repo layout
+
+```
+jc-football-report/
+├── SKILL.md                        # Skill entry: hard rules, workflow, verdict rules
+├── references/
+│   ├── model-and-calibration.md    # Model math + 33-match backtest (tune thresholds here)
+│   ├── analysis-framework.md       # Full analysis checklist (eight sections)
+│   ├── data-collection.md          # Source list, collection conventions, cross-checks
+│   └── report-template.md          # Seven-layer report structure and typography tokens
+├── scripts/
+│   └── analyze.js                  # de-vig / Dixon-Coles / strength model / blend / forecast / backtest
+├── LICENSE
+└── README.md
+```
+
+### Core API (`scripts/analyze.js`)
+
+| Function | Purpose |
+|---|---|
+| `devig(odds)` | Remove the margin; returns `{p, m, overround}` |
+| `grid(lambdaTotal, w, rho)` | 12×12 Poisson + Dixon-Coles score grid |
+| `summarize(g)` / `topScores(g, n)` | 1X2 / O-U / BTTS from the grid; highest-probability scorelines |
+| `goalBuckets(g)` / `goalIntervals(g)` | Total goals in 8 buckets and 4 bands |
+| `rqProb(g, hc)` | Three-way Asian-handicap probabilities |
+| `hafu(g)` | Half-time/full-time 9-way distribution |
+| `fitFromZJQ(zjq, spf)` / `fit2D(spf)` | Market mirror: back out λ and w from the prices |
+| `teamStrength(home, away, form)` | **Independent model**: ratio method + sample-size shrinkage (K=8) + last-6 form (weight 0.15) |
+| `blendModels(market, team, k)` | Blend, default k=0.35 |
+| `predictMatch(row)` | **Everything in one call**: three λ sources, score distribution, goal buckets and bands, 1X2, handicap, BTTS, HT/FT, forecast, verdict |
+| `backtest(preds, results)` | Calibration: per-market hit rate vs. implied probability |
+| `ev(p, odds)` / `combo(legs)` | Expected value / parley multiplication |
+
+### Backtest: 33 settled matches
+
+Of 42 matches in the previous round, 33 had settled — enough to quantify how wrong the model is:
+
+| Measure | Hits | Hit rate |
+|---|---|---|
+| De-vigged top direction | 20 / 32 | **62.5%** |
+| Public-support top direction | 17 / 32 | **53.1%** |
+| Model top direction (7 focus matches) | 5 / 7 | 71.4% |
+| Over/under 2.5 direction | 6 / 7 | 85.7% |
+| Correct score top1 / top3 / top5 | 0 / 3 / 5 (of 7) | 0% / 42.9% / **71.4%** |
+
+Three findings changed the design: (1) following the price beats following the crowd by 9.4pp — in matches where price and money disagreed the pricing side went 3/3; (2) "small stake on the cold side" was falsified — cold options realised 30.0% vs. 26.3% implied, a 3.7pp gap inside an ~8pp standard error at n=30; (3) single-scoreline forecasts are useless (0/7), hence only a probability-ranked top-5 distribution is published.
+
+### Data sources
+
+Four core layers, always collected: China Sports Lottery (`lottery.gov.cn` — on-sale fixtures, all prices, public support, official de-vigged probabilities), the official injury/suspension and H2H feeds (`sporttery.cn`), Nowscore (`cp.nowscore.com` / `live.nowscore.com` — home/away split goals, 18 bookmakers' opening and live lines, weather and pitch), and Zhibo8 for line-ups and motivation. Extended sources are enabled per gap: Titan007, OddsPortal / Oddspedia, Betfair / Smarkets, FBref / Understat, Sofascore / FotMob, Transfermarkt.
+
+Nowscore is the lifeline of the independent model: without home/away split goal data the model degrades into restating the book, and layer 7 must then state "independent model unavailable — market analysis only".
+
+### Disclaimer
+
+**For research and educational purposes only. Not betting advice. No guaranteed returns.** All probabilities are estimates derived from prices and models. Gambling carries a high risk of losing all capital. Comply with local laws; 18+ only. Data are live snapshots of public sites and may be stale, missing or wrong — verify before use. The author accepts no liability for any consequence of using this project.
+
+Licensed under [MIT](LICENSE).
+
+See [SKILL.md](SKILL.md) for the workflow, [references/model-and-calibration.md](references/model-and-calibration.md) for the model math and the 33-match backtest, and [references/data-collection.md](references/data-collection.md) for the source list.
