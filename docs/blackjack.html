@@ -399,7 +399,7 @@ body.fsmode .betpanel,body.fsmode .curve-card,body.fsmode .data-grid{display:non
 .pts-tier{display:inline-block;font-size:9.5px;padding:2px 8px;border-radius:999px;background:#0C3A28;color:#F4EDDB;margin-left:6px;vertical-align:middle}
 .pts-bar{height:5px;border-radius:3px;background:#E7E1D1;margin-top:8px;overflow:hidden}
 .pts-bar i{display:block;height:100%;background:linear-gradient(90deg,#C9A227,#EBD98F)}
-.pts-note{font-size:9.5px;color:#8A8272;margin-top:5px}
+.pts-note{font-size:9.5px;color:#8A8272;margin-top:5px;white-space:pre-line;line-height:1.6}
 
 /* 矮屏全屏：整体缩小，保证手牌区不被底部操作坞压住 */
 @media(max-height:860px){
@@ -772,6 +772,8 @@ body.fsmode .betpanel,body.fsmode .curve-card,body.fsmode .data-grid{display:non
   <p>概率教学模拟，虚拟资金，不连接任何真实账户。真实赌场禁止计数，长期期望为负。未成年人禁止参与赌博。</p>
 </footer>
 
+<script src="assets/bj-casinos.js"></script>
+<script src="assets/bj-core.js"></script>
 <script>
 /* ============================================================
    澳门 21 点引擎
@@ -783,15 +785,18 @@ const BJ = (() => {
   const RANKS = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
   const CUT_BACK = 30;
 
-  /* 娱乐场预设（参考公开资料整理的 HKD 口径，现场表台会随时调整） */
-  const VENUES = [
-    { key:'venetian', name:'威尼斯人', room:'中场',  decks:6, csm:true,  soft17:'s17', seats:6, min:300,  max:10000,  bj:1.5, sur:true,  pts:0.0010, bank:200000,  note:'金光大道中场，洗牌机为主，BJ 3:2' },
-    { key:'galaxy',    name:'银河',     room:'中场',  decks:6, csm:false, soft17:'s17', seats:6, min:500,  max:5000,   bj:1.5, sur:true,  pts:0.0010, bank:200000,  note:'6 副牌靴，低额台 300–1,000 起注常见' },
-    { key:'parisian',  name:'巴黎人',   room:'中场',  decks:6, csm:true,  soft17:'s17', seats:6, min:300,  max:5000,   bj:1.5, sur:true,  pts:0.0010, bank:150000,  note:'中场洗牌机，以低额台为主' },
-    { key:'wynn',      name:'永利',     room:'贵宾厅', decks:8, csm:false, soft17:'s17', seats:7, min:5000, max:500000, bj:1.5, sur:true,  pts:0.0030, bank:5000000, note:'贵宾厅 8 副牌靴，限额高、积分累积快' },
-    { key:'mgm',       name:'美高梅',   room:'中场',  decks:8, csm:true,  soft17:'s17', seats:6, min:500,  max:10000,  bj:1.5, sur:true,  pts:0.0010, bank:250000,  note:'8 副洗牌机，中场标准台' },
-    { key:'lisboa',    name:'新葡京',   room:'普通场', decks:6, csm:false, soft17:'s17', seats:6, min:100,  max:3000,   bj:1.2, sur:false, pts:0.0005, bank:20000,   note:'普通场低额台，部分台 BJ 只赔 6:5' },
-  ];
+  /* 娱乐场预设：来自 assets/bj-casinos.js（21 家 + 6 套会员体系） */
+  const CATALOG = window.BJ_CASINOS;
+  const PROGRAMS = CATALOG.programs;
+  const bankFor = c => c.room === '贵宾厅' ? Math.max(1000000, c.max * 5)
+    : c.room === '中场' ? Math.max(150000, c.max * 10)
+    : Math.max(20000, c.max * 5);
+  const VENUES = CATALOG.casinos.map(c => ({
+    key: c.id, name: c.name, op: c.op, room: c.room, decks: c.decks, csm: c.csm,
+    soft17: c.s17 ? 's17' : 'h17', seats: c.seats, min: c.min, max: c.max,
+    bj: c.bj, sur: c.sur, pts: PROGRAMS[c.prog].rate, prog: c.prog,
+    bank: bankFor(c), note: c.note || ''
+  }));
   const cfg = { venue: 0, seats: 6, mySeat: 2, emptySeats: 0, bank: 200000, noCap: true };
   let HUMAN = 2;
   let seatNames = [];
@@ -801,8 +806,13 @@ const BJ = (() => {
   const betMin = () => curVenue().min;
   const betMax = () => cfg.noCap ? Infinity : curVenue().max;
 
-  const cv = r => r === 'A' ? 11 : (['10','J','Q','K'].includes(r) ? 10 : +r);
+  /* 算法层：全部在 assets/bj-core.js，这里只做薄封装 */
+  const CORE = window.BJCore;
+  const cv = r => CORE.cardValue(r);
   const sameRank = (a, b) => a === b;   // 对子须点数相同，J 与 Q 不算对子
+  const val = cards => CORE.handValue(cards);
+  const isSoft = cards => CORE.isSoft(cards);
+  const isBJ = h => CORE.isBlackjack(h.cards, h.fromSplit);
 
   let shoe = [], discards = 0, shoeSize = 312, cutAt = 0;
   let equipment = 'shoe', soft17 = 's17';
@@ -818,7 +828,6 @@ const BJ = (() => {
   let st = { rounds: 0, w: 0, l: 0, d: 0, bj: 0, side: 0, pl: 0, turnover: 0 };
   let beads = [], loseRun = 0, maxLose = 0, busts = 0;
   let recent = [];
-  const TIERS = [{ n:'普通', p:0 }, { n:'银卡', p:500 }, { n:'金卡', p:5000 }, { n:'黑卡', p:50000 }];
   let rc = 0;
   let flyKeys = new Set();   // 需要播放飞入动画的牌 key
 
@@ -848,13 +857,7 @@ const BJ = (() => {
 
   /* ---------- 牌靴 ---------- */
   function buildShoe(){
-    const decks = curVenue().decks;
-    shoe = [];
-    for (let d = 0; d < decks; d++) for (const s of SUITS) for (const r of RANKS) shoe.push({ r, s });
-    for (let i = shoe.length - 1; i > 0; i--){
-      const j = Math.floor(Math.random() * (i + 1));
-      [shoe[i], shoe[j]] = [shoe[j], shoe[i]];
-    }
+    shoe = CORE.buildShoe(curVenue().decks);
     shoeSize = shoe.length;
     cutAt = shoeSize - CUT_BACK;
     discards = 0; rc = 0;
@@ -863,34 +866,18 @@ const BJ = (() => {
     if (equipment === 'csm'){ if (shoe.length < 12) buildShoe(); }
     else if (shoe.length <= cutAt){ buildShoe(); flash('过白咭，重新洗牌。'); }
     const c = shoe.pop();
-    if (['2','3','4','5','6'].includes(c.r)) rc++;
-    else if (['10','J','Q','K','A'].includes(c.r)) rc--;
+    rc += CORE.hiLo(c.r);
     return c;
   }
   function burn(n){
     for (let i = 0; i < n && shoe.length; i++){
       const c = shoe.pop();
-      if (['2','3','4','5','6'].includes(c.r)) rc++;
-      else if (['10','J','Q','K','A'].includes(c.r)) rc--;
+      rc += CORE.hiLo(c.r);
       discards++;
     }
   }
+  /* ---------- 点数：见 CORE.handValue / isSoft / isBlackjack ---------- */
   const decksLeft = () => Math.max(0.5, shoe.length / 52);
-
-  /* ---------- 点数 ---------- */
-  function val(cards){
-    let t = 0, a = 0;
-    for (const c of cards){ t += cv(c.r); if (c.r === 'A') a++; }
-    while (t > 21 && a > 0){ t -= 10; a--; }
-    return t;
-  }
-  function isSoft(cards){
-    let t = 0, a = 0;
-    for (const c of cards){ t += cv(c.r); if (c.r === 'A') a++; }
-    while (t > 21 && a > 0){ t -= 10; a--; }
-    return a > 0;
-  }
-  const isBJ = h => h.cards.length === 2 && val(h.cards) === 21 && !h.fromSplit;
 
   /* ---------- 渲染 ---------- */
   const fmt = n => (n < 0 ? '-' : '') + Math.abs(Math.round(n)).toLocaleString();
@@ -1100,17 +1087,16 @@ const BJ = (() => {
   /* ---------- 会员积分 ---------- */
   function renderPoints(){
     const v = curVenue();
-    if (el.ptsVenue) el.ptsVenue.textContent = `${v.name} · ${v.room}`;
+    const prog = PROGRAMS[v.prog];
+    if (el.ptsVenue) el.ptsVenue.textContent = `${v.name} · ${prog.name}`;
     if (el.ptsBig) el.ptsBig.textContent = Math.round(points).toLocaleString();
-    let idx = 0;
-    for (let i = 0; i < TIERS.length; i++) if (points >= TIERS[i].p) idx = i;
-    const cur = TIERS[idx], next = TIERS[idx + 1] || null;
-    if (el.ptsTier) el.ptsTier.textContent = cur.n;
-    const pct = next ? Math.min(100, (points - cur.p) / (next.p - cur.p) * 100) : 100;
-    if (el.ptsBar) el.ptsBar.style.width = pct.toFixed(1) + '%';
+    const t = CORE.tierOf(points, prog);
+    if (el.ptsTier) el.ptsTier.textContent = t.tier;
+    if (el.ptsBar) el.ptsBar.style.width = t.pct.toFixed(1) + '%';
     if (el.ptsNote){
+      const ladder = prog.tiers.map(([n, p]) => `${n} ${p.toLocaleString()}`).join(' · ');
       el.ptsNote.textContent = `累计流水 ${fmt(st.turnover)} · ` +
-        (next ? `距${next.n}还差 ${Math.max(0, Math.ceil(next.p - points))} 分` : '已达最高等级');
+        (t.next ? `距${t.next}还差 ${t.need} 分` : '已达最高等级') + `\n${ladder}`;
     }
   }
 
@@ -1626,7 +1612,7 @@ const BJ = (() => {
         st.rounds++;
         st.pl += realPL;
         st.turnover += stakedTotal;                       // 流水按「押出」累计
-        points += stakedTotal * curVenue().pts;           // 积分按场馆费率累积
+        points += CORE.pointsFor(stakedTotal, curVenue().pts);   // 积分按场馆费率累积
         const busted = s.hands.some(h => val(h.cards) > 21 && !h.special);
         const kind = (s.hands[0] && s.hands[0].natBJ) ? 'bj' : busted ? 'bust'
                    : realPL > 0 ? 'w' : realPL < 0 ? 'l' : 'p';
@@ -1849,43 +1835,9 @@ const BJ = (() => {
     if (el.curveTip) el.curveTip.style.opacity = 0;
   }
 
-  /* ---------- 基本策略 ---------- */
+  /* ---------- 基本策略：CORE.basicStrategy ---------- */
   function basicStrategy(cards, up, canDbl, canSplit, canSurr){
-    const tot = val(cards), soft = isSoft(cards);
-    if (canSplit){
-      const r = cards[0].r;
-      if (r === 'A' || r === '8') return 'SPLIT';
-      if (['10','J','Q','K'].includes(r)) return 'STAND';
-      if (r === '9') return (up >= 2 && up <= 9 && up !== 7) ? 'SPLIT' : 'STAND';
-      if (r === '7') return up <= 7 ? 'SPLIT' : 'HIT';
-      if (r === '6') return (up >= 2 && up <= 6) ? 'SPLIT' : 'HIT';
-      if (r === '4') return (up === 5 || up === 6) ? 'SPLIT' : 'HIT';
-      if (r === '3' || r === '2') return up <= 7 ? 'SPLIT' : 'HIT';
-    }
-    if (canSurr && !soft){
-      if (tot === 16 && (up === 9 || up === 10)) return 'SURR';
-      if (tot === 15 && up === 10) return 'SURR';
-    }
-    if (soft){
-      if (tot >= 19) return 'STAND';
-      if (tot === 18){
-        if (up >= 3 && up <= 6) return canDbl ? 'DOUBLE' : 'STAND';
-        if (up === 2 || up === 7 || up === 8) return 'STAND';
-        return 'HIT';
-      }
-      if (tot === 17) return (up >= 3 && up <= 6 && canDbl) ? 'DOUBLE' : 'HIT';
-      if (tot >= 15) return (up >= 4 && up <= 6 && canDbl) ? 'DOUBLE' : 'HIT';
-      return (up >= 5 && up <= 6 && canDbl) ? 'DOUBLE' : 'HIT';
-    }
-    if (tot >= 17) return 'STAND';
-    if (tot === 16) return up <= 6 ? 'STAND' : 'HIT';
-    if (tot === 15) return up <= 6 ? 'STAND' : 'HIT';
-    if (tot >= 13) return up <= 6 ? 'STAND' : 'HIT';
-    if (tot === 12) return (up >= 4 && up <= 6) ? 'STAND' : 'HIT';
-    if (tot === 11) return (canDbl && up <= 10) ? 'DOUBLE' : 'HIT';
-    if (tot === 10) return (canDbl && up <= 9) ? 'DOUBLE' : 'HIT';
-    if (tot === 9) return (canDbl && up >= 3 && up <= 6) ? 'DOUBLE' : 'HIT';
-    return 'HIT';
+    return CORE.basicStrategy(cards, up, { canDouble: !!canDbl, canSplit: !!canSplit, canSurrender: !!canSurr });
   }
 
   function renderHint(){
@@ -1904,93 +1856,10 @@ const BJ = (() => {
     el.msg.innerHTML = html;
   }
 
-  /* ---------- 模拟器 ---------- */
+  /* ---------- 模拟器：CORE.simulate ---------- */
   function simulate(n){
-    let bank = 0, hands = 0, sumSq = 0;
-    const mk = () => {
-      const a = [];
-      const decks = curVenue().decks;
-      for (let d = 0; d < decks; d++) for (const s of SUITS) for (const r of RANKS) a.push({ r, s });
-      for (let i = a.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); [a[i],a[j]] = [a[j],a[i]]; }
-      return a;
-    };
-    let sh = mk();
-    const tk = () => { if (sh.length < 20) sh = mk(); return sh.pop(); };
-
-    for (let i = 0; i < n; i++){
-      const orig = 1;
-      const upC = tk(), up = cv(upC.r);
-      const p0 = [tk(), tk()];
-      const pBJ = val(p0) === 21;
-      const list = [{ cards: p0, bet: orig, fromSplit: false, done: pBJ, surrendered: false, five: false, dbl: false, natBJ: pBJ }];
-      if (!pBJ){
-        for (let hi = 0; hi < list.length; hi++){
-          const h = list[hi];
-          let g = 0;
-          while (!h.done && g++ < 20){
-            const tot = val(h.cards);
-            if (tot >= 21){ h.done = true; break; }
-            const isPair = h.cards.length === 2 && sameRank(h.cards[0].r, h.cards[1].r);
-            const canDbl = h.cards.length === 2 && !h.dbl;
-            const canSplit = isPair && !h.fromSplit && !h.dbl && list.length < 4;
-            const canSurr = h.cards.length === 2 && !h.fromSplit && !h.dbl && up !== 11;
-            const a = basicStrategy(h.cards, up, canDbl, canSplit, canSurr);
-            if (a === 'STAND') h.done = true;
-            else if (a === 'HIT') h.cards.push(tk());
-            else if (a === 'DOUBLE'){ h.bet = orig * 2; h.dbl = true; h.cards.push(tk()); h.done = true; }
-            else if (a === 'SURR'){ h.surrendered = true; h.done = true; }
-            else if (a === 'SPLIT'){
-              const c2 = h.cards.pop();
-              const ace = c2.r === 'A';
-              const nh = { cards: [c2], bet: orig, fromSplit: true, done: false, surrendered: false, five: false, dbl: false, natBJ: false };
-              h.cards.push(tk()); nh.cards.push(tk());
-              h.fromSplit = true;
-              list.splice(hi + 1, 0, nh);
-              if (ace){ h.done = true; nh.done = true; }
-              else if (val(h.cards) >= 21) h.done = true;
-            }
-          }
-        }
-      }
-      const dC = [upC, tk()];
-      const dBJ = val(dC) === 21;
-      if (!dBJ){
-        const live = list.some(h => !h.surrendered && !h.five && val(h.cards) <= 21);
-        if (live){
-          let g = 0;
-          while (g++ < 12){
-            const v = val(dC);
-            if (v < 17){ dC.push(tk()); continue; }
-            if (v === 17 && soft17 === 'h17' && isSoft(dC)){ dC.push(tk()); continue; }
-            break;
-          }
-        }
-      }
-      const dv = val(dC);
-      if (pBJ && dBJ){ hands++; continue; }
-      if (dBJ){
-        const staked = list.reduce((a, h) => a + h.bet, 0);
-        const loss = Math.min(orig, staked);
-        bank -= loss; sumSq += loss * loss; hands += list.length;
-        continue;
-      }
-      for (const h of list){
-        hands++;
-        let r;
-        if (h.surrendered) r = -orig / 2;
-        else if (h.five) r = -orig / 2;
-        else if (val(h.cards) > 21) r = -h.bet;
-        else if (h.natBJ) r = orig * 1.5;
-        else if (dv > 21 || val(h.cards) > dv) r = h.bet;
-        else if (val(h.cards) === dv) r = 0;
-        else r = -h.bet;
-        bank += r; sumSq += r * r;
-      }
-    }
-    const per = bank / hands * 100;
-    const mean = bank / hands;
-    const sd = Math.sqrt(Math.max(0, sumSq / hands - mean * mean));
-    return { ev: per, se: sd / Math.sqrt(hands) * 100, hands };
+    const v = curVenue();
+    return CORE.simulate(n, { decks: v.decks, soft17: soft17, bjPay: v.bj });
   }
 
   /* ---------- 全屏 ---------- */
@@ -2170,10 +2039,12 @@ const BJ = (() => {
       ? `${v.name} 用连续洗牌机：用过的牌随即放回，流水数失去意义。`
       : `${v.name} 用 ${v.decks} 副牌靴，白咭插在最后 30 张处。`;
     if (el.venueHint){
-      el.venueHint.innerHTML = `<b>${v.name} · ${v.room}</b><br>` +
+      const prog = PROGRAMS[v.prog];
+      el.venueHint.innerHTML = `<b>${v.op} · ${v.name} · ${v.room}</b><br>` +
         `${v.decks} 副 · ${v.csm ? '洗牌机' : '牌靴'} · 庄家 17 点停 · BJ ${v.bj === 1.5 ? '3:2' : '6:5'} · ` +
-        `限红 ${fmt(v.min)}–${cfg.noCap ? '无上限' : fmt(v.max)}<br>${v.note}` +
-        `<br><span class="venue-tag">积分 ${(v.pts * 100).toFixed(2)}% / 流水</span>`;
+        `限红 ${fmt(v.min)}–${cfg.noCap ? '无上限' : fmt(v.max)}<br>${v.note}<br>` +
+        `<span class="venue-tag">${prog.name} · 积分 ${(prog.rate * 100).toFixed(2)}%</span><br>` +
+        `<span style="font-size:9.5px;color:#8A8272">${prog.tiers.map(([n, p]) => `${n} ${p.toLocaleString()}`).join(' → ')}</span>`;
     }
     if (el.cfgBank) el.cfgBank.value = cfg.bank;
     if (el.cfgSeats) el.cfgSeats.value = String(cfg.seats);
@@ -2210,8 +2081,15 @@ const BJ = (() => {
 
   function initSettings(){
     if (el.cfgVenue){
-      el.cfgVenue.innerHTML = VENUES.map((v, i) =>
-        `<option value="${i}">${v.name} · ${v.room}</option>`).join('');
+      const groups = new Map();
+      VENUES.forEach((v, i) => {
+        if (!groups.has(v.op)) groups.set(v.op, []);
+        groups.get(v.op).push([i, v]);
+      });
+      el.cfgVenue.innerHTML = [...groups.entries()].map(([op, list]) =>
+        `<optgroup label="${op}（${list.length}）">` +
+        list.map(([i, v]) => `<option value="${i}">${v.name} · ${v.room}</option>`).join('') +
+        `</optgroup>`).join('');
       el.cfgVenue.value = String(cfg.venue);
     }
   }
