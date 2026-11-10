@@ -304,6 +304,40 @@ def vip_score(turnover: float, max_bet: float, days: int, day_turnovers, vip_tie
     return {"level": level, "burst": burst, "share": share, "checks": checks}
 
 
+def vip_chance(turnover, max_bet, days, day_turnovers, vip_tiers, rand=None) -> dict:
+    """随机准入：达标可能不中，未达标也可能被抽中。"""
+    rnd = rand or random.random
+    base = vip_score(turnover, max_bet, days, day_turnovers, vip_tiers)
+    basic, top = vip_tiers[0], vip_tiers[-1]
+    ratio = min(turnover / basic["turnover"], 1.5) if basic["turnover"] else 0.0
+    p = min(0.55, ratio * 0.38)
+    if base["checks"][0]["met"]:
+        p = max(p, 0.55)
+    big_p = min(0.28, max_bet / basic["maxBet"] * 0.18) if basic["maxBet"] else 0.0
+    big_bet = big_p >= 0.03
+    p += big_p
+    if base["burst"]:
+        p *= 0.5
+    p = min(0.75, p)
+
+    p_top = 0.0
+    if top is not basic:
+        r_top = min(turnover / top["turnover"], 1.2) if top["turnover"] else 0.0
+        p_top = min(0.12, r_top * 0.09)
+        if base["checks"][-1]["met"]:
+            p_top = max(p_top, 0.12)
+        if big_bet:
+            p_top += min(0.04, big_p * 0.15)
+        if base["burst"]:
+            p_top *= 0.5
+
+    invited_basic = rnd() < p
+    invited_top = p_top > 0 and rnd() < p_top
+    return {**base, "p": p, "pTop": p_top, "bigBet": big_bet,
+            "invitedBasic": invited_basic, "invitedTop": invited_top,
+            "invited": 2 if invited_top else (1 if invited_basic else 0)}
+
+
 def check() -> None:
     # 1) 点数
     assert hand_value([{"r": "A"}, {"r": "A"}]) == 12
@@ -339,6 +373,14 @@ def check() -> None:
     assert even["level"] == 1 and not even["burst"]
     burst = vip_score(12_000_000, 20_000, 12, [12_000_000 / 7] * 7 + [0], vip)
     assert burst["burst"] and burst["level"] == 0
+
+    # 5) 随机准入：概率随达成度上升，可注入随机源做确定性判定
+    ch_low = vip_chance(1_000_000, 1_000, 3, [400_000] * 3, vip, rand=lambda: 0.99)
+    assert ch_low["invited"] == 0 and 0 < ch_low["p"] < 0.2
+    ch_ok = vip_chance(12_000_000, 20_000, 12, [1_000_000] * 12, vip, rand=lambda: 0.0)
+    assert ch_ok["invited"] >= 1 and ch_ok["p"] >= 0.55
+    ch_big = vip_chance(1_000_000, 40_000, 3, [400_000] * 3, vip, rand=lambda: 0.0)
+    assert ch_big["bigBet"] and ch_big["p"] > ch_low["p"]
     print("check: OK")
 
 

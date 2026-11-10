@@ -257,6 +257,53 @@
   }
 
   /**
+   * 随机准入（邀约概率模型）
+   * 达标也可能不中，未达标也可能被抽中：
+   *   · 基础概率按「累计投注 / 基础门槛」线性给（最高 55%）
+   *   · 单次投注达到门槛 2 倍以上 → 大额单注特殊通道 +15%
+   *   · 流水集中突击（稳定性扣分）→ 概率减半
+   *   · 顶层隐藏卡概率另算，上限 12%
+   * @param {function} rand 可注入的随机源（测试用），默认 Math.random
+   */
+  function vipChance(stats, vip, rand) {
+    const r = rand || Math.random;
+    const base = vipScore(stats, vip);
+    const basic = base.checks[0];
+    const top = base.checks[base.checks.length - 1];
+
+    const ratio = basic && basic.turnover ? Math.min(stats.turnover / basic.turnover, 1.5) : 0;
+    let p = Math.min(0.55, ratio * 0.38);
+    if (basic && basic.met) p = Math.max(p, 0.55);
+
+    // 大额单注通道：按「单次最大投注 / 门槛单注」线性加分，2 倍门槛时到顶
+    const bigP = basic && basic.maxBet
+      ? Math.min(0.28, stats.maxBet / basic.maxBet * 0.18) : 0;
+    const bigBet = bigP >= 0.03;
+    p += bigP;
+    if (base.burst) p *= 0.5;
+    p = Math.min(0.75, p);
+
+    let pTop = 0;
+    if (top && top !== basic) {
+      const rTop = top.turnover ? Math.min(stats.turnover / top.turnover, 1.2) : 0;
+      pTop = Math.min(0.12, rTop * 0.09);
+      if (top.met) pTop = Math.max(pTop, 0.12);
+      if (bigBet) pTop += Math.min(0.04, bigP * 0.15);
+      if (base.burst) pTop *= 0.5;
+    }
+
+    const rollBasic = r();
+    const rollTop = r();
+    const invitedBasic = rollBasic < p;
+    const invitedTop = pTop > 0 && rollTop < pTop;
+
+    return {
+      ...base, p, pTop, bigBet, invitedBasic, invitedTop,
+      invited: invitedTop ? 2 : invitedBasic ? 1 : 0
+    };
+  }
+
+  /**
    * 贵宾候选评分（四维）：6 个月有效投注 A / 单次最大投注 B / 到访天数 C / 稳定性 D
    * 稳定性：若 80% 以上流水集中在连续 7 天以内 → 降一档
    * 注意：只输出候选状态，绝不授予权限
@@ -298,6 +345,6 @@
 
   g.BJCore = {
     SUITS, RANKS, cardValue, buildShoe, handValue, isSoft, isBlackjack,
-    sameRank, hiLo, basicStrategy, handReturn, simulate, pointsFor, tierOf, vipScore
+    sameRank, hiLo, basicStrategy, handReturn, simulate, pointsFor, tierOf, vipScore, vipChance
   };
 })(window);

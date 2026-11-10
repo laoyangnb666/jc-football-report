@@ -382,6 +382,15 @@ body.fsmode .betpanel,body.fsmode .curve-card,body.fsmode .data-stack{display:no
 .vip-metrics{display:flex;gap:12px;flex-wrap:wrap;font-size:9.5px;color:#7C7461;margin-top:7px}
 .vip-metrics b{font-family:Inter,monospace;color:#1B221E;font-size:10.5px}
 .vip-note{font-size:9px;color:#9A927F;line-height:1.65;margin-top:7px;padding-top:7px;border-top:1px dashed #E3DDCB}
+.vip-invite{margin-top:8px;font-size:10px;line-height:1.6}
+.vip-invite .iv{display:block;font-weight:600}
+.vip-invite .iv.ok{color:#127A46}
+.vip-invite .iv.no{color:#B3202A}
+.vip-invite .iv-sub{display:block;font-size:9px;color:#8A8272;margin-top:2px}
+.vip-invite .iv-idle{font-size:9.5px;color:#9A927F}
+.bank.neg,#bankView.neg{color:#B3202A}
+body.fsmode .deck-panel .dp-read.dp-bank b.neg{color:#FCA5A5}
+.dp-pts{color:#C9A227}
 
 /* 弹窗 */
 .modal{position:fixed;inset:0;background:rgba(9,18,14,.55);display:none;align-items:center;justify-content:center;z-index:99}
@@ -576,6 +585,7 @@ body.fsmode .betpanel,body.fsmode .curve-card,body.fsmode .data-stack{display:no
           <div class="betline"><span>本局原注</span><b id="betView">500</b></div>
           <div class="betline"><span>筹码构成</span><small id="betBreak">500 × 1</small></div>
           <div class="betline"><span>附加注合计</span><b id="sideView">0</b></div>
+          <div class="betline"><span>会员</span><small id="ptsInline">金沙会 · 金卡 · 0 分</small></div>
           <div class="hint">点筹码是<b>累加</b>：初始 500，再点两次 500 就是 1,500；也可以直接输入金额（100–10,000）。「撤回」退最后一枚，「清空」归零。</div>
         </div>
 
@@ -606,6 +616,7 @@ body.fsmode .betpanel,body.fsmode .curve-card,body.fsmode .data-stack{display:no
           </div>
           <span class="dp-read">押 <b id="fsBet">500</b></span>
           <span class="dp-read dp-bank">余额 <b id="fsBank">100,000</b></span>
+          <span class="dp-read dp-pts" id="fsPts">积分 0</span>
           <button class="dp-btn" data-bet="undo">撤回</button>
           <button class="dp-btn" data-bet="clear">清空</button>
           <span class="dp-hint">点筹码累加 · H 搏牌 / S 不搏 / D 加注</span>
@@ -649,27 +660,6 @@ body.fsmode .betpanel,body.fsmode .curve-card,body.fsmode .data-stack{display:no
         </div>
 
         <div class="data-card">
-          <h4>本场统计 <span>按本局净额</span></h4>
-          <div class="kv-grid" id="kvGrid"></div>
-        </div>
-
-        <div class="data-card">
-          <h4>同桌座位 <span>本金 / 当前 / 损益</span></h4>
-          <table class="seat-table">
-            <thead><tr><th>座位</th><th>本金</th><th>当前</th><th>损益</th></tr></thead>
-            <tbody id="seatRows"></tbody>
-          </table>
-        </div>
-
-        <div class="data-card">
-          <h4>最近 10 局 <span>你 / 庄 / 结果 / 净额</span></h4>
-          <table class="seat-table round-table">
-            <thead><tr><th>局</th><th>你</th><th>庄</th><th>结果</th><th>净额</th></tr></thead>
-            <tbody id="recentRows"><tr><td colspan="5" class="empty-row">还没开牌</td></tr></tbody>
-          </table>
-        </div>
-
-        <div class="data-card">
           <h4>桌面设备 <span>影响计数</span></h4>
           <div class="segrow"><span class="lbl">发牌</span>
             <div class="seg" id="equipSeg"><button data-v="shoe" class="on">牌靴</button><button data-v="csm">洗牌机</button></div>
@@ -685,21 +675,43 @@ body.fsmode .betpanel,body.fsmode .curve-card,body.fsmode .data-stack{display:no
         </div>
 
         <div class="data-card">
-          <h4>庄家优势实测 <span id="simRun" style="cursor:pointer;color:#8A5A0A;text-decoration:underline">跑 100,000 局</span></h4>
-          <div class="simbox" id="simOut">点击右上角：用基本策略自动打 100,000 局，
-给出主游戏实测 EV 与抽样误差。</div>
+          <h4>这台怎么打 <span>按当前台规自动生成</span></h4>
+          <div class="tips" id="tableTips"></div>
         </div>
 
         <div class="data-card">
-          <h4>这台怎么打 <span>按当前台规自动生成</span></h4>
-          <div class="tips" id="tableTips"></div>
+          <h4>最近 10 局 <span>你 / 庄 / 结果 / 净额</span></h4>
+          <table class="seat-table round-table">
+            <thead><tr><th>局</th><th>你</th><th>庄</th><th>结果</th><th>净额</th></tr></thead>
+            <tbody id="recentRows"><tr><td colspan="5" class="empty-row">还没开牌</td></tr></tbody>
+          </table>
+        </div>
+
+        <div class="data-card">
+          <h4>本场统计 <span>按本局净额</span></h4>
+          <div class="kv-grid" id="kvGrid"></div>
         </div>
 
         <div class="data-card">
           <h4>贵宾候选评估 <span id="vipName">Paiza</span></h4>
           <div class="vip-head" id="vipStatus"></div>
           <div class="vip-body" id="vipRows"></div>
+          <div class="vip-invite" id="vipInvite"></div>
           <div class="vip-note" id="vipNote"></div>
+        </div>
+
+        <div class="data-card">
+          <h4>同桌座位 <span>本金 / 当前 / 损益</span></h4>
+          <table class="seat-table">
+            <thead><tr><th>座位</th><th>本金</th><th>当前</th><th>损益</th></tr></thead>
+            <tbody id="seatRows"></tbody>
+          </table>
+        </div>
+
+        <div class="data-card">
+          <h4>庄家优势实测 <span id="simRun" style="cursor:pointer;color:#8A5A0A;text-decoration:underline">跑 100,000 局</span></h4>
+          <div class="simbox" id="simOut">点击右上角：用基本策略自动打 100,000 局，
+给出主游戏实测 EV 与抽样误差。</div>
         </div>
       </section>
 
@@ -902,6 +914,7 @@ const BJ = (() => {
   let rc = 0;
   /* 会员与贵宾评估用的累计量 */
   let maxStake = 0, dayTurnovers = [];
+  let invite = null;   // 本局随机准入结果（每局重掷）
   let flyKeys = new Set();   // 需要播放飞入动画的牌 key
 
   /* 资金曲线数据 */
@@ -923,7 +936,7 @@ const BJ = (() => {
      'myHands','myLive','ledger','curve','curveTip','curveLegend','cvPeak','cvDD','cvAvg','cvN','betBreak',
      'beads','beadCount','kvGrid','seatRows','recentRows','ptsBig','ptsTier','ptsBar','ptsNote','ptsVenue',
      'myZoneLabel','mySeatLabel','feltPayText','plMax','plMin','plEquip','venueHint','cfgVenue','cfgRoom','cfgSeats',
-     'tableTips','vipName','vipStatus','vipRows','vipNote','melcoModal','melcoOk',
+     'tableTips','vipName','vipStatus','vipRows','vipNote','melcoModal','melcoOk','fsPts','ptsInline','vipInvite',
      'cfgMySeat','cfgEmpty','cfgBank','cfgCap','cfgApply',
      'stageTxt','sg1','sg2','sg3','sg4','sg5'
     ].forEach(k => el[k] = $(k));
@@ -1051,6 +1064,8 @@ const BJ = (() => {
 
     // 数字
     el.bankView.textContent = fmt(seats[HUMAN].bank);
+    el.bankView.classList.toggle('neg', seats[HUMAN].bank < 0);
+    if (el.fsPts) el.fsPts.textContent = fsPointsText();
     el.betView.textContent = fmt(humanBet);
     const sideTotal = sideBetTotal();
     el.sideView.textContent = fmt(sideTotal);
@@ -1107,7 +1122,10 @@ const BJ = (() => {
     const fb = document.getElementById('fsBet');
     if (fb) fb.textContent = fmt(humanBet);
     const fk = document.getElementById('fsBank');
-    if (fk) fk.textContent = fmt(seats[HUMAN].bank);
+    if (fk){
+      fk.textContent = fmt(seats[HUMAN].bank);
+      fk.classList.toggle('neg', seats[HUMAN].bank < 0);
+    }
     // 按底部操作坞的实际高度（按钮换行会变高）动态让位，避免压住手牌区
     const dock = document.querySelector('.dock');
     const felt = document.querySelector('.felt');
@@ -1175,6 +1193,9 @@ const BJ = (() => {
     if (el.ptsVenue) el.ptsVenue.textContent = `${v.name} · ${prog.name}`;
     if (el.ptsBig) el.ptsBig.textContent = prog.no21Points ? '不计分' : Math.round(points).toLocaleString();
     if (el.ptsTier) el.ptsTier.textContent = prog.no21Points ? '—' : t.tier;
+    if (el.ptsInline) el.ptsInline.textContent = prog.no21Points
+      ? `${prog.name} · 21 点不计分`
+      : `${prog.name} · ${t.tier} · ${Math.round(points).toLocaleString()} 分`;
     if (el.ptsBar) el.ptsBar.style.width = (t.pct == null ? 0 : t.pct).toFixed(1) + '%';
     if (el.ptsNote){
       const lines = [];
@@ -1237,6 +1258,35 @@ const BJ = (() => {
     parts.push(`${vip.note ? vip.note + '；' : ''}到访天数按「局」模拟，积分与贵宾为两套独立评估`);
     parts.push('贵宾资格永远由赌场评估邀约，系统只输出状态，不授予权限');
     el.vipNote.textContent = parts.join(' · ');
+
+    /* 随机准入：达标也可能不中，未达标也可能被抽中 */
+    if (el.vipInvite){
+      if (!invite){
+        el.vipInvite.innerHTML = `<span class="iv-idle">打完一局后，这里给出本局的随机准入结果</span>`;
+      } else {
+        const pUsed = invite.invited === 2 ? invite.pTop : invite.p;
+        const pTxt = pUsed <= 0 ? '0%' : pUsed < 0.01 ? '<1%' : (pUsed * 100).toFixed(0) + '%';
+        const lvlName = invite.invited === 2 ? vip.tiers[vip.tiers.length - 1].name
+          : invite.invited === 1 ? vip.tiers[0].name : '';
+        const boost = invite.bigBet ? ' · 已触发大额单注通道' : '';
+        if (invite.invited){
+          el.vipInvite.innerHTML =
+            `<span class="iv ok">本局评估：抽中 <b>${lvlName}</b> 邀约（概率 ${pTxt}）${boost}</span>
+             <span class="iv-sub">随机准入：未达标也可能被抽中，达标也可能不中；仍只是候选，需赌场最终核定</span>`;
+        } else {
+          el.vipInvite.innerHTML =
+            `<span class="iv no">本局评估：未获邀约（本次概率 ${pTxt}）${boost}</span>
+             <span class="iv-sub">每局重掷；未达标时按「投注 / 门槛」与「单次最大投注」线性给概率，大额单注可越过门槛直接抽</span>`;
+        }
+      }
+    }
+  }
+
+  function fsPointsText(){
+    const prog = PROGRAMS[curVenue().prog];
+    if (prog.no21Points) return '积分 不计（21 点）';
+    const t = CORE.tierOf(points, prog);
+    return `积分 ${Math.round(points).toLocaleString()} · ${t.tier}`;
   }
 
   /* ---------- 底部数据区 ---------- */
@@ -1377,7 +1427,11 @@ const BJ = (() => {
     if (humanBet < betMin()){ flash(`最低注 <b>${fmt(betMin())}</b>，先点筹码或输入金额。`); return; }
     const me = seats[HUMAN];
     const outlay = humanBet + sideBetTotal();
-    if (me.bank < outlay){ flash('<b>余额不足</b>，请调低注码。'); return; }
+    // 允许透支下注：资产可以被打成负数（信用/签单模拟）
+    if (me.bank < outlay && !me.overdraftWarned){
+      me.overdraftWarned = true;
+      flash('注码超过余额：本局按<b>信用签单</b>结算，余额可为负。');
+    }
 
     busy = true;
     setStage(1);
@@ -1551,7 +1605,6 @@ const BJ = (() => {
   function dbl(){
     if (!myTurn()) return;
     const s = seats[HUMAN], h = s.hands[activeHand];
-    if (s.bank < h.bet) return;
     s.bank -= h.bet; h.bet *= 2; h.dbl = true;
     const ci = h.cards.length;
     h.cards.push(draw());
@@ -1562,7 +1615,7 @@ const BJ = (() => {
   function split(){
     if (!myTurn()) return;
     const s = seats[HUMAN], h = s.hands[activeHand];
-    if (s.bank < h.bet || s.hands.length >= 4) return;
+    if (s.hands.length >= 4) return;
     if (!(h.cards.length === 2 && sameRank(h.cards[0].r, h.cards[1].r) && !h.dbl)) return;
     doSplit(s, h);
     if (h.done){ activeHand++; nextTurn(); return; }
@@ -1593,8 +1646,7 @@ const BJ = (() => {
       flash('不投保。庄家第二张牌要等全部闲家行动完才补。');
     } else {
       const amt = kind === 'half' ? Math.floor(humanBet / 2) : humanBet;
-      if (me.bank < amt){ flash('余额不足，无法投保。'); return; }
-      me.bank -= amt;            // 这是本局唯一一次扣保险
+      me.bank -= amt;            // 这是本局唯一一次扣保险（可透支）
       insuranceAmt = amt;
       flash(`已投保 <b>${fmt(amt)}</b>。全部闲家行动完后庄家才补第二张牌（无底牌制），那时才结算保险。`);
     }
@@ -1770,6 +1822,10 @@ const BJ = (() => {
         points += CORE.pointsFor(stakedTotal, PROGRAMS[curVenue().prog]);   // 新濠 21 点返回 0
         if (stakedTotal > maxStake) maxStake = stakedTotal;                 // 单次最大投注
         dayTurnovers.push(stakedTotal);                                     // 每局视作一个到访日
+        invite = CORE.vipChance({                                       // 每局重掷一次随机准入
+          turnover: st.turnover, maxBet: maxStake,
+          days: dayTurnovers.length, dayTurnovers
+        }, PROGRAMS[curVenue().prog].vip);
         const busted = s.hands.some(h => val(h.cards) > 21 && !h.special);
         const kind = (s.hands[0] && s.hands[0].natBJ) ? 'bj' : busted ? 'bust'
                    : realPL > 0 ? 'w' : realPL < 0 ? 'l' : 'p';
@@ -2237,11 +2293,11 @@ const BJ = (() => {
   function resetSession(){
     st = { rounds: 0, w: 0, l: 0, d: 0, bj: 0, side: 0, pl: 0, turnover: 0 };
     points = 0; beads = []; loseRun = 0; maxLose = 0; busts = 0; recent = [];
-    maxStake = 0; dayTurnovers = [];
+    maxStake = 0; dayTurnovers = []; invite = null;
     lastRound = null;
     phase = 'bet'; activeSeat = 0; activeHand = 0; busy = false;
     dealer = []; insuranceAmt = 0; flyKeys.clear();
-    seats.forEach(s => { s.hands = []; s.side = []; s.pendingBet = 0; s.bank = s.start; });
+    seats.forEach(s => { s.hands = []; s.side = []; s.pendingBet = 0; s.bank = s.start; s.overdraftWarned = false; });
     hist = [{ r: 0, bank: seats[HUMAN].bank }];
     peerHist = seats.map(s => [{ r: 0, bank: s.bank }]);
     setStage(0);
