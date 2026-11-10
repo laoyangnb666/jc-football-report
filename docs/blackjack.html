@@ -324,7 +324,7 @@ body.fsmode .dock .actbar .btn-ico{width:30px;height:30px}
 body.fsmode .dock .msgline{margin:0;background:rgba(255,255,255,.055);border:1px solid rgba(235,217,143,.26);
   border-left:3px solid var(--gold);color:#E9E3D1;min-height:0;padding:6px 10px;font-size:11.5px;line-height:1.55}
 body.fsmode .dock .msgline b{color:var(--gold-lt)}
-body.fsmode .betpanel,body.fsmode .curve-card,body.fsmode .data-grid{display:none!important}
+body.fsmode .betpanel,body.fsmode .curve-card,body.fsmode .data-stack{display:none!important}
 
 .deck-panel{display:none}
 
@@ -342,8 +342,9 @@ body.fsmode .betpanel,body.fsmode .curve-card,body.fsmode .data-grid{display:non
   background:rgba(13,24,18,.95);color:#F4EDDB;font-size:10.5px;line-height:1.65;padding:6px 10px;border-radius:9px;
   white-space:nowrap;z-index:6;transition:opacity .12s;box-shadow:0 8px 20px rgba(0,0,0,.28)}
 .curve-tip .tr{color:#9C9481;font-size:9.5px;letter-spacing:.8px;margin-bottom:2px}
-.curve-tip i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px}
-.curve-tip b{font-family:Inter,monospace;font-size:11.5px;float:right;margin-left:10px}
+.curve-tip > div:not(.tr){display:flex;align-items:center;gap:5px;white-space:nowrap;line-height:1.55}
+.curve-tip i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:1px;flex:0 0 auto}
+.curve-tip b{font-family:Inter,monospace;font-size:11.5px;margin-left:auto;padding-left:12px;flex:0 0 auto}
 .curve-legend{display:flex;gap:9px;flex-wrap:wrap;font-size:9.5px;color:#6E6653;margin-top:3px;min-height:13px}
 .curve-legend i{display:inline-block;width:11px;height:2px;margin-right:4px;vertical-align:middle}
 .curve-foot{display:flex;gap:10px;flex-wrap:wrap;font-size:10px;color:#7C7461;margin-top:5px;padding-top:6px;border-top:1px dashed #E3DDCB}
@@ -365,13 +366,13 @@ body.fsmode .betpanel,body.fsmode .curve-card,body.fsmode .data-grid{display:non
 .tips div:before{content:"";position:absolute;left:2px;top:6px;width:5px;height:5px;border-radius:50%;background:#C9A227}
 
 /* ---------- 底部数据区 ---------- */
-.data-grid{display:grid;grid-template-columns:1.05fr 1fr 1.15fr;gap:12px;margin-top:14px}
-.data-grid.second{grid-template-columns:1.1fr 1fr 1fr;margin-top:12px}
-.data-grid.third{grid-template-columns:1fr;margin-top:12px}
+/* 瀑布流：卡片按内容高度紧排，不再被网格拉伸留白 */
+.data-stack{columns:3;column-gap:12px;margin-top:14px}
+.data-stack .data-card{break-inside:avoid;-webkit-column-break-inside:avoid;display:block;width:100%;margin:0 0 12px}
 .edge-table.wide td{font-size:10.5px;padding:7px 0}
 .edge-table.wide td:last-child{text-align:left;color:#6E6653;font-weight:400;font-family:inherit;white-space:normal}
 .edge-table.wide th:last-child{text-align:left}
-@media(max-width:1100px){.data-grid,.data-grid.second{grid-template-columns:1fr}}
+@media(max-width:1100px){.data-stack{columns:1}}
 .round-table td{padding:4.5px 0;font-size:10px}
 .round-table .empty-row{text-align:center;color:#9A927F;font-family:inherit;padding:16px 0!important}
 .data-card{background:#FBFAF4;border:1px solid #E6E0CE;border-radius:13px;padding:12px 14px}
@@ -603,8 +604,8 @@ body.fsmode .betpanel,body.fsmode .curve-card,body.fsmode .data-grid{display:non
         <div class="msgline" id="msg">先在下方选注码（最低 300），再点「开局 · 发牌」。<b>第 3 门是你的</b>，其余五门是同桌的。</div>
       </div>
 
-      <!-- 底部数据区：珠盘 / 本场统计 / 同桌座位 -->
-      <section class="data-grid">
+      <!-- 底部数据区：瀑布流，卡片按内容高度紧排 -->
+      <section class="data-stack">
         <div class="data-card">
           <h4>本场珠盘 <span id="beadCount">0 局</span></h4>
           <div class="beads" id="beads"><div class="beads-empty">还没开牌</div></div>
@@ -629,9 +630,7 @@ body.fsmode .betpanel,body.fsmode .curve-card,body.fsmode .data-grid{display:non
             <tbody id="seatRows"></tbody>
           </table>
         </div>
-      </section>
 
-      <section class="data-grid second">
         <div class="data-card">
           <h4>最近 10 局 <span>你 / 庄 / 结果 / 净额</span></h4>
           <table class="seat-table round-table">
@@ -660,14 +659,26 @@ body.fsmode .betpanel,body.fsmode .curve-card,body.fsmode .data-grid{display:non
           <div class="simbox" id="simOut">点击右上角：用基本策略自动打 100,000 局，
 给出主游戏实测 EV 与抽样误差。</div>
         </div>
-      </section>
 
-      <section class="data-grid third">
         <div class="data-card">
           <h4>这台怎么打 <span>按当前台规自动生成</span></h4>
           <div class="tips" id="tableTips"></div>
         </div>
       </section>
+
+      <div class="data-card">
+        <h4>附加注赔率 <span>庄家优势 · 精确组合数学（6 副 312 张）</span></h4>
+        <table class="edge-table wide">
+          <thead><tr><th>玩法</th><th>赔率</th><th>庄家优势</th><th>说明</th></tr></thead>
+          <tbody>
+            <tr><td>主游戏</td><td>—</td><td>约 0.5%</td><td>基本策略实测，越靠近 0 越好</td></tr>
+            <tr><td>任何对子</td><td>1 : 11</td><td>11.25%</td><td>首两张点数相同即中，J 与 Q 不算对子</td></tr>
+            <tr><td>7（两张 7）</td><td>50 / 150</td><td>31.25%</td><td>不同花 50:1，同花 150:1</td></tr>
+            <tr><td>7（三张 7）</td><td>500 / 5000</td><td>31.25%</td><td>不同花 500:1，同花 5000:1</td></tr>
+            <tr><td>13 以上 / 以下</td><td>1 : 1</td><td>6.6% / 10.1%</td><td>A 计 1 点，正好 13 通吃</td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
 
     <div>
@@ -729,21 +740,6 @@ body.fsmode .betpanel,body.fsmode .curve-card,body.fsmode .data-grid{display:non
           <div><b>五张牌</b><span>五张不爆可弃牌赔半注 <em>第十九条</em></span></div>
           <div><b>彩金</b><span>同花 6-7-8 或三张 7 即时收 3 倍 <em>第十五条</em></span></div>
         </div>
-      </div>
-
-      <div class="side-card">
-        <h4>附加注赔率 <span>庄家优势</span></h4>
-        <table class="edge-table">
-          <thead><tr><th>玩法</th><th>赔率</th><th>优势</th></tr></thead>
-          <tbody>
-            <tr><td>主游戏<br><small style="color:#8A8272">基本策略实测</small></td><td>—</td><td>约 0.5%</td></tr>
-            <tr><td>任何对子</td><td>1 : 11</td><td>11.25%</td></tr>
-            <tr><td>7（两 7 不同花 / 同花）</td><td>50 / 150</td><td rowspan="2">31.25%</td></tr>
-            <tr><td>7（三 7 不同花 / 同花）</td><td>500 / 5000</td></tr>
-            <tr><td>13 以上 / 13 以下</td><td>1 : 1</td><td>6.6% / 10.1%</td></tr>
-          </tbody>
-        </table>
-        <div class="tag-src">附加注为精确组合数学结果（6 副牌 312 张）。13 以上/以下中 A 计 1 点，正好 13 通吃。</div>
       </div>
 
       <div class="side-card">
