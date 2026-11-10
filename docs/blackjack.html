@@ -360,10 +360,17 @@ body.fsmode .betpanel,body.fsmode .curve-card,body.fsmode .data-grid{display:non
 .btn-apply:hover{background:#12513A}
 .venue-tag{display:inline-flex;align-items:center;gap:5px;font-size:9.5px;padding:2px 7px;border-radius:6px;
   background:#EDF3EA;color:#0C3A28;font-family:Inter,monospace}
+.tips{display:grid;grid-template-columns:1fr 1fr;gap:6px 18px}
+.tips div{font-size:10.5px;color:#4A5450;line-height:1.65;padding-left:14px;position:relative}
+.tips div:before{content:"";position:absolute;left:2px;top:6px;width:5px;height:5px;border-radius:50%;background:#C9A227}
 
 /* ---------- 底部数据区 ---------- */
 .data-grid{display:grid;grid-template-columns:1.05fr 1fr 1.15fr;gap:12px;margin-top:14px}
 .data-grid.second{grid-template-columns:1.1fr 1fr 1fr;margin-top:12px}
+.data-grid.third{grid-template-columns:1fr;margin-top:12px}
+.edge-table.wide td{font-size:10.5px;padding:7px 0}
+.edge-table.wide td:last-child{text-align:left;color:#6E6653;font-weight:400;font-family:inherit;white-space:normal}
+.edge-table.wide th:last-child{text-align:left}
 @media(max-width:1100px){.data-grid,.data-grid.second{grid-template-columns:1fr}}
 .round-table td{padding:4.5px 0;font-size:10px}
 .round-table .empty-row{text-align:center;color:#9A927F;font-family:inherit;padding:16px 0!important}
@@ -371,10 +378,12 @@ body.fsmode .betpanel,body.fsmode .curve-card,body.fsmode .data-grid{display:non
 .data-card h4{margin:0 0 9px;font-size:12px;letter-spacing:1.1px;color:#0C3A28;font-weight:600;
   display:flex;justify-content:space-between;align-items:baseline;gap:8px}
 .data-card h4 span{font-size:9.5px;color:#8A8272;font-weight:400;letter-spacing:0}
-.beads{display:flex;flex-wrap:wrap;gap:3.5px;min-height:54px;align-content:flex-start}
-.bead{width:15px;height:15px;border-radius:4px;transition:.15s}
+.beads{display:flex;flex-wrap:wrap;gap:3.5px;min-height:96px;align-content:flex-start}
+.bead{width:16px;height:16px;border-radius:4px;transition:.15s}
+.bead.empty{background:transparent;border:1px dashed #DED7C6}
 .bead.w{background:#2F7A4F}.bead.l{background:#B3202A}.bead.p{background:#BEB7A4}
 .bead.bj{background:#C9A227}.bead.bust{background:#7A1B1B}
+.ghost td{color:#C9C2B0}
 .beads-empty{font-size:10.5px;color:#9A927F;padding:14px 0}
 .bead-legend{display:flex;gap:10px;flex-wrap:wrap;font-size:9px;color:#8A8272;margin-top:8px;padding-top:7px;border-top:1px dashed #E3DDCB}
 .bead-legend i{width:8px;height:8px;border-radius:2px;display:inline-block;margin-right:4px;vertical-align:middle}
@@ -383,10 +392,14 @@ body.fsmode .betpanel,body.fsmode .curve-card,body.fsmode .data-grid{display:non
 .kv small{display:block;font-size:9px;color:#7C7461;letter-spacing:.3px}
 .kv b{font-family:Inter,monospace;font-size:12.5px;color:#1B221E;display:block;margin-top:1px}
 .kv b.up{color:#127A46}.kv b.down{color:#B3202A}
-.seat-table{width:100%;border-collapse:collapse;font-size:10px}
+.seat-table{width:100%;border-collapse:collapse;font-size:10px;table-layout:fixed}
 .seat-table th{text-align:right;font-weight:600;font-size:9px;color:#7C7461;padding:0 0 5px;border-bottom:1px solid #E6E0CE}
 .seat-table th:first-child{text-align:left}
-.seat-table td{text-align:right;padding:4.5px 0;border-bottom:1px dotted #ECE6D6;font-family:Inter,monospace;color:#3D4742}
+.seat-table th:nth-child(1){width:36%}
+.seat-table th:nth-child(2),.seat-table th:nth-child(3){width:23%}
+.seat-table th:nth-child(4){width:18%}
+.seat-table td{text-align:right;padding:4.5px 0;border-bottom:1px dotted #ECE6D6;font-family:Inter,monospace;color:#3D4742;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .seat-table td:first-child{text-align:left;font-family:inherit;color:#1B221E}
 .seat-table tr.me td{background:#F3F7F0}
 .seat-table tr:last-child td{border-bottom:none}
@@ -648,12 +661,20 @@ body.fsmode .betpanel,body.fsmode .curve-card,body.fsmode .data-grid{display:non
 给出主游戏实测 EV 与抽样误差。</div>
         </div>
       </section>
+
+      <section class="data-grid third">
+        <div class="data-card">
+          <h4>这台怎么打 <span>按当前台规自动生成</span></h4>
+          <div class="tips" id="tableTips"></div>
+        </div>
+      </section>
     </div>
 
     <div>
       <div class="side-card">
         <h4>牌桌设置 <span>娱乐场 / 门数 / 本金</span></h4>
         <div class="setrow"><label>娱乐场</label><select id="cfgVenue"></select></div>
+        <div class="setrow"><label>房间</label><select id="cfgRoom"></select></div>
         <div class="setrow"><label>门数</label>
           <select id="cfgSeats">
             <option value="5">5 门</option><option value="6" selected>6 门</option>
@@ -785,24 +806,32 @@ const BJ = (() => {
   const RANKS = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
   const CUT_BACK = 30;
 
-  /* 娱乐场预设：来自 assets/bj-casinos.js（21 家 + 6 套会员体系） */
+  /* 娱乐场目录：来自 assets/bj-casinos.js（21 家 / 45 张台 / 6 套会员体系） */
   const CATALOG = window.BJ_CASINOS;
   const PROGRAMS = CATALOG.programs;
-  const bankFor = c => c.room === '贵宾厅' ? Math.max(1000000, c.max * 5)
-    : c.room === '中场' ? Math.max(150000, c.max * 10)
-    : Math.max(20000, c.max * 5);
-  const VENUES = CATALOG.casinos.map(c => ({
-    key: c.id, name: c.name, op: c.op, room: c.room, decks: c.decks, csm: c.csm,
-    soft17: c.s17 ? 's17' : 'h17', seats: c.seats, min: c.min, max: c.max,
-    bj: c.bj, sur: c.sur, pts: PROGRAMS[c.prog].rate, prog: c.prog,
-    bank: bankFor(c), note: c.note || ''
-  }));
-  const cfg = { venue: 0, seats: 6, mySeat: 2, emptySeats: 0, bank: 200000, noCap: true };
+  const CASINOS = CATALOG.casinos;
+  const bankFor = r => (r.name === '贵宾厅' || r.name === '私人厅' || r.name === '主席厅')
+    ? Math.max(1000000, r.max * 5)
+    : r.name === '普通场' ? Math.max(20000, r.max * 5)
+    : Math.max(150000, r.max * 10);
+
+  const cfg = { venue: 0, room: 0, seats: 6, mySeat: 2, emptySeats: 0, bank: 200000, noCap: true };
   let HUMAN = 2;
   let seatNames = [];
   let points = 0;
 
-  const curVenue = () => VENUES[cfg.venue];
+  const curCasino = () => CASINOS[cfg.venue];
+  /** 当前台 = 场 × 房间 */
+  function curVenue(){
+    const c = curCasino();
+    const r = c.rooms[Math.min(cfg.room, c.rooms.length - 1)] || c.rooms[0];
+    return {
+      key: c.id + ':' + r.name, name: c.name, op: c.op, room: r.name,
+      decks: r.decks, csm: r.csm, soft17: r.s17 ? 's17' : 'h17', seats: r.seats,
+      min: r.min, max: r.max, bj: c.bj, sur: c.sur, prog: c.prog,
+      pts: PROGRAMS[c.prog].rate, bank: bankFor(r), note: r.note || ''
+    };
+  }
   const betMin = () => curVenue().min;
   const betMax = () => cfg.noCap ? Infinity : curVenue().max;
 
@@ -849,7 +878,8 @@ const BJ = (() => {
      'discN','discStack','cntLeft','cntBurn','cntRC','cntTC','countHint','countBox','deckPanel',
      'myHands','myLive','ledger','curve','curveTip','curveLegend','cvPeak','cvDD','cvAvg','cvN','betBreak',
      'beads','beadCount','kvGrid','seatRows','recentRows','ptsBig','ptsTier','ptsBar','ptsNote','ptsVenue',
-     'myZoneLabel','mySeatLabel','feltPayText','plMax','plMin','plEquip','venueHint','cfgVenue','cfgSeats',
+     'myZoneLabel','mySeatLabel','feltPayText','plMax','plMin','plEquip','venueHint','cfgVenue','cfgRoom','cfgSeats',
+     'tableTips',
      'cfgMySeat','cfgEmpty','cfgBank','cfgCap','cfgApply',
      'stageTxt','sg1','sg2','sg3','sg4','sg5'
     ].forEach(k => el[k] = $(k));
@@ -881,6 +911,13 @@ const BJ = (() => {
 
   /* ---------- 渲染 ---------- */
   const fmt = n => (n < 0 ? '-' : '') + Math.abs(Math.round(n)).toLocaleString();
+  /* 座位表用的紧凑数字：1,050,000 → 105万，避免窄栏里挤成一团 */
+  const fmtShort = n => {
+    const a = Math.abs(n);
+    if (a >= 1e8) return (n / 1e8).toFixed(2) + '亿';
+    if (a >= 1e4) return (n / 1e4).toFixed(a >= 1e6 ? 0 : 1).replace(/\.0$/, '') + '万';
+    return Math.round(n).toLocaleString();
+  };
 
   function cardHTML(c, key, size, faceUp){
     const red = c.s === '♥' || c.s === '♦';
@@ -986,6 +1023,7 @@ const BJ = (() => {
     renderStats();
     renderPoints();
     renderData();
+    renderTips();
     renderCurve();
     renderButtons();
     syncFs();
@@ -1101,15 +1139,29 @@ const BJ = (() => {
   }
 
   /* ---------- 底部数据区 ---------- */
+  function renderTips(){
+    if (!el.tableTips) return;
+    const v = curVenue();
+    const lines = [
+      `庄家${v.soft17 === 'h17' ? '软 17 继续要牌，对玩家不利' : '软 17 停牌'}，硬 16 及以下必博`,
+      `${v.decks} 副牌 · ${v.csm ? '洗牌机：流水数无效，别按真数加注' : '牌靴：白咭前最后约 30 张，可用真数'}`,
+      v.bj === 1.5 ? 'Blackjack 赔 3:2，标准赔付' : 'Blackjack 只赔 6:5：比 3:2 少约 1.4% 期望，长期明显吃亏',
+      v.sur ? '允许早投降：硬 16 对 9/10、硬 15 对 10 可弃一半' : '不设早投降：硬 16 对强牌只能硬扛',
+      `限红 ${fmt(v.min)}–${cfg.noCap ? '无上限（当前设定）' : fmt(v.max)}，低于最低注不能发牌`,
+      `你坐第 ${HUMAN + 1} 门：${HUMAN === 0 ? '贴牌靴，先拿牌' : HUMAN === seats.length - 1 ? '末门，看到的信息最多' : '中间门，信息与行动顺序居中'}`
+    ];
+    el.tableTips.innerHTML = lines.map(t => `<div>${t}</div>`).join('');
+  }
+
   function renderData(){
     if (el.beads){
-      if (!beads.length){
-        el.beads.innerHTML = `<div class="beads-empty">还没开牌</div>`;
-      } else {
-        const start = Math.max(0, beads.length - 48);
-        el.beads.innerHTML = beads.slice(start).map((k, i) =>
-          `<i class="bead ${k}" title="第 ${start + i + 1} 局"></i>`).join('');
-      }
+      const CELLS = 50;
+      const shown = beads.slice(-CELLS);
+      const blank = CELLS - shown.length;
+      el.beads.innerHTML = Array.from({ length: CELLS }, (_, i) => {
+        const k = i < blank ? '' : shown[i - blank];
+        return `<i class="bead ${k || 'empty'}"${k ? ` title="第 ${st.rounds - shown.length + (i - blank) + 1} 局"` : ''}></i>`;
+      }).join('');
     }
     if (el.beadCount) el.beadCount.textContent = st.rounds + ' 局';
 
@@ -1119,9 +1171,11 @@ const BJ = (() => {
       const rows = [
         ['胜率（按净额）', rate.toFixed(1) + '%', rate >= 50 ? 'up' : rate > 0 ? 'down' : ''],
         ['局均净额', (avg > 0 ? '+' : '') + fmt(avg), avg > 0 ? 'up' : avg < 0 ? 'down' : ''],
+        ['本场净额', (st.pl > 0 ? '+' : '') + fmt(st.pl), st.pl > 0 ? 'up' : st.pl < 0 ? 'down' : ''],
         ['Blackjack', st.bj + ' 次', ''],
         ['爆牌', busts + ' 次', ''],
         ['最大连败', maxLose + ' 局', 'down'],
+        ['当前连手', loseRun ? '连负 ' + loseRun : '—', loseRun ? 'down' : ''],
         ['累计流水', fmt(st.turnover), '']
       ];
       el.kvGrid.innerHTML = rows.map(([k, v, c]) =>
@@ -1133,24 +1187,24 @@ const BJ = (() => {
         const d = s.bank - s.start;
         return `<tr class="${s.human ? 'me' : ''}">
           <td>${i + 1}. ${s.name}${s.empty ? '<span class="badge empty">空位</span>' : ''}</td>
-          <td>${fmt(s.start)}</td>
-          <td>${fmt(s.bank)}</td>
-          <td class="${d > 0 ? 'pos' : d < 0 ? 'neg' : ''}">${d > 0 ? '+' : ''}${fmt(d)}</td>
+          <td>${fmtShort(s.start)}</td>
+          <td>${fmtShort(s.bank)}</td>
+          <td class="${d > 0 ? 'pos' : d < 0 ? 'neg' : ''}">${d > 0 ? '+' : ''}${fmtShort(d)}</td>
         </tr>`;
       }).join('');
     }
 
     if (el.recentRows){
       const lbl = { w: '胜', l: '负', p: '和', bj: 'BJ', bust: '爆' };
-      el.recentRows.innerHTML = recent.length
-        ? recent.map(r => {
-            const c = (r.kind === 'w' || r.kind === 'bj') ? 'pos'
-                    : (r.kind === 'l' || r.kind === 'bust') ? 'neg' : '';
-            return `<tr><td>${r.n}</td><td>${r.mine}</td><td>${r.dealer}</td>
-              <td class="${c}">${lbl[r.kind] || '—'}</td>
-              <td class="${r.net > 0 ? 'pos' : r.net < 0 ? 'neg' : ''}">${r.net > 0 ? '+' : ''}${fmt(r.net)}</td></tr>`;
-          }).join('')
-        : `<tr><td colspan="5" class="empty-row">还没开牌</td></tr>`;
+      el.recentRows.innerHTML = Array.from({ length: 10 }, (_, i) => {
+        const r = recent[i];
+        if (!r) return `<tr class="ghost"><td>—</td><td>—</td><td>—</td><td></td><td>—</td></tr>`;
+        const c = (r.kind === 'w' || r.kind === 'bj') ? 'pos'
+                : (r.kind === 'l' || r.kind === 'bust') ? 'neg' : '';
+        return `<tr><td>${r.n}</td><td>${r.mine}</td><td>${r.dealer}</td>
+          <td class="${c}">${lbl[r.kind] || '—'}</td>
+          <td class="${r.net > 0 ? 'pos' : r.net < 0 ? 'neg' : ''}">${r.net > 0 ? '+' : ''}${fmt(r.net)}</td></tr>`;
+      }).join('');
     }
   }
 
@@ -1890,12 +1944,18 @@ const BJ = (() => {
       updateSeatSelect();
     });
     el.cfgVenue.addEventListener('change', () => {
-      const v = VENUES[+el.cfgVenue.value];
-      el.cfgBank.value = v.bank;
-      el.cfgSeats.value = String(v.seats);
-      cfg.seats = v.seats;
-      cfg.mySeat = Math.min(cfg.mySeat, v.seats - 1);
-      updateSeatSelect();
+      cfg.venue = +el.cfgVenue.value;
+      cfg.room = 0;
+      updateRoomSelect();
+      const r = curCasino().rooms[0];
+      el.cfgBank.value = bankFor(r);
+      el.cfgSeats.value = String(r.seats);
+    });
+    el.cfgRoom.addEventListener('change', () => {
+      cfg.room = +el.cfgRoom.value;
+      const r = curCasino().rooms[cfg.room];
+      el.cfgBank.value = bankFor(r);
+      el.cfgSeats.value = String(r.seats);        // 房间默认门数，可再手动改
     });
     el.cfgApply.addEventListener('click', applySettings);
 
@@ -2043,14 +2103,16 @@ const BJ = (() => {
       el.venueHint.innerHTML = `<b>${v.op} · ${v.name} · ${v.room}</b><br>` +
         `${v.decks} 副 · ${v.csm ? '洗牌机' : '牌靴'} · 庄家 17 点停 · BJ ${v.bj === 1.5 ? '3:2' : '6:5'} · ` +
         `限红 ${fmt(v.min)}–${cfg.noCap ? '无上限' : fmt(v.max)}<br>${v.note}<br>` +
-        `<span class="venue-tag">${prog.name} · 积分 ${(prog.rate * 100).toFixed(2)}%</span><br>` +
-        `<span style="font-size:9.5px;color:#8A8272">${prog.tiers.map(([n, p]) => `${n} ${p.toLocaleString()}`).join(' → ')}</span>`;
+        `<span class="venue-tag">${prog.name} · ${prog.brand}</span><br>` +
+        `<span style="font-size:9.5px;color:#8A8272">${prog.tiers.map(([n, p]) => `${n} ${p.toLocaleString()}`).join(' → ')}</span><br>` +
+        `<span style="font-size:9.5px;color:#9A927F">${prog.basis}</span>`;
     }
     if (el.cfgBank) el.cfgBank.value = cfg.bank;
     if (el.cfgSeats) el.cfgSeats.value = String(cfg.seats);
     if (el.cfgEmpty) el.cfgEmpty.value = String(cfg.emptySeats);
     if (el.cfgCap) el.cfgCap.value = cfg.noCap ? '1' : '0';
     if (el.cfgVenue) el.cfgVenue.value = String(cfg.venue);
+    updateRoomSelect();
     document.querySelectorAll('#equipSeg button').forEach(b => b.classList.toggle('on', b.dataset.v === equipment));
     document.querySelectorAll('#h17Seg button').forEach(b => b.classList.toggle('on', b.dataset.v === soft17));
     updateSeatSelect();
@@ -2082,21 +2144,32 @@ const BJ = (() => {
   function initSettings(){
     if (el.cfgVenue){
       const groups = new Map();
-      VENUES.forEach((v, i) => {
-        if (!groups.has(v.op)) groups.set(v.op, []);
-        groups.get(v.op).push([i, v]);
+      CASINOS.forEach((c, i) => {
+        if (!groups.has(c.op)) groups.set(c.op, []);
+        groups.get(c.op).push([i, c]);
       });
       el.cfgVenue.innerHTML = [...groups.entries()].map(([op, list]) =>
         `<optgroup label="${op}（${list.length}）">` +
-        list.map(([i, v]) => `<option value="${i}">${v.name} · ${v.room}</option>`).join('') +
+        list.map(([i, c]) => `<option value="${i}">${c.name}</option>`).join('') +
         `</optgroup>`).join('');
       el.cfgVenue.value = String(cfg.venue);
     }
+    updateRoomSelect();
+  }
+
+  function updateRoomSelect(){
+    if (!el.cfgRoom) return;
+    const rooms = curCasino().rooms;
+    cfg.room = Math.min(cfg.room, rooms.length - 1);
+    el.cfgRoom.innerHTML = rooms.map((r, i) =>
+      `<option value="${i}">${r.name} · ${fmt(r.min)}–${fmt(r.max)}</option>`).join('');
+    el.cfgRoom.value = String(cfg.room);
   }
 
   function applySettings(){
-    const v = VENUES[+el.cfgVenue.value] || curVenue();
-    cfg.venue = VENUES.indexOf(v);
+    cfg.venue = Math.min(+el.cfgVenue.value || 0, CASINOS.length - 1);
+    cfg.room = Math.max(0, +el.cfgRoom.value || 0);
+    const v = curVenue();
     cfg.seats = +el.cfgSeats.value;
     cfg.emptySeats = +el.cfgEmpty.value;
     cfg.bank = Math.max(1000, Math.floor(+el.cfgBank.value || v.bank));
@@ -2104,7 +2177,7 @@ const BJ = (() => {
     cfg.mySeat = Math.min(+el.cfgMySeat.value, cfg.seats - 1);
     humanBet = Math.max(v.min, Math.min(humanBet, cfg.bank));
     setupTable();
-    flash(`已切到 <b>${v.name} · ${v.room}</b>：${cfg.seats} 门、你坐第 ${HUMAN + 1} 门、本金 ${fmt(cfg.bank)}。`);
+    flash(`已切到 <b>${v.op} · ${v.name} · ${v.room}</b>：${cfg.seats} 门、你坐第 ${HUMAN + 1} 门、本金 ${fmt(cfg.bank)}。`);
   }
 
   function boot(){
