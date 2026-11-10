@@ -80,13 +80,13 @@
 .doorswrap{position:relative;z-index:4;margin-top:auto;padding-top:14px}
 .doors{display:flex;justify-content:center;align-items:flex-start;gap:6px;padding:0 2px}
 .door{flex:1 1 0;min-width:0;max-width:132px;transition:transform .25s,opacity .25s;position:relative}
-/* 弧形排列：1-6 从左到右 */
-.door:nth-child(1){transform:translateY(13px) rotate(-5.5deg)}
-.door:nth-child(2){transform:translateY(4px) rotate(-2.6deg)}
-.door:nth-child(3){transform:translateY(0)}
-.door:nth-child(4){transform:translateY(0)}
-.door:nth-child(5){transform:translateY(4px) rotate(2.6deg)}
-.door:nth-child(6){transform:translateY(13px) rotate(5.5deg)}
+/* 弧形排列：只在标准 6 门台启用，其他门数平排 */
+.doors[data-n="6"] .door:nth-child(1){transform:translateY(13px) rotate(-5.5deg)}
+.doors[data-n="6"] .door:nth-child(2){transform:translateY(4px) rotate(-2.6deg)}
+.doors[data-n="6"] .door:nth-child(3){transform:translateY(0)}
+.doors[data-n="6"] .door:nth-child(4){transform:translateY(0)}
+.doors[data-n="6"] .door:nth-child(5){transform:translateY(4px) rotate(2.6deg)}
+.doors[data-n="6"] .door:nth-child(6){transform:translateY(13px) rotate(5.5deg)}
 .door.mine{transform:translateY(-6px) scale(1.06);z-index:6}
 .door.mine:nth-child(3){transform:translateY(-6px) scale(1.06)}
 .door.idle{opacity:.5}
@@ -324,7 +324,7 @@ body.fsmode .dock .actbar .btn-ico{width:30px;height:30px}
 body.fsmode .dock .msgline{margin:0;background:rgba(255,255,255,.055);border:1px solid rgba(235,217,143,.26);
   border-left:3px solid var(--gold);color:#E9E3D1;min-height:0;padding:6px 10px;font-size:11.5px;line-height:1.55}
 body.fsmode .dock .msgline b{color:var(--gold-lt)}
-body.fsmode .betpanel,body.fsmode .curve-card{display:none!important}
+body.fsmode .betpanel,body.fsmode .curve-card,body.fsmode .data-grid{display:none!important}
 
 .deck-panel{display:none}
 
@@ -348,6 +348,58 @@ body.fsmode .betpanel,body.fsmode .curve-card{display:none!important}
 .curve-legend i{display:inline-block;width:11px;height:2px;margin-right:4px;vertical-align:middle}
 .curve-foot{display:flex;gap:10px;flex-wrap:wrap;font-size:10px;color:#7C7461;margin-top:5px;padding-top:6px;border-top:1px dashed #E3DDCB}
 .curve-foot b{font-family:Inter,monospace;font-size:11px;color:#1B221E}
+
+/* ---------- 牌桌设置 ---------- */
+.setrow{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+.setrow label{font-size:10.5px;color:#7C7461;width:50px;flex:0 0 auto}
+.setrow select,.setrow input{flex:1;min-width:0;font-family:inherit;font-size:11.5px;padding:5px 7px;
+  border:1px solid #DED7C4;border-radius:7px;background:#fff;color:#1F2A24;outline:none}
+.setrow select:focus,.setrow input:focus{border-color:#0C3A28}
+.btn-apply{width:100%;margin-top:5px;font-family:inherit;font-size:11.5px;padding:8px;border-radius:8px;
+  border:1px solid #0C3A28;background:#0C3A28;color:#F4EDDB;cursor:pointer;transition:.15s}
+.btn-apply:hover{background:#12513A}
+.venue-tag{display:inline-flex;align-items:center;gap:5px;font-size:9.5px;padding:2px 7px;border-radius:6px;
+  background:#EDF3EA;color:#0C3A28;font-family:Inter,monospace}
+
+/* ---------- 底部数据区 ---------- */
+.data-grid{display:grid;grid-template-columns:1.05fr 1fr 1.15fr;gap:12px;margin-top:14px}
+.data-grid.second{grid-template-columns:1.1fr 1fr 1fr;margin-top:12px}
+@media(max-width:1100px){.data-grid,.data-grid.second{grid-template-columns:1fr}}
+.round-table td{padding:4.5px 0;font-size:10px}
+.round-table .empty-row{text-align:center;color:#9A927F;font-family:inherit;padding:16px 0!important}
+.data-card{background:#FBFAF4;border:1px solid #E6E0CE;border-radius:13px;padding:12px 14px}
+.data-card h4{margin:0 0 9px;font-size:12px;letter-spacing:1.1px;color:#0C3A28;font-weight:600;
+  display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.data-card h4 span{font-size:9.5px;color:#8A8272;font-weight:400;letter-spacing:0}
+.beads{display:flex;flex-wrap:wrap;gap:3.5px;min-height:54px;align-content:flex-start}
+.bead{width:15px;height:15px;border-radius:4px;transition:.15s}
+.bead.w{background:#2F7A4F}.bead.l{background:#B3202A}.bead.p{background:#BEB7A4}
+.bead.bj{background:#C9A227}.bead.bust{background:#7A1B1B}
+.beads-empty{font-size:10.5px;color:#9A927F;padding:14px 0}
+.bead-legend{display:flex;gap:10px;flex-wrap:wrap;font-size:9px;color:#8A8272;margin-top:8px;padding-top:7px;border-top:1px dashed #E3DDCB}
+.bead-legend i{width:8px;height:8px;border-radius:2px;display:inline-block;margin-right:4px;vertical-align:middle}
+.kv-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.kv{background:#fff;border:1px solid #EBE5D4;border-radius:7px;padding:6px 8px}
+.kv small{display:block;font-size:9px;color:#7C7461;letter-spacing:.3px}
+.kv b{font-family:Inter,monospace;font-size:12.5px;color:#1B221E;display:block;margin-top:1px}
+.kv b.up{color:#127A46}.kv b.down{color:#B3202A}
+.seat-table{width:100%;border-collapse:collapse;font-size:10px}
+.seat-table th{text-align:right;font-weight:600;font-size:9px;color:#7C7461;padding:0 0 5px;border-bottom:1px solid #E6E0CE}
+.seat-table th:first-child{text-align:left}
+.seat-table td{text-align:right;padding:4.5px 0;border-bottom:1px dotted #ECE6D6;font-family:Inter,monospace;color:#3D4742}
+.seat-table td:first-child{text-align:left;font-family:inherit;color:#1B221E}
+.seat-table tr.me td{background:#F3F7F0}
+.seat-table tr:last-child td{border-bottom:none}
+.seat-table td.pos{color:#127A46}.seat-table td.neg{color:#B3202A}
+.seat-table .badge{display:inline-block;font-size:8.5px;padding:0 5px;border-radius:5px;background:#E7E1D1;color:#6E6653;margin-left:4px}
+.seat-table .badge.me{background:#0C3A28;color:#F4EDDB}
+.seat-table .badge.empty{background:#EFEAD9;color:#9A927F}
+/* 会员积分 */
+.pts-big{font-family:Inter,monospace;font-size:22px;color:#0C3A28;line-height:1.1}
+.pts-tier{display:inline-block;font-size:9.5px;padding:2px 8px;border-radius:999px;background:#0C3A28;color:#F4EDDB;margin-left:6px;vertical-align:middle}
+.pts-bar{height:5px;border-radius:3px;background:#E7E1D1;margin-top:8px;overflow:hidden}
+.pts-bar i{display:block;height:100%;background:linear-gradient(90deg,#C9A227,#EBD98F)}
+.pts-note{font-size:9.5px;color:#8A8272;margin-top:5px}
 
 /* 矮屏全屏：整体缩小，保证手牌区不被底部操作坞压住 */
 @media(max-height:860px){
@@ -425,7 +477,7 @@ body.fsmode .betpanel,body.fsmode .curve-card{display:none!important}
         <div class="felt" id="felt">
           <div class="feltarc"></div>
           <div class="felttext">
-            <div class="t1">BLACKJACK PAYS 3 TO 2</div>
+            <div class="t1" id="feltPayText">BLACKJACK PAYS 3 TO 2</div>
             <div class="t2">庄家须博至 16 点 · 17 点及以上停牌 · 保险赔 2 赔 1<br>分门与加注遇庄家 Blackjack 仅失原注</div>
           </div>
 
@@ -442,7 +494,7 @@ body.fsmode .betpanel,body.fsmode .curve-card{display:none!important}
 
           <div class="placard">
             <div class="r"><small>MIN</small><b id="plMin">300</b></div>
-            <div class="r"><small>MAX</small><b>10,000</b></div>
+            <div class="r"><small>MAX</small><b id="plMax">10,000</b></div>
             <i id="plEquip">牌靴 · 6 副</i>
           </div>
 
@@ -455,7 +507,7 @@ body.fsmode .betpanel,body.fsmode .curve-card{display:none!important}
           <div class="doorswrap"><div class="doors" id="doors"></div></div>
 
           <div class="myzone">
-            <div class="myzone-head"><span>你的手牌 · 第 3 门</span><b id="myLive">—</b></div>
+            <div class="myzone-head"><span id="myZoneLabel">你的手牌 · 第 3 门</span><b id="myLive">—</b></div>
             <div class="myhands" id="myHands"><div class="myempty">等待发牌</div></div>
           </div>
         </div>
@@ -537,9 +589,89 @@ body.fsmode .betpanel,body.fsmode .curve-card{display:none!important}
 
         <div class="msgline" id="msg">先在下方选注码（最低 300），再点「开局 · 发牌」。<b>第 3 门是你的</b>，其余五门是同桌的。</div>
       </div>
+
+      <!-- 底部数据区：珠盘 / 本场统计 / 同桌座位 -->
+      <section class="data-grid">
+        <div class="data-card">
+          <h4>本场珠盘 <span id="beadCount">0 局</span></h4>
+          <div class="beads" id="beads"><div class="beads-empty">还没开牌</div></div>
+          <div class="bead-legend">
+            <span><i style="background:#2F7A4F"></i>胜</span>
+            <span><i style="background:#B3202A"></i>负</span>
+            <span><i style="background:#BEB7A4"></i>和</span>
+            <span><i style="background:#C9A227"></i>Blackjack</span>
+            <span><i style="background:#7A1B1B"></i>爆牌</span>
+          </div>
+        </div>
+
+        <div class="data-card">
+          <h4>本场统计 <span>按本局净额</span></h4>
+          <div class="kv-grid" id="kvGrid"></div>
+        </div>
+
+        <div class="data-card">
+          <h4>同桌座位 <span>本金 / 当前 / 损益</span></h4>
+          <table class="seat-table">
+            <thead><tr><th>座位</th><th>本金</th><th>当前</th><th>损益</th></tr></thead>
+            <tbody id="seatRows"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="data-grid second">
+        <div class="data-card">
+          <h4>最近 10 局 <span>你 / 庄 / 结果 / 净额</span></h4>
+          <table class="seat-table round-table">
+            <thead><tr><th>局</th><th>你</th><th>庄</th><th>结果</th><th>净额</th></tr></thead>
+            <tbody id="recentRows"><tr><td colspan="5" class="empty-row">还没开牌</td></tr></tbody>
+          </table>
+        </div>
+
+        <div class="data-card">
+          <h4>桌面设备 <span>影响计数</span></h4>
+          <div class="segrow"><span class="lbl">发牌</span>
+            <div class="seg" id="equipSeg"><button data-v="shoe" class="on">牌靴</button><button data-v="csm">洗牌机</button></div>
+          </div>
+          <div class="segrow"><span class="lbl">软 17</span>
+            <div class="seg" id="h17Seg"><button data-v="s17" class="on">停牌</button><button data-v="h17">要牌</button></div>
+          </div>
+          <div class="hint" id="countHint">牌靴：6 副 312 张，白咭插在最后 30 张处（规章第二条第 1 款）。</div>
+          <div class="countbox" id="countBox">
+            <div>剩余 <b id="cntLeft">312</b> · 已销 <b id="cntBurn">0</b></div>
+            <div>流水数 <b id="cntRC">0</b> · 真数 <b id="cntTC">0.00</b></div>
+          </div>
+        </div>
+
+        <div class="data-card">
+          <h4>庄家优势实测 <span id="simRun" style="cursor:pointer;color:#8A5A0A;text-decoration:underline">跑 100,000 局</span></h4>
+          <div class="simbox" id="simOut">点击右上角：用基本策略自动打 100,000 局，
+给出主游戏实测 EV 与抽样误差。</div>
+        </div>
+      </section>
     </div>
 
     <div>
+      <div class="side-card">
+        <h4>牌桌设置 <span>娱乐场 / 门数 / 本金</span></h4>
+        <div class="setrow"><label>娱乐场</label><select id="cfgVenue"></select></div>
+        <div class="setrow"><label>门数</label>
+          <select id="cfgSeats">
+            <option value="5">5 门</option><option value="6" selected>6 门</option>
+            <option value="7">7 门</option><option value="8">8 门</option>
+          </select>
+        </div>
+        <div class="setrow"><label>我的座位</label><select id="cfgMySeat"></select></div>
+        <div class="setrow"><label>空位</label>
+          <select id="cfgEmpty"><option value="0">不留空位</option><option value="1">留 1 个</option><option value="2">留 2 个</option></select>
+        </div>
+        <div class="setrow"><label>本金</label><input id="cfgBank" type="number" min="1000" step="1000"></div>
+        <div class="setrow"><label>单注上限</label>
+          <select id="cfgCap"><option value="1">不设上限</option><option value="0">按场馆限额</option></select>
+        </div>
+        <button class="btn-apply" id="cfgApply">应用并重置本场</button>
+        <div class="hint" id="venueHint"></div>
+      </div>
+
       <div class="side-card curve-card">
         <h4>资金曲线 <span>每局结算后更新 · 悬停查点</span></h4>
         <div class="curve-tabs" id="curveTabs">
@@ -608,7 +740,14 @@ body.fsmode .betpanel,body.fsmode .curve-card{display:none!important}
       </div>
 
       <div class="side-card">
-        <h4>本桌战绩 <span>你的门（第 3 门）</span></h4>
+        <h4>会员积分 <span id="ptsVenue">威尼斯人 · 中场</span></h4>
+        <div><span class="pts-big" id="ptsBig">0</span><span class="pts-tier" id="ptsTier">普通</span></div>
+        <div class="pts-bar"><i id="ptsBar" style="width:0%"></i></div>
+        <div class="pts-note" id="ptsNote">累计流水 0 · 距银卡还差 500 分</div>
+      </div>
+
+      <div class="side-card">
+        <h4>本桌战绩 <span id="mySeatLabel">你的门（第 3 门）</span></h4>
         <div class="statgrid">
           <div class="stat"><small>局数</small><b id="stRounds">0</b></div>
           <div class="stat"><small>胜 / 负 / 和（按净额）</small><b id="stWDL">0/0/0</b></div>
@@ -619,27 +758,6 @@ body.fsmode .betpanel,body.fsmode .curve-card{display:none!important}
         </div>
         <div class="msgline" style="margin-top:10px;min-height:0;padding:7px 10px;font-size:11px">
           附加注每局都需要重新下注，结算后自动归零 —— 否则「主注赢了但净额还是负」就是被三份附加注吃掉了。
-        </div>
-      </div>
-
-      <div class="side-card">
-        <h4>庄家优势实测 <span id="simRun" style="cursor:pointer;color:#8A5A0A;text-decoration:underline">跑 100,000 局</span></h4>
-        <div class="simbox" id="simOut">点击右上角：用基本策略自动打 100,000 局，
-给出主游戏实测 EV 与抽样误差。</div>
-      </div>
-
-      <div class="side-card">
-        <h4>桌面设备 <span>影响计数</span></h4>
-        <div class="segrow"><span class="lbl">发牌</span>
-          <div class="seg" id="equipSeg"><button data-v="shoe" class="on">牌靴</button><button data-v="csm">洗牌机</button></div>
-        </div>
-        <div class="segrow"><span class="lbl">软 17</span>
-          <div class="seg" id="h17Seg"><button data-v="s17" class="on">停牌</button><button data-v="h17">要牌</button></div>
-        </div>
-        <div class="hint" id="countHint">牌靴：6 副 312 张，白咭插在最后 30 张处（规章第二条第 1 款）。</div>
-        <div class="countbox" id="countBox">
-          <div>剩余 <b id="cntLeft">312</b> · 已销 <b id="cntBurn">0</b></div>
-          <div>流水数 <b id="cntRC">0</b> · 真数 <b id="cntTC">0.00</b></div>
         </div>
       </div>
     </div>
@@ -661,18 +779,32 @@ body.fsmode .betpanel,body.fsmode .curve-card{display:none!important}
    结算模型：开局一次性扣下注 → 结算只加返还 → 净损益 = 余额差
    ============================================================ */
 const BJ = (() => {
-  const DECKS = 6;
   const SUITS = ['♠','♥','♦','♣'];
   const RANKS = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
-  const SEAT_NAMES = ['阿强','陈生','你','莎莎','空位','阿明'];
-  const HUMAN = 2;
   const CUT_BACK = 30;
-  const MIN_BET = 300, MAX_BET = 10000;
+
+  /* 娱乐场预设（参考公开资料整理的 HKD 口径，现场表台会随时调整） */
+  const VENUES = [
+    { key:'venetian', name:'威尼斯人', room:'中场',  decks:6, csm:true,  soft17:'s17', seats:6, min:300,  max:10000,  bj:1.5, sur:true,  pts:0.0010, bank:200000,  note:'金光大道中场，洗牌机为主，BJ 3:2' },
+    { key:'galaxy',    name:'银河',     room:'中场',  decks:6, csm:false, soft17:'s17', seats:6, min:500,  max:5000,   bj:1.5, sur:true,  pts:0.0010, bank:200000,  note:'6 副牌靴，低额台 300–1,000 起注常见' },
+    { key:'parisian',  name:'巴黎人',   room:'中场',  decks:6, csm:true,  soft17:'s17', seats:6, min:300,  max:5000,   bj:1.5, sur:true,  pts:0.0010, bank:150000,  note:'中场洗牌机，以低额台为主' },
+    { key:'wynn',      name:'永利',     room:'贵宾厅', decks:8, csm:false, soft17:'s17', seats:7, min:5000, max:500000, bj:1.5, sur:true,  pts:0.0030, bank:5000000, note:'贵宾厅 8 副牌靴，限额高、积分累积快' },
+    { key:'mgm',       name:'美高梅',   room:'中场',  decks:8, csm:true,  soft17:'s17', seats:6, min:500,  max:10000,  bj:1.5, sur:true,  pts:0.0010, bank:250000,  note:'8 副洗牌机，中场标准台' },
+    { key:'lisboa',    name:'新葡京',   room:'普通场', decks:6, csm:false, soft17:'s17', seats:6, min:100,  max:3000,   bj:1.2, sur:false, pts:0.0005, bank:20000,   note:'普通场低额台，部分台 BJ 只赔 6:5' },
+  ];
+  const cfg = { venue: 0, seats: 6, mySeat: 2, emptySeats: 0, bank: 200000, noCap: true };
+  let HUMAN = 2;
+  let seatNames = [];
+  let points = 0;
+
+  const curVenue = () => VENUES[cfg.venue];
+  const betMin = () => curVenue().min;
+  const betMax = () => cfg.noCap ? Infinity : curVenue().max;
 
   const cv = r => r === 'A' ? 11 : (['10','J','Q','K'].includes(r) ? 10 : +r);
   const sameRank = (a, b) => a === b;   // 对子须点数相同，J 与 Q 不算对子
 
-  let shoe = [], discards = 0, shoeSize = DECKS * 52, cutAt = 0;
+  let shoe = [], discards = 0, shoeSize = 312, cutAt = 0;
   let equipment = 'shoe', soft17 = 's17';
   let dealer = [];
   let seats = [];
@@ -683,13 +815,16 @@ const BJ = (() => {
   let sideBet = { pair: 0, seven: 0, ou: 'none' };
   let insuranceAmt = 0;
   let timer = null, busy = false;
-  let st = { rounds: 0, w: 0, l: 0, d: 0, bj: 0, side: 0, pl: 0 };
+  let st = { rounds: 0, w: 0, l: 0, d: 0, bj: 0, side: 0, pl: 0, turnover: 0 };
+  let beads = [], loseRun = 0, maxLose = 0, busts = 0;
+  let recent = [];
+  const TIERS = [{ n:'普通', p:0 }, { n:'银卡', p:500 }, { n:'金卡', p:5000 }, { n:'黑卡', p:50000 }];
   let rc = 0;
   let flyKeys = new Set();   // 需要播放飞入动画的牌 key
 
   /* 资金曲线数据 */
-  const START_BANK = 100000;
-  const PEER_COLORS = ['#7F8F79','#A3822A','#0C5C3B','#B25B2A','#4E6E8E','#8A8272'];
+  let START_BANK = 200000;
+  const PEER_COLORS = ['#7F8F79','#A3822A','#0C5C3B','#B25B2A','#4E6E8E','#8A8272','#6B7FA3','#A06A8C'];
   let hist = [{ r: 0, bank: START_BANK }];
   let peerHist = [];
   let curveView = 'me';
@@ -704,14 +839,18 @@ const BJ = (() => {
      'sideView','stRounds','stWDL','stBJ','stSide','stBank','stPL','simOut','shoeLeft','shoeStack',
      'discN','discStack','cntLeft','cntBurn','cntRC','cntTC','countHint','countBox','deckPanel',
      'myHands','myLive','ledger','curve','curveTip','curveLegend','cvPeak','cvDD','cvAvg','cvN','betBreak',
+     'beads','beadCount','kvGrid','seatRows','recentRows','ptsBig','ptsTier','ptsBar','ptsNote','ptsVenue',
+     'myZoneLabel','mySeatLabel','feltPayText','plMax','plMin','plEquip','venueHint','cfgVenue','cfgSeats',
+     'cfgMySeat','cfgEmpty','cfgBank','cfgCap','cfgApply',
      'stageTxt','sg1','sg2','sg3','sg4','sg5'
     ].forEach(k => el[k] = $(k));
   }
 
   /* ---------- 牌靴 ---------- */
   function buildShoe(){
+    const decks = curVenue().decks;
     shoe = [];
-    for (let d = 0; d < DECKS; d++) for (const s of SUITS) for (const r of RANKS) shoe.push({ r, s });
+    for (let d = 0; d < decks; d++) for (const s of SUITS) for (const r of RANKS) shoe.push({ r, s });
     for (let i = shoe.length - 1; i > 0; i--){
       const j = Math.floor(Math.random() * (i + 1));
       [shoe[i], shoe[j]] = [shoe[j], shoe[i]];
@@ -784,6 +923,7 @@ const BJ = (() => {
     }
 
     // 六门 1..6
+    el.doors.dataset.n = String(seats.length);
     el.doors.innerHTML = seats.map((s, i) => {
       const mine = s.human;
       const isActive = phase === 'player' && i === activeSeat;
@@ -827,7 +967,7 @@ const BJ = (() => {
         return `<i class="${c}">${x.label}</i>`;
       }).join('');
 
-      const name = mine ? '你' : SEAT_NAMES[i];
+      const name = s.name;
       return `<div class="${cls}"><div class="doorinner">
         <div class="doorhead"><span class="doorno">${i + 1}</span><span class="doorname">${name}</span></div>
         ${body}
@@ -857,6 +997,8 @@ const BJ = (() => {
     el.cntTC.textContent = (rc / decksLeft()).toFixed(2);
 
     renderStats();
+    renderPoints();
+    renderData();
     renderCurve();
     renderButtons();
     syncFs();
@@ -913,8 +1055,8 @@ const BJ = (() => {
     if (phase !== 'bet' || busy) return;
     v = Math.floor(v);
     if (!v || v <= 0){ flash('下注金额必须大于 0。'); return; }
-    if (humanBet + v > MAX_BET){
-      flash(`单注上限 <b>${fmt(MAX_BET)}</b>，已押 ${fmt(humanBet)}。`);
+    if (humanBet + v > betMax()){
+      flash(`单注上限 <b>${fmt(betMax())}</b>，已押 ${fmt(humanBet)}。`);
       return;
     }
     humanBet += v;
@@ -951,20 +1093,94 @@ const BJ = (() => {
     el.stBank.textContent = fmt(seats[HUMAN].bank);
     el.stPL.textContent = (st.pl > 0 ? '+' : '') + fmt(st.pl);
     el.stPL.className = st.pl > 0 ? 'up' : st.pl < 0 ? 'down' : '';
+    if (el.mySeatLabel) el.mySeatLabel.textContent = `你的门（第 ${HUMAN + 1} 门）`;
+    if (el.myZoneLabel) el.myZoneLabel.textContent = `你的手牌 · 第 ${HUMAN + 1} 门`;
+  }
+
+  /* ---------- 会员积分 ---------- */
+  function renderPoints(){
+    const v = curVenue();
+    if (el.ptsVenue) el.ptsVenue.textContent = `${v.name} · ${v.room}`;
+    if (el.ptsBig) el.ptsBig.textContent = Math.round(points).toLocaleString();
+    let idx = 0;
+    for (let i = 0; i < TIERS.length; i++) if (points >= TIERS[i].p) idx = i;
+    const cur = TIERS[idx], next = TIERS[idx + 1] || null;
+    if (el.ptsTier) el.ptsTier.textContent = cur.n;
+    const pct = next ? Math.min(100, (points - cur.p) / (next.p - cur.p) * 100) : 100;
+    if (el.ptsBar) el.ptsBar.style.width = pct.toFixed(1) + '%';
+    if (el.ptsNote){
+      el.ptsNote.textContent = `累计流水 ${fmt(st.turnover)} · ` +
+        (next ? `距${next.n}还差 ${Math.max(0, Math.ceil(next.p - points))} 分` : '已达最高等级');
+    }
+  }
+
+  /* ---------- 底部数据区 ---------- */
+  function renderData(){
+    if (el.beads){
+      if (!beads.length){
+        el.beads.innerHTML = `<div class="beads-empty">还没开牌</div>`;
+      } else {
+        const start = Math.max(0, beads.length - 48);
+        el.beads.innerHTML = beads.slice(start).map((k, i) =>
+          `<i class="bead ${k}" title="第 ${start + i + 1} 局"></i>`).join('');
+      }
+    }
+    if (el.beadCount) el.beadCount.textContent = st.rounds + ' 局';
+
+    if (el.kvGrid){
+      const rate = st.rounds ? st.w / st.rounds * 100 : 0;
+      const avg = st.rounds ? st.pl / st.rounds : 0;
+      const rows = [
+        ['胜率（按净额）', rate.toFixed(1) + '%', rate >= 50 ? 'up' : rate > 0 ? 'down' : ''],
+        ['局均净额', (avg > 0 ? '+' : '') + fmt(avg), avg > 0 ? 'up' : avg < 0 ? 'down' : ''],
+        ['Blackjack', st.bj + ' 次', ''],
+        ['爆牌', busts + ' 次', ''],
+        ['最大连败', maxLose + ' 局', 'down'],
+        ['累计流水', fmt(st.turnover), '']
+      ];
+      el.kvGrid.innerHTML = rows.map(([k, v, c]) =>
+        `<div class="kv"><small>${k}</small><b class="${c}">${v}</b></div>`).join('');
+    }
+
+    if (el.seatRows){
+      el.seatRows.innerHTML = seats.map((s, i) => {
+        const d = s.bank - s.start;
+        return `<tr class="${s.human ? 'me' : ''}">
+          <td>${i + 1}. ${s.name}${s.empty ? '<span class="badge empty">空位</span>' : ''}</td>
+          <td>${fmt(s.start)}</td>
+          <td>${fmt(s.bank)}</td>
+          <td class="${d > 0 ? 'pos' : d < 0 ? 'neg' : ''}">${d > 0 ? '+' : ''}${fmt(d)}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    if (el.recentRows){
+      const lbl = { w: '胜', l: '负', p: '和', bj: 'BJ', bust: '爆' };
+      el.recentRows.innerHTML = recent.length
+        ? recent.map(r => {
+            const c = (r.kind === 'w' || r.kind === 'bj') ? 'pos'
+                    : (r.kind === 'l' || r.kind === 'bust') ? 'neg' : '';
+            return `<tr><td>${r.n}</td><td>${r.mine}</td><td>${r.dealer}</td>
+              <td class="${c}">${lbl[r.kind] || '—'}</td>
+              <td class="${r.net > 0 ? 'pos' : r.net < 0 ? 'neg' : ''}">${r.net > 0 ? '+' : ''}${fmt(r.net)}</td></tr>`;
+          }).join('')
+        : `<tr><td colspan="5" class="empty-row">还没开牌</td></tr>`;
+    }
   }
 
   function renderButtons(){
     const inPlay = phase === 'player' && seats[activeSeat] && seats[activeSeat].human;
     const h = inPlay ? seats[HUMAN].hands[activeHand] : null;
     const bank = seats[HUMAN].bank;
-    const ready = phase === 'bet' && !busy && humanBet >= MIN_BET;
+    const ready = phase === 'bet' && !busy && humanBet >= betMin();
     el.btnDeal.disabled = !ready;
     el.btnHit.disabled = !inPlay;
     el.btnStand.disabled = !inPlay;
     el.btnDbl.disabled = !(inPlay && h && h.cards.length === 2 && !h.dbl && bank >= h.bet);
     el.btnSplit.disabled = !(inPlay && h && h.cards.length === 2 && !h.dbl &&
       sameRank(h.cards[0].r, h.cards[1].r) && seats[HUMAN].hands.length < 4 && bank >= h.bet);
-    el.btnSur.disabled = !(inPlay && h && h.cards.length === 2 && !h.dbl && !h.fromSplit && dealer[0] && dealer[0].r !== 'A');
+    el.btnSur.disabled = !(inPlay && h && h.cards.length === 2 && !h.dbl && !h.fromSplit &&
+      curVenue().sur && dealer[0] && dealer[0].r !== 'A');
     el.btnFive.disabled = !(inPlay && h && h.cards.length >= 5 && val(h.cards) <= 21 && dealer[0] && dealer[0].r !== 'A');
     const ins = phase === 'insurance';
     el.btnIns.disabled = !ins;
@@ -1006,8 +1222,8 @@ const BJ = (() => {
   const wait = ms => new Promise(r => setTimeout(r, ms));
 
   /* ---------- 座位 ---------- */
-  function mkSeat(name, human, bank){
-    return { name, human, bank, start: bank, hands: [], side: [], pendingBet: 0, roundStartBank: bank, lastPL: 0 };
+  function mkSeat(name, human, bank, empty){
+    return { name, human, empty: !!empty, bank, start: bank, hands: [], side: [], pendingBet: 0, roundStartBank: bank, lastPL: 0 };
   }
   function newHand(bet){
     return { cards: [], bet, done: false, fromSplit: false, dbl: false, surrendered: false,
@@ -1017,7 +1233,7 @@ const BJ = (() => {
   /* ---------- 开局（顺序发牌 + 动画） ---------- */
   async function deal(){
     if (phase !== 'bet' || busy) return;
-    if (humanBet < MIN_BET){ flash(`最低注 <b>${fmt(MIN_BET)}</b>，先点筹码或输入金额。`); return; }
+    if (humanBet < betMin()){ flash(`最低注 <b>${fmt(betMin())}</b>，先点筹码或输入金额。`); return; }
     const me = seats[HUMAN];
     const outlay = humanBet + sideBetTotal();
     if (me.bank < outlay){ flash('<b>余额不足</b>，请调低注码。'); return; }
@@ -1037,10 +1253,10 @@ const BJ = (() => {
     const sideStake = sideBetTotal();
     me.bank -= sideStake;
 
-    // 同桌 AI 下注
+    // 同桌 AI 下注（空位不参与）
     for (const s of seats){
-      if (s.human) continue;
-      if (s.bank < 300){ s.pendingBet = 0; continue; }
+      if (s.human || s.empty) continue;
+      if (s.bank < betMin()){ s.pendingBet = 0; continue; }
       s.pendingBet = Math.min(aiBet(s), s.bank);
       s.bank -= s.pendingBet;
       s.hands = [newHand(s.pendingBet)];
@@ -1097,9 +1313,11 @@ const BJ = (() => {
   }
 
   function aiBet(s){
-    if (s.name === '陈生') return 1000;
-    if (s.name === '莎莎') return s.bank > 20000 ? 3000 : 1000;
-    return Math.min([500, 1000, 1500, 2000][Math.floor(Math.random() * 4)], s.bank);
+    const m = betMin();
+    if (s.name === '陈生') return Math.round(m * 2);
+    if (s.name === '莎莎') return s.bank > m * 30 ? Math.round(m * 4) : Math.round(m * 2);
+    const opts = [m, m * 1.5, m * 2, m * 3].map(v => Math.max(m, Math.round(v / m) * m));
+    return Math.min(opts[Math.floor(Math.random() * opts.length)], s.bank);
   }
 
   function checkSpecial(h){
@@ -1211,6 +1429,7 @@ const BJ = (() => {
   }
   function surrender(){
     if (!myTurn()) return;
+    if (!curVenue().sur){ flash('这个场子的台规不允许早投降。'); return; }
     const h = seats[HUMAN].hands[activeHand];
     if (h.cards.length !== 2 || h.fromSplit || h.dbl || (dealer[0] && dealer[0].r === 'A')) return;
     h.surrendered = true; h.done = true;
@@ -1379,7 +1598,9 @@ const BJ = (() => {
             continue;   // 彩金即时结算，不再与庄家比牌（否则会重复赔付）
           }
           if (hv > 21){ if (!h.special){ h.result = '爆'; h.plRes = -1; mainLines.push(`${label} 爆 -${fmt(h.bet)}`); } continue; }
-          if (h.natBJ){ payout += h.bet * 2.5; h.result = 'BJ'; h.plRes = 1.5; mainLines.push(`Blackjack +${fmt(h.bet * 1.5)}`); if (s.human) st.bj++; continue; }
+          const bjPay = curVenue().bj;
+          if (h.natBJ){ payout += h.bet * (1 + bjPay); h.result = 'BJ'; h.plRes = bjPay;
+            mainLines.push(`Blackjack +${fmt(h.bet * bjPay)}`); if (s.human) st.bj++; continue; }
           if (dv > 21 || hv > dv){ payout += h.bet * 2; h.result = '胜'; h.plRes = 1; mainLines.push(`${label} 胜 +${fmt(h.bet)}`); }
           else if (hv === dv){ payout += h.bet; h.result = '和'; h.plRes = 0; mainLines.push(`${label} 和`); }
           else { h.result = '负'; h.plRes = -1; mainLines.push(`${label} 负 -${fmt(h.bet)}`); }
@@ -1404,6 +1625,17 @@ const BJ = (() => {
         if (Math.abs(check - realPL) > 0.01) console.warn('对账不平', { stakedTotal, payout, realPL });
         st.rounds++;
         st.pl += realPL;
+        st.turnover += stakedTotal;                       // 流水按「押出」累计
+        points += stakedTotal * curVenue().pts;           // 积分按场馆费率累积
+        const busted = s.hands.some(h => val(h.cards) > 21 && !h.special);
+        const kind = (s.hands[0] && s.hands[0].natBJ) ? 'bj' : busted ? 'bust'
+                   : realPL > 0 ? 'w' : realPL < 0 ? 'l' : 'p';
+        beads.push(kind);
+        if (beads.length > 200) beads.shift();
+        if (busted) busts++;
+        recent.unshift({ n: st.rounds, mine: s.hands.map(h => val(h.cards)).join('/'), dealer: dv, kind, net: realPL });
+        if (recent.length > 10) recent.pop();
+        if (realPL < 0){ loseRun++; maxLose = Math.max(maxLose, loseRun); } else loseRun = 0;
         if (realPL > 0) st.w++; else if (realPL < 0) st.l++; else st.d++;
         lastRound = {
           net: realPL, stake: stakedTotal, ret: payout,
@@ -1485,8 +1717,8 @@ const BJ = (() => {
         if (s.bank <= 0 && !s.hands.length) return;      // 空位不画
         const d = peerHist[i] || [];
         if (!d.length) return;
-        series.push({ name: s.human ? '你' : SEAT_NAMES[i],
-                      color: s.human ? '#0C5C3B' : PEER_COLORS[i], data: d, main: s.human, start: s.start });
+        series.push({ name: s.name,
+                      color: s.human ? '#0C5C3B' : PEER_COLORS[i % PEER_COLORS.length], data: d, main: s.human, start: s.start });
       });
     } else {
       series.push({ name: '你', color: '#0C5C3B', data: hist, main: true, start: START_BANK });
@@ -1677,7 +1909,8 @@ const BJ = (() => {
     let bank = 0, hands = 0, sumSq = 0;
     const mk = () => {
       const a = [];
-      for (let d = 0; d < DECKS; d++) for (const s of SUITS) for (const r of RANKS) a.push({ r, s });
+      const decks = curVenue().decks;
+      for (let d = 0; d < decks; d++) for (const s of SUITS) for (const r of RANKS) a.push({ r, s });
       for (let i = a.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); [a[i],a[j]] = [a[j],a[i]]; }
       return a;
     };
@@ -1780,6 +2013,23 @@ const BJ = (() => {
 
   /* ---------- 事件 ---------- */
   function bind(){
+    // ---- 牌桌设置 ----
+    el.cfgSeats.addEventListener('change', () => {
+      cfg.seats = +el.cfgSeats.value;
+      if (cfg.mySeat > cfg.seats - 1) cfg.mySeat = cfg.seats - 1;
+      if (cfg.emptySeats > cfg.seats - 1) cfg.emptySeats = Math.max(0, cfg.seats - 1);
+      updateSeatSelect();
+    });
+    el.cfgVenue.addEventListener('change', () => {
+      const v = VENUES[+el.cfgVenue.value];
+      el.cfgBank.value = v.bank;
+      el.cfgSeats.value = String(v.seats);
+      cfg.seats = v.seats;
+      cfg.mySeat = Math.min(cfg.mySeat, v.seats - 1);
+      updateSeatSelect();
+    });
+    el.cfgApply.addEventListener('click', applySettings);
+
     $('chips').addEventListener('click', e => {
       const c = e.target.closest('.chip');
       if (!c) return;
@@ -1822,10 +2072,10 @@ const BJ = (() => {
       $('equipSeg').querySelectorAll('button').forEach(x => x.classList.remove('on'));
       b.classList.add('on');
       equipment = b.dataset.v;
-      $('plEquip').textContent = equipment === 'csm' ? '洗牌机' : '牌靴 · 6 副';
+      $('plEquip').textContent = `${equipment === 'csm' ? '洗牌机' : '牌靴'} · ${curVenue().decks} 副`;
       $('countHint').textContent = equipment === 'csm'
-        ? '连续洗牌机：用过的牌随即放回，流水数失去意义——这正是澳门主场的常态。'
-        : '牌靴：6 副 312 张，白咭插在最后 30 张处（规章第二条第 1 款）。';
+        ? `${curVenue().name} 用连续洗牌机：用过的牌随即放回，流水数失去意义。`
+        : `${curVenue().name} 用 ${curVenue().decks} 副牌靴，白咭插在最后 30 张处。`;
       buildShoe(); render();
     });
     $('h17Seg').addEventListener('click', e => {
@@ -1874,18 +2124,117 @@ const BJ = (() => {
     window.addEventListener('resize', () => render());
   }
 
-  function boot(){
-    initEls();
+  /* ---------- 牌桌构建（娱乐场 / 门数 / 座位 / 本金） ---------- */
+  const NAME_POOL = ['阿强','陈生','莎莎','阿明','嘉姐','大刘','阿伟','细陈','阿玲','老周'];
+  const AI_RATIO = [0.30, 0.42, 0.26, 0.21, 0.35, 0.18, 0.28, 0.24];
+
+  function setupTable(){
+    const v = curVenue();
+    cfg.seats = Math.max(2, Math.min(8, cfg.seats));
+    cfg.mySeat = Math.max(0, Math.min(cfg.seats - 1, cfg.mySeat));
+    HUMAN = cfg.mySeat;
+    equipment = v.csm ? 'csm' : 'shoe';
+    soft17 = v.soft17;
+    START_BANK = cfg.bank;
     buildShoe();
-    seats = SEAT_NAMES.map((n, i) => mkSeat(n, i === HUMAN, [30000, 42000, START_BANK, 26000, 0, 21000][i]));
+
+    const empties = new Set();
+    for (let k = 1; k <= Math.min(cfg.emptySeats, cfg.seats - 1); k++){
+      const idx = cfg.seats - k;
+      if (idx !== HUMAN) empties.add(idx);
+    }
+    seats = [];
+    let ni = 0;
+    for (let i = 0; i < cfg.seats; i++){
+      const isMe = i === HUMAN;
+      const isEmpty = empties.has(i);
+      const name = isMe ? '你' : isEmpty ? '空位' : NAME_POOL[(ni++) % NAME_POOL.length];
+      const bank = isMe ? cfg.bank
+        : isEmpty ? 0
+        : Math.max(v.min * 20, Math.round(cfg.bank * AI_RATIO[i % AI_RATIO.length] / 1000) * 1000);
+      seats.push(mkSeat(name, isMe, bank, isEmpty));
+    }
+    humanBet = Math.max(v.min, Math.min(humanBet || v.min, cfg.bank));
+    betStack = [humanBet];
+    resetSession();
+    syncTableChrome();
+  }
+
+  function syncTableChrome(){
+    const v = curVenue();
+    if (el.feltPayText) el.feltPayText.textContent = `BLACKJACK PAYS ${v.bj === 1.5 ? '3 TO 2' : '6 TO 5'}`;
+    if (el.plMin) el.plMin.textContent = fmt(v.min);
+    if (el.plMax) el.plMax.textContent = cfg.noCap ? '无上限' : fmt(v.max);
+    if (el.plEquip) el.plEquip.textContent = `${v.csm ? '洗牌机' : '牌靴'} · ${v.decks} 副`;
+    if (el.countHint) el.countHint.textContent = v.csm
+      ? `${v.name} 用连续洗牌机：用过的牌随即放回，流水数失去意义。`
+      : `${v.name} 用 ${v.decks} 副牌靴，白咭插在最后 30 张处。`;
+    if (el.venueHint){
+      el.venueHint.innerHTML = `<b>${v.name} · ${v.room}</b><br>` +
+        `${v.decks} 副 · ${v.csm ? '洗牌机' : '牌靴'} · 庄家 17 点停 · BJ ${v.bj === 1.5 ? '3:2' : '6:5'} · ` +
+        `限红 ${fmt(v.min)}–${cfg.noCap ? '无上限' : fmt(v.max)}<br>${v.note}` +
+        `<br><span class="venue-tag">积分 ${(v.pts * 100).toFixed(2)}% / 流水</span>`;
+    }
+    if (el.cfgBank) el.cfgBank.value = cfg.bank;
+    if (el.cfgSeats) el.cfgSeats.value = String(cfg.seats);
+    if (el.cfgEmpty) el.cfgEmpty.value = String(cfg.emptySeats);
+    if (el.cfgCap) el.cfgCap.value = cfg.noCap ? '1' : '0';
+    if (el.cfgVenue) el.cfgVenue.value = String(cfg.venue);
+    document.querySelectorAll('#equipSeg button').forEach(b => b.classList.toggle('on', b.dataset.v === equipment));
+    document.querySelectorAll('#h17Seg button').forEach(b => b.classList.toggle('on', b.dataset.v === soft17));
+    updateSeatSelect();
+  }
+
+  function updateSeatSelect(){
+    const sel = el.cfgMySeat;
+    if (!sel) return;
+    sel.innerHTML = Array.from({ length: cfg.seats }, (_, i) =>
+      `<option value="${i}">第 ${i + 1} 门${i === 0 ? '（贴牌靴）' : ''}</option>`).join('');
+    sel.value = String(cfg.mySeat);
+  }
+
+  function resetSession(){
+    st = { rounds: 0, w: 0, l: 0, d: 0, bj: 0, side: 0, pl: 0, turnover: 0 };
+    points = 0; beads = []; loseRun = 0; maxLose = 0; busts = 0; recent = [];
+    lastRound = null;
+    phase = 'bet'; activeSeat = 0; activeHand = 0; busy = false;
+    dealer = []; insuranceAmt = 0; flyKeys.clear();
+    seats.forEach(s => { s.hands = []; s.side = []; s.pendingBet = 0; s.bank = s.start; });
     hist = [{ r: 0, bank: seats[HUMAN].bank }];
     peerHist = seats.map(s => [{ r: 0, bank: s.bank }]);
-    betStack = [humanBet];
-    bind();
     setStage(0);
     render();
     renderLedger();
-    flash('点筹码可以叠加多枚（也可以输入任意金额），再点「开局 · 发牌」。<b>第 3 门是你的</b>，同桌闲家都是明牌。');
+    renderCurve();
+  }
+
+  function initSettings(){
+    if (el.cfgVenue){
+      el.cfgVenue.innerHTML = VENUES.map((v, i) =>
+        `<option value="${i}">${v.name} · ${v.room}</option>`).join('');
+      el.cfgVenue.value = String(cfg.venue);
+    }
+  }
+
+  function applySettings(){
+    const v = VENUES[+el.cfgVenue.value] || curVenue();
+    cfg.venue = VENUES.indexOf(v);
+    cfg.seats = +el.cfgSeats.value;
+    cfg.emptySeats = +el.cfgEmpty.value;
+    cfg.bank = Math.max(1000, Math.floor(+el.cfgBank.value || v.bank));
+    cfg.noCap = el.cfgCap.value === '1';
+    cfg.mySeat = Math.min(+el.cfgMySeat.value, cfg.seats - 1);
+    humanBet = Math.max(v.min, Math.min(humanBet, cfg.bank));
+    setupTable();
+    flash(`已切到 <b>${v.name} · ${v.room}</b>：${cfg.seats} 门、你坐第 ${HUMAN + 1} 门、本金 ${fmt(cfg.bank)}。`);
+  }
+
+  function boot(){
+    initEls();
+    initSettings();
+    setupTable();
+    bind();
+    flash(`<b>${curVenue().name} · ${curVenue().room}</b>：${cfg.seats} 门，你坐第 ${HUMAN + 1} 门，本金 ${fmt(cfg.bank)}。点筹码累加下注。`);
   }
 
   return {
