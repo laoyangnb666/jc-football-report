@@ -253,20 +253,55 @@ def simulate(n: int, decks: int = 6, s17: bool = True, bj_pay: float = 1.5) -> d
     return {"ev": per, "se": sd / math.sqrt(hands) * 100, "hands": hands}
 
 
-def points_for(turnover: float, rate: float) -> float:
-    return turnover * rate
+def points_for(turnover: float, mop_per_point: float = 5000, no21: bool = False) -> float:
+    """中场积分：有效投注 / 每分所需投注额；新濠 21 点不计分返回 0。"""
+    if no21 or not mop_per_point:
+        return 0.0
+    return turnover / mop_per_point
 
 
 def tier_of(points: float, tiers) -> dict:
+    """tiers: [(name, need|None)]；need 为 None 表示官方未公开 / 邀请制。"""
     idx = 0
     for i, (_, need) in enumerate(tiers):
-        if points >= need:
+        if need is not None and points >= need:
             idx = i
     cur = tiers[idx]
     nxt = tiers[idx + 1] if idx + 1 < len(tiers) else None
-    pct = min(100.0, (points - cur[1]) / (nxt[1] - cur[1]) * 100) if nxt else 100.0
-    return {"index": idx, "tier": cur[0], "next": nxt[0] if nxt else None,
-            "need": math.ceil(nxt[1] - points) if nxt else 0, "pct": pct}
+    next_need = nxt[1] if nxt and nxt[1] is not None else None
+    pct = None if next_need is None else max(0.0, min(100.0, (points - cur[1]) / (next_need - cur[1]) * 100))
+    return {"tier": cur[0], "next": nxt[0] if nxt else None,
+            "need": math.ceil(next_need - points) if next_need is not None else None,
+            "pct": pct}
+
+
+def vip_score(turnover: float, max_bet: float, days: int, day_turnovers, vip_tiers) -> dict:
+    """贵宾候选四维评分：A 累计投注 / B 单次最大 / C 到访天数 / D 稳定性。
+
+    稳定性：80% 以上流水集中在连续 7 天以内 → 降一档。
+    """
+    best = 0.0
+    for i in range(max(0, len(day_turnovers) - 6)):
+        s = sum(day_turnovers[i:i + 7])
+        if s > best:
+            best = s
+    share = best / turnover if turnover else 0.0
+    burst = len(day_turnovers) > 7 and share >= 0.8
+
+    checks = []
+    for t in vip_tiers:
+        ok_a = turnover >= t["turnover"]
+        ok_b = max_bet >= t["maxBet"]
+        ok_c = days >= t["days"]
+        checks.append({**t, "okA": ok_a, "okB": ok_b, "okC": ok_c, "met": ok_a and ok_b and ok_c})
+
+    level = 0
+    for i, c in enumerate(checks):
+        if c["met"]:
+            level = i + 1
+    if burst:
+        level = max(0, level - 1)
+    return {"level": level, "burst": burst, "share": share, "checks": checks}
 
 
 def check() -> None:
@@ -283,11 +318,27 @@ def check() -> None:
     assert hand_return([{"r": "A"}, {"r": "K"}], 100, 20, bj_pay=1.5) == 250
     assert hand_return([{"r": "A"}, {"r": "K"}], 100, 21, dealer_bj=True, bj_pay=1.5) == 100
     assert hand_return([{"r": "10"}, {"r": "6"}], 100, 20, surrendered=True) == 50
-    # 4) 积分 / 卡级
-    tiers = [["红卡", 0], ["金卡", 300], ["白金卡", 3000], ["钻石卡", 30000]]
-    assert abs(points_for(35000, 0.001) - 35) < 1e-9
-    assert tier_of(35, tiers)["tier"] == "红卡"
-    assert tier_of(320, tiers)["tier"] == "金卡"
+    # 4) 积分 / 卡级 / 贵宾评分
+    assert abs(points_for(500000, 5000) - 100) < 1e-9
+    assert abs(points_for(500000, 25) - 20000) < 1e-9
+    assert points_for(500000, 5000, no21=True) == 0.0
+    tiers = [("金卡", 0), ("红宝石", 888), ("钻石", 8888)]
+    assert tier_of(500, tiers)["tier"] == "金卡"
+    assert tier_of(900, tiers)["tier"] == "红宝石"
+    assert tier_of(9000, tiers)["tier"] == "钻石"
+    assert tier_of(9000, tiers)["next"] is None      # 已是顶档
+    unknown = [("皇", 0), ("爵", None), ("赫", None)]
+    assert tier_of(99999, unknown)["tier"] == "皇"
+    assert tier_of(99999, unknown)["pct"] is None
+
+    vip = [
+        {"name": "Platinum", "turnover": 12_000_000, "maxBet": 20_000, "days": 12},
+        {"name": "Chairman", "turnover": 80_000_000, "maxBet": 150_000, "days": 30},
+    ]
+    even = vip_score(12_000_000, 20_000, 12, [1_000_000] * 12, vip)
+    assert even["level"] == 1 and not even["burst"]
+    burst = vip_score(12_000_000, 20_000, 12, [12_000_000 / 7] * 7 + [0], vip)
+    assert burst["burst"] and burst["level"] == 0
     print("check: OK")
 
 

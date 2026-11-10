@@ -8,36 +8,93 @@
    ============================================================ */
 window.BJ_CASINOS = {
   updated: '2026-11',
+  currency: 'MOP（与 HKD 近似 1:1，仅作模拟）',
   programs: {
     sands: {
-      name: '金沙会', brand: 'Sands Rewards Club', rate: 0.0010,
-      tiers: [['红宝卡', 0], ['金宝卡', 300], ['白金卡', 3000], ['钻宝卡', 30000], ['尊享卡（邀请）', 150000]],
-      basis: '按表台流水计分，1 元流水 = 1 分 ×0.10%'
+      name: '金沙会', brand: 'Sands Rewards',
+      mopPerPoint: 5000, conversion: '圈内估算 4,000–6,000 MOP 有效投注 = 1 分，取中值 5,000',
+      tiers: [['金卡', 0], ['红宝石', 888], ['钻石', 8888]],
+      tiersNote: '红宝石内部细分为 Ruby I / II / III，仅展示标签，不设独立门槛；6 个月累计积分',
+      tiersKnown: true,
+      vip: {
+        name: 'Paiza', note: '中场积分与 Paiza 贵宾厅是两套体系',
+        tiers: [
+          { name: 'Paiza Platinum', turnover: 12000000, maxBet: 20000, days: 12 },
+          { name: 'Paiza Diamond', turnover: 30000000, maxBet: 50000, days: 20 },
+          { name: 'Paiza Chairman（御匾主席）', turnover: 80000000, maxBet: 150000, days: 30, top: true }
+        ]
+      }
     },
     galaxy: {
-      name: '银河优越会', brand: 'GEG Privilege Club', rate: 0.0012,
-      tiers: [['金卡', 0], ['白金卡', 500], ['黑卡', 5000], ['钻石卡', 50000], ['尊尚钻石（邀请）', 200000]],
-      basis: '官方四档：金 / 白金 / 黑 / 钻石；最高档只邀不申'
-    },
-    wynn: {
-      name: '永利会', brand: 'Wynn Rewards', rate: 0.0015,
-      tiers: [['红卡', 0], ['白金卡', 1000], ['黑卡', 10000], ['主席卡（邀请）', 100000]],
-      basis: '红卡为公开卡；白金/黑卡按季评；主席卡 Chairman’s Club 只邀不申'
-    },
-    mgm: {
-      name: '金狮会', brand: 'Golden Lion Club', rate: 0.0010,
-      tiers: [['蓝宝石卡', 0], ['珍珠卡', 400], ['白金卡', 4000], ['黑狮卡（Noir）', 40000], ['狮王卡（邀请）', 200000]],
-      basis: '官方：Sapphire 免费、Pearl 半年 400 分、Platinum、Noir；狮王为邀请制'
+      name: '银娱优越会', brand: 'GEG Privilege Club',
+      mopPerPoint: 6000, conversion: '圈内估算 5,000–7,000 MOP = 1 分，取中值 6,000',
+      tiers: [['皇', 0], ['爵', null], ['赫', null], ['尊', null]],
+      tiersNote: '档位名称官方公布，升级积分官方未公开',
+      tiersKnown: false,
+      vip: {
+        name: '金尊', note: '贵宾厅独立于中场优越会',
+        tiers: [
+          { name: '金尊（基础贵宾）', turnover: 10000000, maxBet: 15000, days: 10 },
+          { name: '金尊御尊（顶层）', turnover: 70000000, maxBet: 120000, days: 28, top: true }
+        ]
+      }
     },
     melco: {
-      name: '新濠会', brand: 'Melco Club', rate: 0.0010,
-      tiers: [['红卡', 0], ['金卡', 300], ['白金卡', 3000], ['钻石卡', 30000], ['黑卡（邀请）', 150000]],
-      basis: '新濠天地 / 影汇 / 锋共用一套卡，跨场累计'
+      name: '摩卡会', brand: 'Mocha Club',
+      mopPerPoint: 0, conversion: '21 点不计摩卡积分：摩卡会仅角子机计分',
+      no21Points: true,
+      tiers: [['礼悦', 0], ['贵宾', 688], ['尊尚', 6888], ['钻誉（邀请）', null]],
+      tiersNote: '角子机积分档位；21 点不产生摩卡积分',
+      tiersKnown: false,
+      vip: {
+        name: '铂悦', note: '21 点贵宾归属铂悦体系，与摩卡积分相互独立',
+        tiers: [
+          { name: '铂悦（基础贵宾）', turnover: 10000000, maxBet: 15000, days: 10 },
+          { name: '铂悦臻尊（顶层）', turnover: 65000000, maxBet: 100000, days: 25, top: true }
+        ]
+      }
+    },
+    mgm: {
+      name: '金狮会', brand: 'Golden Lion Club',
+      mopPerPoint: 25, conversion: '官方基准 20 MOP = 1 分，21 点桌面衰减后固定按 25 MOP = 1 分',
+      tiers: [['蓝宝石', 0], ['珍珠', 400], ['铂金', 5900], ['黑玺', 15000]],
+      tiersNote: '6 个月累计积分（官方基准）',
+      tiersKnown: true,
+      vip: {
+        name: 'Privé / 狮王卡', note: '贵宾厅邀约制，狮王卡为隐藏顶层',
+        tiers: [
+          { name: 'Privé（常规贵宾）', turnover: 9000000, maxBet: 12000, days: 10 },
+          { name: '狮王卡（隐藏顶层）', turnover: 60000000, maxBet: 100000, days: 25, top: true }
+        ]
+      }
+    },
+    wynn: {
+      name: '红卡', brand: 'Red Card',
+      mopPerPoint: 6500, conversion: '圈内估算 5,000–8,000 MOP = 1 分，取中值 6,500',
+      tiers: [['红卡', 0]],
+      tiersNote: '中场有分级，但档位名称与升级积分官方完全不公开',
+      tiersKnown: false,
+      vip: {
+        name: '永利会贵宾',
+        tiers: [
+          { name: '永利基础贵宾', turnover: 13000000, maxBet: 20000, days: 12 },
+          { name: '主席卡（隐藏顶层）', turnover: 90000000, maxBet: 180000, days: 30, top: true }
+        ]
+      }
     },
     sjm: {
-      name: '澳博至尊卡', brand: 'SJM Supreme Card', rate: 0.0008,
-      tiers: [['翡翠卡', 0], ['黄金卡', 200], ['白金卡', 2000], ['钻石卡', 20000], ['尊贵卡（邀请）', 100000]],
-      basis: '官方按累计净消费：翡翠<5万、黄金5–15万、白金15–30万、钻石≥30万（MOP）'
+      name: '葡京中场积分卡', brand: 'SJM',
+      mopPerPoint: 5000, conversion: '圈内估算 5,000 MOP = 1 分（可信度低）',
+      tiers: [['红卡', 0], ['银卡', null], ['金卡', null], ['黑钻', null]],
+      tiersNote: '档位全部为坊间流传，无官方佐证，可信度低',
+      tiersKnown: false,
+      vip: {
+        name: '至尊贵宾',
+        tiers: [
+          { name: '至尊贵宾（基础）', turnover: 8000000, maxBet: 10000, days: 8 },
+          { name: '至尊御尊（顶层）', turnover: 55000000, maxBet: 90000, days: 22, top: true }
+        ]
+      }
     }
   },
   casinos: [

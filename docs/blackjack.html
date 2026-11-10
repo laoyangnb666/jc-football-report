@@ -365,6 +365,36 @@ body.fsmode .betpanel,body.fsmode .curve-card,body.fsmode .data-stack{display:no
 .tips div{font-size:10.5px;color:#4A5450;line-height:1.65;padding-left:14px;position:relative}
 .tips div:before{content:"";position:absolute;left:2px;top:6px;width:5px;height:5px;border-radius:50%;background:#C9A227}
 
+/* 贵宾候选评估 */
+.vip-head{display:flex;gap:8px;align-items:flex-start;margin-bottom:8px}
+.vip-badge{flex:0 0 auto;font-size:10px;padding:2px 8px;border-radius:999px;background:#E7E1D1;color:#6E6653;font-weight:600}
+.vip-badge.lv1{background:#E8EFE4;color:#1F6B45}
+.vip-badge.lv2{background:#0C3A28;color:#F4EDDB}
+.vip-hint{font-size:9.5px;color:#7C7461;line-height:1.6}
+.vip-table{width:100%;border-collapse:collapse;font-size:9.5px;table-layout:fixed}
+.vip-table th{text-align:left;font-weight:600;font-size:9px;color:#7C7461;padding:0 0 5px;border-bottom:1px solid #E6E0CE}
+.vip-table th:nth-child(1){width:38%}
+.vip-table td{padding:4px 0;border-bottom:1px dotted #ECE6D6;color:#3D4742;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vip-table tr.met td{color:#127A46}
+.vip-table tr:last-child td{border-bottom:none}
+.vip-table i.ok{font-style:normal;font-weight:700;color:#127A46}
+.vip-table i.ok.no{color:#B3202A}
+.vip-metrics{display:flex;gap:12px;flex-wrap:wrap;font-size:9.5px;color:#7C7461;margin-top:7px}
+.vip-metrics b{font-family:Inter,monospace;color:#1B221E;font-size:10.5px}
+.vip-note{font-size:9px;color:#9A927F;line-height:1.65;margin-top:7px;padding-top:7px;border-top:1px dashed #E3DDCB}
+
+/* 弹窗 */
+.modal{position:fixed;inset:0;background:rgba(9,18,14,.55);display:none;align-items:center;justify-content:center;z-index:99}
+.modal.on{display:flex}
+.modal-box{background:#FBFAF4;border:1px solid #E2DACA;border-radius:16px;padding:24px 26px;max-width:420px;
+  box-shadow:0 24px 60px rgba(0,0,0,.28);margin:20px}
+.modal-box h3{margin:0 0 10px;font-size:15px;color:#0C3A28;letter-spacing:.5px}
+.modal-box p{margin:0 0 18px;font-size:12px;line-height:1.8;color:#4A5450}
+.modal-box b{color:#B3202A}
+.modal-box button{width:100%;font-family:inherit;font-size:12px;padding:9px;border-radius:9px;border:1px solid #0C3A28;
+  background:#0C3A28;color:#F4EDDB;cursor:pointer}
+.modal-box button:hover{background:#12513A}
+
 /* ---------- 底部数据区 ---------- */
 /* 瀑布流：卡片按内容高度紧排，不再被网格拉伸留白 */
 .data-stack{columns:3;column-gap:12px;margin-top:14px}
@@ -664,6 +694,13 @@ body.fsmode .betpanel,body.fsmode .curve-card,body.fsmode .data-stack{display:no
           <h4>这台怎么打 <span>按当前台规自动生成</span></h4>
           <div class="tips" id="tableTips"></div>
         </div>
+
+        <div class="data-card">
+          <h4>贵宾候选评估 <span id="vipName">Paiza</span></h4>
+          <div class="vip-head" id="vipStatus"></div>
+          <div class="vip-body" id="vipRows"></div>
+          <div class="vip-note" id="vipNote"></div>
+        </div>
       </section>
 
       <div class="data-card">
@@ -781,6 +818,15 @@ body.fsmode .betpanel,body.fsmode .curve-card,body.fsmode .data-stack{display:no
   </div>
 </main>
 
+<!-- 新濠摩卡会：21 点不计分弹窗 -->
+<div class="modal" id="melcoModal">
+  <div class="modal-box">
+    <h3>新濠摩卡会 · 21 点不计分</h3>
+    <p>摩卡会积分只来自角子机，21 点投注<b>不产生</b>摩卡积分；21 点贵宾归属<b>铂悦</b>体系，与摩卡积分相互独立。</p>
+    <button id="melcoOk">知道了</button>
+  </div>
+</div>
+
 <footer style="border-top:1px solid #E2DACA;padding:24px 0 44px;text-align:center;color:#6B6355;font-size:11px;line-height:1.85">
   <p style="max-width:860px;margin:0 auto 7px">
     规则依据：澳门特别行政区《“Black Jack”或“二十一点”法定规章》（现行由第 57/2009 号经济财政司司长批示核准，
@@ -825,7 +871,7 @@ const BJ = (() => {
       key: c.id + ':' + r.name, name: c.name, op: c.op, room: r.name,
       decks: r.decks, csm: r.csm, soft17: r.s17 ? 's17' : 'h17', seats: r.seats,
       min: r.min, max: r.max, bj: c.bj, sur: c.sur, prog: c.prog,
-      pts: PROGRAMS[c.prog].rate, bank: bankFor(r), note: r.note || ''
+      bank: bankFor(r), note: r.note || ''
     };
   }
   const betMin = () => curVenue().min;
@@ -854,6 +900,8 @@ const BJ = (() => {
   let beads = [], loseRun = 0, maxLose = 0, busts = 0;
   let recent = [];
   let rc = 0;
+  /* 会员与贵宾评估用的累计量 */
+  let maxStake = 0, dayTurnovers = [];
   let flyKeys = new Set();   // 需要播放飞入动画的牌 key
 
   /* 资金曲线数据 */
@@ -875,7 +923,7 @@ const BJ = (() => {
      'myHands','myLive','ledger','curve','curveTip','curveLegend','cvPeak','cvDD','cvAvg','cvN','betBreak',
      'beads','beadCount','kvGrid','seatRows','recentRows','ptsBig','ptsTier','ptsBar','ptsNote','ptsVenue',
      'myZoneLabel','mySeatLabel','feltPayText','plMax','plMin','plEquip','venueHint','cfgVenue','cfgRoom','cfgSeats',
-     'tableTips',
+     'tableTips','vipName','vipStatus','vipRows','vipNote','melcoModal','melcoOk',
      'cfgMySeat','cfgEmpty','cfgBank','cfgCap','cfgApply',
      'stageTxt','sg1','sg2','sg3','sg4','sg5'
     ].forEach(k => el[k] = $(k));
@@ -1020,6 +1068,7 @@ const BJ = (() => {
     renderPoints();
     renderData();
     renderTips();
+    renderVip();
     renderCurve();
     renderButtons();
     syncFs();
@@ -1122,16 +1171,72 @@ const BJ = (() => {
   function renderPoints(){
     const v = curVenue();
     const prog = PROGRAMS[v.prog];
-    if (el.ptsVenue) el.ptsVenue.textContent = `${v.name} · ${prog.name}`;
-    if (el.ptsBig) el.ptsBig.textContent = Math.round(points).toLocaleString();
     const t = CORE.tierOf(points, prog);
-    if (el.ptsTier) el.ptsTier.textContent = t.tier;
-    if (el.ptsBar) el.ptsBar.style.width = t.pct.toFixed(1) + '%';
+    if (el.ptsVenue) el.ptsVenue.textContent = `${v.name} · ${prog.name}`;
+    if (el.ptsBig) el.ptsBig.textContent = prog.no21Points ? '不计分' : Math.round(points).toLocaleString();
+    if (el.ptsTier) el.ptsTier.textContent = prog.no21Points ? '—' : t.tier;
+    if (el.ptsBar) el.ptsBar.style.width = (t.pct == null ? 0 : t.pct).toFixed(1) + '%';
     if (el.ptsNote){
-      const ladder = prog.tiers.map(([n, p]) => `${n} ${p.toLocaleString()}`).join(' · ');
-      el.ptsNote.textContent = `累计流水 ${fmt(st.turnover)} · ` +
-        (t.next ? `距${t.next}还差 ${t.need} 分` : '已达最高等级') + `\n${ladder}`;
+      const lines = [];
+      if (prog.no21Points){
+        lines.push(`有效投注 ${fmt(st.turnover)} · 21 点不累积摩卡积分`);
+        lines.push('摩卡会积分仅来自角子机；21 点贵宾走铂悦体系');
+      } else {
+        lines.push(`有效投注 ${fmt(st.turnover)} MOP · ${prog.conversion}`);
+        if (t.pct == null) lines.push(`${t.next ? '下一档 ' + t.next + '：' : ''}${prog.tiersNote}`);
+        else lines.push(`距${t.next}还差 ${t.need} 分（${prog.tiersNote}）`);
+      }
+      lines.push(prog.tiers.map(([n, p]) => `${n} ${p == null ? '未公开' : p.toLocaleString()}`).join(' · '));
+      el.ptsNote.textContent = lines.join('\n');
     }
+  }
+
+  /* ---------- 贵宾候选评估（四维打分，只给状态，不授予权限） ---------- */
+  function renderVip(){
+    if (!el.vipName) return;
+    const v = curVenue();
+    const prog = PROGRAMS[v.prog];
+    const vip = prog.vip;
+    const res = CORE.vipScore({
+      turnover: st.turnover, maxBet: maxStake,
+      days: dayTurnovers.length, dayTurnovers
+    }, vip);
+
+    el.vipName.textContent = vip.name;
+    const badge = ['暂不达标', '基础候选池', '顶层候选池'][res.level];
+    el.vipStatus.innerHTML = `<span class="vip-badge lv${res.level}">${badge}</span>
+      <span class="vip-hint">${
+        res.level === 0 ? '暂未进入贵宾候选池，继续积累投注'
+        : res.level === 1 ? '已进入基础贵宾邀约候选池，仅模拟，赌场会综合评估，不保证一定邀约'
+        : '已进入顶层贵宾（隐藏卡）邀约候选池，门槛极高，仅为模拟参考，真实赌场极少发放'
+      }</span>`;
+
+    const row = (c) => {
+      const mk = (ok) => `<i class="ok${ok ? '' : ' no'}">${ok ? '✓' : '✗'}</i>`;
+      return `<tr class="${c.met ? 'met' : ''}">
+        <td>${c.name}</td>
+        <td>${fmtShort(c.turnover)} ${mk(c.okTurnover)}</td>
+        <td>${fmtShort(c.maxBet)} ${mk(c.okMax)}</td>
+        <td>${c.days} 天 ${mk(c.okDays)}</td>
+      </tr>`;
+    };
+    el.vipRows.innerHTML = `
+      <table class="vip-table">
+        <thead><tr><th>候选档</th><th>6 个月投注</th><th>单次最大</th><th>到访</th></tr></thead>
+        <tbody>${vip.tiers.map(row).join('')}</tbody>
+      </table>
+      <div class="vip-metrics">
+        <span>当前：投注 <b>${fmtShort(res.turnover)}</b></span>
+        <span>单次最大 <b>${fmtShort(res.maxBet)}</b></span>
+        <span>到访 <b>${res.days}</b> 天</span>
+      </div>`;
+
+    const parts = [];
+    if (res.burst) parts.push(`流水集中在短期突击（连续 7 局窗口占 ${(res.share * 100).toFixed(0)}%），稳定性扣分，等级降一档；真实赌场邀约概率大幅降低`);
+    else if (res.days > 7) parts.push(`稳定性正常（连续 7 局窗口占 ${(res.share * 100).toFixed(0)}%），未触发突击扣分`);
+    parts.push(`${vip.note ? vip.note + '；' : ''}到访天数按「局」模拟，积分与贵宾为两套独立评估`);
+    parts.push('贵宾资格永远由赌场评估邀约，系统只输出状态，不授予权限');
+    el.vipNote.textContent = parts.join(' · ');
   }
 
   /* ---------- 底部数据区 ---------- */
@@ -1662,7 +1767,9 @@ const BJ = (() => {
         st.rounds++;
         st.pl += realPL;
         st.turnover += stakedTotal;                       // 流水按「押出」累计
-        points += CORE.pointsFor(stakedTotal, curVenue().pts);   // 积分按场馆费率累积
+        points += CORE.pointsFor(stakedTotal, PROGRAMS[curVenue().prog]);   // 新濠 21 点返回 0
+        if (stakedTotal > maxStake) maxStake = stakedTotal;                 // 单次最大投注
+        dayTurnovers.push(stakedTotal);                                     // 每局视作一个到访日
         const busted = s.hands.some(h => val(h.cards) > 21 && !h.special);
         const kind = (s.hands[0] && s.hands[0].natBJ) ? 'bj' : busted ? 'bust'
                    : realPL > 0 ? 'w' : realPL < 0 ? 'l' : 'p';
@@ -1954,6 +2061,10 @@ const BJ = (() => {
       el.cfgSeats.value = String(r.seats);        // 房间默认门数，可再手动改
     });
     el.cfgApply.addEventListener('click', applySettings);
+    if (el.melcoOk) el.melcoOk.addEventListener('click', () => el.melcoModal.classList.remove('on'));
+    if (el.melcoModal) el.melcoModal.addEventListener('click', e => {
+      if (e.target === el.melcoModal) el.melcoModal.classList.remove('on');
+    });
 
     $('chips').addEventListener('click', e => {
       const c = e.target.closest('.chip');
@@ -2096,12 +2207,13 @@ const BJ = (() => {
       : `${v.name} 用 ${v.decks} 副牌靴，白咭插在最后 30 张处。`;
     if (el.venueHint){
       const prog = PROGRAMS[v.prog];
+      const ladder = prog.tiers.map(([n, p]) => `${n} ${p == null ? '未公开' : p.toLocaleString()}`).join(' → ');
       el.venueHint.innerHTML = `<b>${v.op} · ${v.name} · ${v.room}</b><br>` +
         `${v.decks} 副 · ${v.csm ? '洗牌机' : '牌靴'} · 庄家 17 点停 · BJ ${v.bj === 1.5 ? '3:2' : '6:5'} · ` +
         `限红 ${fmt(v.min)}–${cfg.noCap ? '无上限' : fmt(v.max)}<br>${v.note}<br>` +
         `<span class="venue-tag">${prog.name} · ${prog.brand}</span><br>` +
-        `<span style="font-size:9.5px;color:#8A8272">${prog.tiers.map(([n, p]) => `${n} ${p.toLocaleString()}`).join(' → ')}</span><br>` +
-        `<span style="font-size:9.5px;color:#9A927F">${prog.basis}</span>`;
+        `<span style="font-size:9.5px;color:#8A8272">${ladder}</span><br>` +
+        `<span style="font-size:9.5px;color:#9A927F">${prog.conversion}<br>${prog.tiersNote}</span>`;
     }
     if (el.cfgBank) el.cfgBank.value = cfg.bank;
     if (el.cfgSeats) el.cfgSeats.value = String(cfg.seats);
@@ -2125,6 +2237,7 @@ const BJ = (() => {
   function resetSession(){
     st = { rounds: 0, w: 0, l: 0, d: 0, bj: 0, side: 0, pl: 0, turnover: 0 };
     points = 0; beads = []; loseRun = 0; maxLose = 0; busts = 0; recent = [];
+    maxStake = 0; dayTurnovers = [];
     lastRound = null;
     phase = 'bet'; activeSeat = 0; activeHand = 0; busy = false;
     dealer = []; insuranceAmt = 0; flyKeys.clear();
@@ -2174,6 +2287,7 @@ const BJ = (() => {
     humanBet = Math.max(v.min, Math.min(humanBet, cfg.bank));
     setupTable();
     flash(`已切到 <b>${v.op} · ${v.name} · ${v.room}</b>：${cfg.seats} 门、你坐第 ${HUMAN + 1} 门、本金 ${fmt(cfg.bank)}。`);
+    if (PROGRAMS[v.prog].no21Points && el.melcoModal) el.melcoModal.classList.add('on');
   }
 
   function boot(){

@@ -222,21 +222,82 @@
     return { ev: per, se: sd / Math.sqrt(hands) * 100, hands };
   }
 
-  /** 积分 = 流水 × 场馆费率 */
-  const pointsFor = (turnover, rate) => turnover * rate;
+  /**
+   * 中场积分：有效投注 / 每分所需投注额
+   * 新濠摩卡会 21 点不计分（no21Points），直接返回 0
+   */
+  function pointsFor(turnover, prog) {
+    if (!prog || prog.no21Points || !prog.mopPerPoint) return 0;
+    return turnover / prog.mopPerPoint;
+  }
 
-  /** 卡级：返回 { index, tier, next, pct } */
-  function tierOf(points, program) {
-    const tiers = (program && program.tiers) || [['普通卡', 0]];
+  /**
+   * 中场卡级：只有官方公开的数值门槛才参与升级；
+   * 门槛为 null（未公开 / 邀请）时停在当前档，进度返回 null
+   */
+  function tierOf(points, prog) {
+    const tiers = (prog && prog.tiers) || [['—', 0]];
     let idx = 0;
-    for (let i = 0; i < tiers.length; i++) if (points >= tiers[i][1]) idx = i;
+    for (let i = 0; i < tiers.length; i++) {
+      const need = tiers[i][1];
+      if (need != null && points >= need) idx = i;
+    }
     const cur = tiers[idx], nxt = tiers[idx + 1] || null;
-    const pct = nxt ? Math.min(100, (points - cur[1]) / (nxt[1] - cur[1]) * 100) : 100;
-    return { index: idx, tier: cur[0], next: nxt ? nxt[0] : null, need: nxt ? Math.ceil(nxt[1] - points) : 0, pct };
+    const known = !!prog.tiersKnown;
+    const nextNeed = nxt && nxt[1] != null ? nxt[1] : null;
+    const pct = nextNeed != null
+      ? Math.max(0, Math.min(100, (points - cur[1]) / (nextNeed - cur[1]) * 100))
+      : null;
+    return {
+      tier: cur[0],
+      next: nxt ? nxt[0] : null,
+      need: nextNeed != null ? Math.ceil(nextNeed - points) : null,
+      pct, known
+    };
+  }
+
+  /**
+   * 贵宾候选评分（四维）：6 个月有效投注 A / 单次最大投注 B / 到访天数 C / 稳定性 D
+   * 稳定性：若 80% 以上流水集中在连续 7 天以内 → 降一档
+   * 注意：只输出候选状态，绝不授予权限
+   */
+  function vipScore(stats, vip) {
+    const turnover = stats.turnover || 0;
+    const maxBet = stats.maxBet || 0;
+    const days = stats.days || 0;
+    const arr = stats.dayTurnovers || [];
+
+    // 连续 7 天窗口内的最大流水占比
+    let best = 0;
+    for (let i = 0; i + 7 <= arr.length; i++) {
+      let s = 0;
+      for (let k = i; k < i + 7; k++) s += arr[k];
+      if (s > best) best = s;
+    }
+    const share = turnover > 0 ? best / turnover : 0;
+    const burst = arr.length > 7 && share >= 0.8;
+
+    const checks = (vip.tiers || []).map(t => {
+      const okTurnover = turnover >= t.turnover;
+      const okMax = maxBet >= t.maxBet;
+      const okDays = days >= t.days;
+      return {
+        name: t.name, top: !!t.top,
+        turnover: t.turnover, maxBet: t.maxBet, days: t.days,
+        okTurnover, okMax, okDays,
+        met: okTurnover && okMax && okDays
+      };
+    });
+
+    let level = 0;
+    checks.forEach((c, i) => { if (c.met) level = i + 1; });
+    if (burst) level = Math.max(0, level - 1);
+
+    return { level, burst, share, checks, turnover, maxBet, days };
   }
 
   g.BJCore = {
     SUITS, RANKS, cardValue, buildShoe, handValue, isSoft, isBlackjack,
-    sameRank, hiLo, basicStrategy, handReturn, simulate, pointsFor, tierOf
+    sameRank, hiLo, basicStrategy, handReturn, simulate, pointsFor, tierOf, vipScore
   };
 })(window);
