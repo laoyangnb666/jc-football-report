@@ -199,6 +199,36 @@ function blendModels(market, team, k = K_BLEND) {
   };
 }
 
+// ---------- 4.5 纪律层：红牌风险（v5.1，披露制 + 待验证） ----------
+// 输入 row.discipline（全部来自捷报裁判分析页，可查源）：
+//   refH/refA: 主裁判对主队/客队口径的场均红牌（大样本，200+ 场）
+//   teamH/teamA: 主队（本侧）/客队（本侧）近 10 场场均红牌
+//   refYellowH/refYellowA/teamYellowH/teamYellowA: 同口径场均黄牌（可选，仅披露）
+// 机制：红牌期望 λ_red = 0.5·裁判口径 + 0.5·球队口径（两个独立估计互相印证）；
+//   P(该队吃红) = 1 − exp(−λ_red)（泊松近似）。
+// 效应量级取文献共识（非本样本回测）：10 人作战进攻 λ −40%、对方 +30%；
+//   红牌平均发生在 ~60'，期望作用时长占比 ≈ 0.35。
+//   故对 λ 的期望修正：己方 −0.40·0.35·P，对方 +0.30·0.35·P，封顶 ±0.12 球。
+// 「球员情绪状态」本身不可查询，纪律恶化（近 5 场 vs 近 10 场牌数）与裁判严格度是其可观测代理；
+//   更衣室新闻只进文字层，不进 λ。
+function disciplineLayer(disc) {
+  if (!disc) return null;
+  const redH = 0.5 * (num(disc.refH) ?? 0) + 0.5 * (num(disc.teamH) ?? 0);
+  const redA = 0.5 * (num(disc.refA) ?? 0) + 0.5 * (num(disc.teamA) ?? 0);
+  if (redH <= 0 && redA <= 0) return null;
+  const pRedH = 1 - Math.exp(-redH), pRedA = 1 - Math.exp(-redA);
+  const T = 0.35, SELF = 0.40, OPP = 0.30;
+  const adjH = clamp(-SELF * T * pRedH + OPP * T * pRedA, -0.12, 0.12);
+  const adjA = clamp(-SELF * T * pRedA + OPP * T * pRedH, -0.12, 0.12);
+  const yellowH = 0.5 * (num(disc.refYellowH) ?? 0) + 0.5 * (num(disc.teamYellowH) ?? 0);
+  const yellowA = 0.5 * (num(disc.refYellowA) ?? 0) + 0.5 * (num(disc.teamYellowA) ?? 0);
+  return {
+    lamRedH: redH, lamRedA: redA, pRedH, pRedA, adjH, adjA,
+    hot: yellowH >= 2.3 || yellowA >= 2.3,   // 高摩擦场次标记（只披露，不改 λ）
+    yellowH, yellowA,
+  };
+}
+
 // ---------- 5. 逐场综合预测 ----------
 // row: {
 //   no, lg, home, away, kickoff, hc,
@@ -206,7 +236,8 @@ function blendModels(market, team, k = K_BLEND) {
 //   zjq:[8] | null, open:[h,d,a] | null,
 //   team:{home:{home:{gf,ga,p}, away:{gf,ga,p}}, away:{...}, form:{home,away}} | null,
 //   panlu:{home:{...}, away:{...}} | null,
-//   bookAvg:{ euOpen, euLive, rqOpen:{h,line,a}, rqLive, ouOpen:{line}, ouLive } | null
+//   bookAvg:{ euOpen, euLive, rqOpen:{h,line,a}, rqLive, ouOpen:{line}, ouLive } | null,
+//   discipline:{ refH, refA, teamH, teamA, refYellowH?, refYellowA?, teamYellowH?, teamYellowA? } | null
 // }
 function predictMatch(row) {
   const out = { no: row.no, lg: row.lg, home: row.home, away: row.away, hc: row.hc, kickoff: row.kickoff };
@@ -218,8 +249,10 @@ function predictMatch(row) {
 
   // v3：伤停修正（人工情报裁定，报告必须披露依据）
   const adj = row.injuryAdj || { home: 0, away: 0 };
-  const lamH = clamp(bl.lambdaTotal * bl.w + (adj.home || 0), 0.2, 4.8);
-  const lamA = clamp(bl.lambdaTotal * (1 - bl.w) + (adj.away || 0), 0.15, 4.5);
+  // v5.1：纪律层红牌风险（自动、可复算，披露制；无 discipline 输入时不启用）
+  const disc = disciplineLayer(row.discipline);
+  const lamH = clamp(bl.lambdaTotal * bl.w + (adj.home || 0) + (disc ? disc.adjH : 0), 0.2, 4.8);
+  const lamA = clamp(bl.lambdaTotal * (1 - bl.w) + (adj.away || 0) + (disc ? disc.adjA : 0), 0.15, 4.5);
   const lamTotal = lamH + lamA, w = lamH / lamTotal;
   const g = grid(lamTotal, w);
   const s = summarize(g);
@@ -232,6 +265,7 @@ function predictMatch(row) {
     ...out, ok: true,
     lambdaTotal: lamTotal, w, lamH, lamA,
     injuryAdj: adj,
+    discipline: disc,
     blendK: bl.blendK, modelSource: bl.source,
     marketLambda: mk ? mk.lambdaTotal : null, marketW: mk ? mk.w : null,
     teamLambda: tm ? tm.lambdaTotal : null, teamW: tm ? tm.w : null,
@@ -545,6 +579,16 @@ if (typeof module !== 'undefined' && require.main === module) {
   console.log('比分 top5', p.forecast.scores.map((s) => `${s.s} ${(s.p * 100).toFixed(1)}%`).join(' | '));
   console.log('判定', p.verdict.level, p.verdict.pick, '|', p.verdict.reason);
 
+  // 纪律层自检：客队纪律差 + 严格裁判 → 客队 λ 应下调、主队 λ 应上调
+  const demoDisc = { ...demo, discipline: { refH: 0.15, refA: 0.15, teamH: 0.0, teamA: 0.30, refYellowH: 2.5, refYellowA: 2.5, teamYellowH: 1.8, teamYellowA: 2.6 } };
+  const pd = predictMatch(demoDisc);
+  const p0 = predictMatch({ ...demo, discipline: null });
+  console.log('== 纪律层 ==', 'P(主红)', (pd.discipline.pRedH * 100).toFixed(1) + '%',
+    'P(客红)', (pd.discipline.pRedA * 100).toFixed(1) + '%',
+    'adjH', pd.discipline.adjH.toFixed(3), 'adjA', pd.discipline.adjA.toFixed(3),
+    '| λ总', p0.lambdaTotal.toFixed(3), '→', pd.lambdaTotal.toFixed(3),
+    '| 高摩擦', pd.discipline.hot);
+
   const bt = backtest([p], { '示例A': [2, 1] });
   console.log('== 回测 ==', JSON.stringify(bt.hit));
   console.log('去吧', devig([2.0, 3.4, 4.0]).m.toFixed(4),
@@ -554,7 +598,7 @@ if (typeof module !== 'undefined' && require.main === module) {
 module.exports = {
   RHO, K_SHRINK, K_BLEND, SIDE,
   devig, grid, summarize, topScores, goalBuckets, goalIntervals, rqProb, hafu,
-  fitFromZJQ, fit2D, teamStrength, blendModels,
+  fitFromZJQ, fit2D, teamStrength, blendModels, disciplineLayer,
   predictMatch, buildForecast, verdictFromPrediction, buildRecommendation,
   backtest, ev, combo,
 };

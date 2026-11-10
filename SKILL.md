@@ -29,12 +29,13 @@ description: Build institutional-grade China sports lottery football analysis re
 按顺序执行，不要跳步。
 
 1. **回测上一轮**：拿到已完赛比分，用 `backtest(preds, results)` 跑出逐市场命中率，与 [references/model-and-calibration.md](references/model-and-calibration.md) 的待验证清单核对。**这一步在采集新数据之前做。**
-2. **采集**：竞彩官网在售场次（胜平负/让球/总进球/比分/半全场 + 支持率 + 官方概率），捷报逐场（主客分离得失球、盘路、18 家初盘与即时亚盘/水位、大小球、天气），直播吧与搜索补齐伤停/动机/裁判。口径见 [references/data-collection.md](references/data-collection.md)。**v5 起必须取捷报 16+ 家即时欧赔，用来构造海外共识 λ。**
-3. **建模（v5 四层）**：`scripts/analyze.js` 的 `predictMatch(row)` 一次产出 λ（共识 + 独立 + 融合）、比分分布、总进球桶与区间、胜平负、让球、双方进球、半全场、判定。数据以对象传入，字段见脚本文档头。
+2. **采集**：竞彩官网在售场次（胜平负/让球/总进球/比分/半全场 + 支持率 + 官方概率），捷报逐场（主客分离得失球、盘路、18 家初盘与即时亚盘/水位、大小球、天气、**裁判页纪律数据**），直播吧与搜索补齐伤停/动机/裁判。口径见 [references/data-collection.md](references/data-collection.md)。**v5 起必须取捷报 16+ 家即时欧赔，用来构造海外共识 λ。**
+3. **建模（v5 五层）**：`scripts/analyze.js` 的 `predictMatch(row)` 一次产出 λ（共识 + 独立 + 融合）、比分分布、总进球桶与区间、胜平负、让球、双方进球、半全场、判定。数据以对象传入，字段见脚本文档头。
    - **L1 共识 λ**：16–17 家即时欧赔取均值去水，拟合 λ 与偏斜；竞彩只做价格与 EV 基准。
    - **L2 独立 λ**：捷报主客分离得失球 + `shrink(K=8)` + 近 6 场状态（0.15）。
    - **L3 盘口位移**：≥4 家且初盘→即时均值位移 ≥0.20 才触发 ±0.10 球。
    - **L4 裁判层**：捷报 `/info/referee/{id}.htm` 与 api-sports `referee`；未公布即标「未公布」，不进模型。
+   - **L5 纪律层（v5.1 新增）**：红牌风险自动修正 λ——裁判场均红牌与球队近 10 场场均红牌各取 0.5 权重合成 λ_red，P(吃红)=1−exp(−λ_red)，按「10 人作战 λ −40%/对方 +30%、期望作用时长 0.35」折算，封顶 ±0.12 球。黄牌/犯规只做「高摩擦场次」披露。累积黄牌停赛走 injuryAdj 通道。
    - 融合：`λ = (1−k)·λ_共识 + k·λ_独立`，联赛 k=0.35，杯赛 k=0.25；ρ = −0.10。
 4. **判定与方案**：`verdict` 字段给简明判定，`rec` 字段（`buildRecommendation`）给完整购买方案——级别（主推/小注/观察/回避）+ 玩法 + 选项 + 赔率 + 概率/隐含 + EV + 仓位 + 否决条件。**不要手改阈值**；规则与理由见下文与 [references/model-and-calibration.md](references/model-and-calibration.md)。
 5. **补齐逻辑**：按 [references/analysis-framework.md](references/analysis-framework.md) 八节检查表逐项过，标出进模型 / 进文字 / 因缺数据降级。
@@ -84,7 +85,7 @@ description: Build institutional-grade China sports lottery football analysis re
 | 层 | 源 | 取什么 | 边界 |
 |---|---|---|---|
 | A | 竞彩官网 `lottery.gov.cn/jc/jsq/zqspf/` | 在售场次、全部玩法赔率、支持率、官方去水概率 | 唯一法定价，定价基准 |
-| B | 捷报 `cp.nowscore.com` + `live.nowscore.com` | **主客分离得失球、盘路（让球胜率/大小球率，主客分开）、18 家初盘与即时欧赔/亚盘水位/大小球、天气场地、裁判分析页** | 独立模型的唯一输入来源 |
+| B | 捷报 `cp.nowscore.com` + `live.nowscore.com` | **主客分离得失球、盘路（让球胜率/大小球率，主客分开）、18 家初盘与即时欧赔/亚盘水位/大小球、天气场地、裁判分析页（场均红黄牌/犯规，主客与近况分开）** | 独立模型与纪律层的唯一输入来源 |
 | B2 | 捷报 16+ 家即时欧赔均值（v5 新增） | **海外共识 1X2 概率**：去水后拟合 L1 共识 λ | 比竞彩少约 8pp 抽水，是价差基准 |
 | C | 直播吧 `zhibo8.com` | 伤停、首发、赛程、动机线索 | 定性，需第二来源确认 |
 | D | 联网搜索 | xG/xGA、官方公告、裁判、联赛形势 | 每个数字能点回原页 |
