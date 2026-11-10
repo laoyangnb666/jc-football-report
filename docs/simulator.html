@@ -219,11 +219,13 @@
     });
     h += '</div>';
 
-    h += `<h4 style="text-transform:none;letter-spacing:0;font-size:11px;color:#959889">伤停修正 / λ 来源</h4>
+    h += `<h4 style="text-transform:none;letter-spacing:0;font-size:11px;color:#959889">λ 来源 / 盘口位移</h4>
       <div style="font-size:12.2px;color:var(--muted);line-height:1.7">
-        融合 λ <b style="color:var(--ink);font-family:ui-monospace,monospace">${m.lam.toFixed(2)}</b>
-        （市场 ${m.lamMkt ? m.lamMkt.toFixed(2) : '—'} ＋ 独立 ${m.lamTeam ? m.lamTeam.toFixed(2) : '—'}），
-        伤停修正 ${m.adj[0].toFixed(2)} / ${m.adj[1].toFixed(2)}。
+        融合 λ <b style="color:var(--ink);font-family:ui-monospace,monospace">${m.lam.toFixed(2)}</b>${
+          m.adj ? `，伤停修正 ${m.adj[0].toFixed(2)} / ${m.adj[1].toFixed(2)}` : ''
+        }${
+          (m.drift != null) ? `。亚盘位移 ${m.drift > 0 ? '+' : ''}${m.drift.toFixed(2)}（${m.driftN || 0} 家）` : ''
+        }。
         ${m.note ? '<br>' + m.note : ''}
       </div>
       <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
