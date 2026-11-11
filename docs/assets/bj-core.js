@@ -260,20 +260,24 @@
    * 随机准入（邀约概率模型）
    * 达标也可能不中，未达标也可能被抽中：
    *   · 基础概率按「累计投注 / 基础门槛」线性给（最高 55%）
-   *   · 单次投注达到门槛 2 倍以上 → 大额单注特殊通道 +15%
+   *   · 单次投注按「单次最大 / 门槛单注」线性加分，2 倍门槛封顶 28%
    *   · 流水集中突击（稳定性扣分）→ 概率减半
-   *   · 顶层隐藏卡概率另算，上限 12%
+   *   · 顶层隐藏卡概率另算，未达标上限 20%
+   *   · 已完全达标却没中：每局保底 +25pp（顶层 +10pp），直到摇中
    * @param {function} rand 可注入的随机源（测试用），默认 Math.random
+   * @param {object} pity 保底计数 { basic, top }：自上次达标未中以来的连续局数
    */
-  function vipChance(stats, vip, rand) {
+  function vipChance(stats, vip, rand, pity) {
     const r = rand || Math.random;
+    pity = pity || {};
     const base = vipScore(stats, vip);
     const basic = base.checks[0];
     const top = base.checks[base.checks.length - 1];
 
     const ratio = basic && basic.turnover ? Math.min(stats.turnover / basic.turnover, 1.5) : 0;
+    const metB = !!(basic && basic.met);
     let p = Math.min(0.55, ratio * 0.38);
-    if (basic && basic.met) p = Math.max(p, 0.55);
+    if (metB) p = 0.55;
 
     // 大额单注通道：按「单次最大投注 / 门槛单注」线性加分，2 倍门槛时到顶
     const bigP = basic && basic.maxBet
@@ -281,15 +285,18 @@
     const bigBet = bigP >= 0.03;
     p += bigP;
     if (base.burst) p *= 0.5;
-    p = Math.min(0.75, p);
+    if (metB) p += 0.25 * (pity.basic || 0);   // 达标保底不因突击扣分而打折
+    p = Math.min(metB ? 1 : 0.75, p);
 
     let pTop = 0;
     if (top && top !== basic) {
       const rTop = top.turnover ? Math.min(stats.turnover / top.turnover, 1.2) : 0;
       pTop = Math.min(0.12, rTop * 0.09);
-      if (top.met) pTop = Math.max(pTop, 0.12);
+      if (top.met) pTop = 0.12;
       if (bigBet) pTop += Math.min(0.04, bigP * 0.15);
       if (base.burst) pTop *= 0.5;
+      if (top.met) pTop += 0.10 * (pity.top || 0);
+      pTop = Math.min(top.met ? 1 : 0.2, pTop);
     }
 
     const rollBasic = r();
@@ -336,11 +343,13 @@
       };
     });
 
-    let level = 0;
-    checks.forEach((c, i) => { if (c.met) level = i + 1; });
+    let metLevel = 0;
+    checks.forEach((c, i) => { if (c.met) metLevel = i + 1; });
+    // 突击流水只扣「邀约概率」，不再把已达门槛的候选档降成未达标
+    let level = metLevel;
     if (burst) level = Math.max(0, level - 1);
 
-    return { level, burst, share, checks, turnover, maxBet, days };
+    return { level, metLevel, burst, share, checks, turnover, maxBet, days };
   }
 
   g.BJCore = {

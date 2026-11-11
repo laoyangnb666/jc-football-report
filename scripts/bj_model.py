@@ -295,41 +295,51 @@ def vip_score(turnover: float, max_bet: float, days: int, day_turnovers, vip_tie
         ok_c = days >= t["days"]
         checks.append({**t, "okA": ok_a, "okB": ok_b, "okC": ok_c, "met": ok_a and ok_b and ok_c})
 
-    level = 0
+    met_level = 0
     for i, c in enumerate(checks):
         if c["met"]:
-            level = i + 1
+            met_level = i + 1
+    # 突击流水只扣邀约概率，不把已达门槛的候选档降成未达标
+    level = met_level
     if burst:
         level = max(0, level - 1)
-    return {"level": level, "burst": burst, "share": share, "checks": checks}
+    return {"level": level, "metLevel": met_level, "burst": burst, "share": share, "checks": checks}
 
 
-def vip_chance(turnover, max_bet, days, day_turnovers, vip_tiers, rand=None) -> dict:
-    """随机准入：达标可能不中，未达标也可能被抽中。"""
+def vip_chance(turnover, max_bet, days, day_turnovers, vip_tiers, rand=None, pity=None) -> dict:
+    """随机准入：达标可能不中，未达标也可能被抽中；完全达标未中则按局保底。"""
     rnd = rand or random.random
+    pity = pity or {}
     base = vip_score(turnover, max_bet, days, day_turnovers, vip_tiers)
     basic, top = vip_tiers[0], vip_tiers[-1]
     ratio = min(turnover / basic["turnover"], 1.5) if basic["turnover"] else 0.0
+    met_basic = base["checks"][0]["met"]
     p = min(0.55, ratio * 0.38)
-    if base["checks"][0]["met"]:
-        p = max(p, 0.55)
+    if met_basic:
+        p = 0.55
     big_p = min(0.28, max_bet / basic["maxBet"] * 0.18) if basic["maxBet"] else 0.0
     big_bet = big_p >= 0.03
     p += big_p
     if base["burst"]:
         p *= 0.5
-    p = min(0.75, p)
+    if met_basic:
+        p += 0.25 * pity.get("basic", 0)   # 达标保底不因突击扣分而打折
+    p = min(1.0 if met_basic else 0.75, p)
 
     p_top = 0.0
     if top is not basic:
         r_top = min(turnover / top["turnover"], 1.2) if top["turnover"] else 0.0
         p_top = min(0.12, r_top * 0.09)
-        if base["checks"][-1]["met"]:
-            p_top = max(p_top, 0.12)
+        met_top = base["checks"][-1]["met"]
+        if met_top:
+            p_top = 0.12
         if big_bet:
             p_top += min(0.04, big_p * 0.15)
         if base["burst"]:
             p_top *= 0.5
+        if met_top:
+            p_top += 0.10 * pity.get("top", 0)
+        p_top = min(1.0 if met_top else 0.2, p_top)
 
     invited_basic = rnd() < p
     invited_top = p_top > 0 and rnd() < p_top
@@ -381,6 +391,29 @@ def check() -> None:
     assert ch_ok["invited"] >= 1 and ch_ok["p"] >= 0.55
     ch_big = vip_chance(1_000_000, 40_000, 3, [400_000] * 3, vip, rand=lambda: 0.0)
     assert ch_big["bigBet"] and ch_big["p"] > ch_low["p"]
+    # 达标首摇仍可能不中；连续未中后保底必中（p 到 100%）
+    ch_met_miss = vip_chance(12_000_000, 20_000, 12, [1_000_000] * 12, vip, rand=lambda: 0.999)
+    assert ch_met_miss["invited"] == 0
+    ch_pity = vip_chance(12_000_000, 20_000, 12, [1_000_000] * 12, vip,
+                         rand=lambda: 0.999, pity={"basic": 2})
+    assert ch_pity["p"] == 1.0 and ch_pity["invited"] == 1
+    top_vip = vip + [{"name": "ChairmanX", "turnover": 80_000_000, "maxBet": 150_000, "days": 30}]
+    ch_top_pity = vip_chance(80_000_000, 150_000, 30, [1_000_000] * 30, top_vip,
+                             rand=lambda: 0.999, pity={"basic": 0, "top": 9})
+    assert ch_top_pity["pTop"] == 1.0 and ch_top_pity["invited"] == 2
+    # 突击流水只扣概率，不改「已达门槛」判定
+    low_vip = [
+        {"name": "基础", "turnover": 8_000_000, "maxBet": 10_000, "days": 8},
+        {"name": "顶层", "turnover": 55_000_000, "maxBet": 90_000, "days": 22},
+    ]
+    b = vip_score(8_000_000, 20_000, 8, [1_000_000] * 8, low_vip)
+    assert b["burst"] and b["metLevel"] == 1 and b["level"] == 0
+    ch_pity_burst = vip_chance(8_000_000, 20_000, 8, [1_000_000] * 8, low_vip,
+                               rand=lambda: 0.999, pity={"basic": 1})
+    assert abs(ch_pity_burst["p"] - 0.665) < 1e-9 and ch_pity_burst["invited"] == 0
+    ch_pity_burst2 = vip_chance(8_000_000, 20_000, 8, [1_000_000] * 8, low_vip,
+                                rand=lambda: 0.999, pity={"basic": 3})
+    assert ch_pity_burst2["p"] == 1.0 and ch_pity_burst2["invited"] == 1
     print("check: OK")
 
 

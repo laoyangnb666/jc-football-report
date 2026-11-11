@@ -388,6 +388,15 @@ body.fsmode .betpanel,body.fsmode .curve-card,body.fsmode .data-stack{display:no
 .vip-invite .iv.no{color:#B3202A}
 .vip-invite .iv-sub{display:block;font-size:9px;color:#8A8272;margin-top:2px}
 .vip-invite .iv-idle{font-size:9.5px;color:#9A927F}
+/* 已获邀约的贵宾卡（持卡状态，不因单局未中而收回） */
+.vip-held{display:none;align-items:center;justify-content:space-between;gap:10px;
+  margin:0 0 9px;padding:8px 11px;border-radius:10px;
+  background:linear-gradient(135deg,#14392A,#0A2318);border:1px solid #C9A227;
+  box-shadow:inset 0 1px 0 rgba(235,217,143,.18)}
+.vip-held b{display:block;font-size:11.5px;color:#F4EDDB;letter-spacing:.4px;line-height:1.35}
+.vip-held small{display:block;font-size:8.5px;color:#B9B199;margin-top:2px}
+.vip-held .vh-tag{flex:0 0 auto;font-size:8.5px;letter-spacing:1px;padding:2px 7px;border-radius:999px;
+  background:#C9A227;color:#1A1306;font-weight:700}
 .bank.neg,#bankView.neg{color:#B3202A}
 body.fsmode .deck-panel .dp-read.dp-bank b.neg{color:#FCA5A5}
 .dp-pts{color:#C9A227}
@@ -695,6 +704,7 @@ body.fsmode .deck-panel .dp-read.dp-bank b.neg{color:#FCA5A5}
         <div class="data-card">
           <h4>贵宾候选评估 <span id="vipName">Paiza</span></h4>
           <div class="vip-head" id="vipStatus"></div>
+          <div class="vip-held" id="vipHeld"></div>
           <div class="vip-body" id="vipRows"></div>
           <div class="vip-invite" id="vipInvite"></div>
           <div class="vip-note" id="vipNote"></div>
@@ -915,6 +925,9 @@ const BJ = (() => {
   /* 会员与贵宾评估用的累计量 */
   let maxStake = 0, dayTurnovers = [];
   let invite = null;   // 本局随机准入结果（每局重掷）
+  let vipCard = 0;     // 已获邀约并保留的贵宾卡：0 无 / 1 基础 / 2 顶层隐藏卡
+  let vipCardRound = 0;
+  let vipMiss = { basic: 0, top: 0 };   // 完全达标却未中：保底计数
   let flyKeys = new Set();   // 需要播放飞入动画的牌 key
 
   /* 资金曲线数据 */
@@ -936,7 +949,7 @@ const BJ = (() => {
      'myHands','myLive','ledger','curve','curveTip','curveLegend','cvPeak','cvDD','cvAvg','cvN','betBreak',
      'beads','beadCount','kvGrid','seatRows','recentRows','ptsBig','ptsTier','ptsBar','ptsNote','ptsVenue',
      'myZoneLabel','mySeatLabel','feltPayText','plMax','plMin','plEquip','venueHint','cfgVenue','cfgRoom','cfgSeats',
-     'tableTips','vipName','vipStatus','vipRows','vipNote','melcoModal','melcoOk','fsPts','ptsInline','vipInvite',
+     'tableTips','vipName','vipStatus','vipRows','vipNote','melcoModal','melcoOk','fsPts','ptsInline','vipInvite','vipHeld',
      'cfgMySeat','cfgEmpty','cfgBank','cfgCap','cfgApply',
      'stageTxt','sg1','sg2','sg3','sg4','sg5'
     ].forEach(k => el[k] = $(k));
@@ -1224,13 +1237,32 @@ const BJ = (() => {
     }, vip);
 
     el.vipName.textContent = vip.name;
-    const badge = ['暂不达标', '基础候选池', '顶层候选池'][res.level];
-    el.vipStatus.innerHTML = `<span class="vip-badge lv${res.level}">${badge}</span>
+    const basicName = vip.tiers[0] ? vip.tiers[0].name : '—';
+    const topName = vip.tiers[vip.tiers.length - 1].name;
+    const hasTop = vip.tiers.length > 1;
+    const badge = vipCard === 2 ? '已持卡 · 顶层隐藏卡'
+      : vipCard === 1 ? '已持卡 · 基础贵宾'
+      : ['暂不达标', '已达门槛 · 基础候选', '已达门槛 · 顶层候选'][res.metLevel];
+    el.vipStatus.innerHTML = `<span class="vip-badge lv${res.metLevel}">${badge}</span>
       <span class="vip-hint">${
-        res.level === 0 ? '暂未进入贵宾候选池，继续积累投注'
-        : res.level === 1 ? '已进入基础贵宾邀约候选池，仅模拟，赌场会综合评估，不保证一定邀约'
-        : '已进入顶层贵宾（隐藏卡）邀约候选池，门槛极高，仅为模拟参考，真实赌场极少发放'
+        vipCard ? '贵宾厅会员卡已到手并保留，不会因后续单局未中而收回'
+        : res.metLevel === 0 ? '暂未进入贵宾候选池，继续积累投注'
+        : `三项门槛已达${res.metLevel === 2 ? '（顶层）' : ''}，已进入邀约池；每局抽签，未中按局保底${res.burst ? '；流水突击，概率减半' : ''}`
       }</span>`;
+
+    /* 已获邀约的卡：一旦到手就保留，不因后续单局未中而收回 */
+    if (el.vipHeld){
+      if (!vipCard){
+        el.vipHeld.style.display = 'none';
+        el.vipHeld.innerHTML = '';
+      } else {
+        const nm = vipCard === 2 ? topName : basicName;
+        el.vipHeld.style.display = 'flex';
+        el.vipHeld.innerHTML =
+          `<div><b>${nm}</b><small>贵宾厅会员卡 · 第 ${vipCardRound} 局获邀约 · 已保留</small></div>
+           <span class="vh-tag">持有中</span>`;
+      }
+    }
 
     const row = (c) => {
       const mk = (ok) => `<i class="ok${ok ? '' : ' no'}">${ok ? '✓' : '✗'}</i>`;
@@ -1244,7 +1276,7 @@ const BJ = (() => {
     el.vipRows.innerHTML = `
       <table class="vip-table">
         <thead><tr><th>候选档</th><th>6 个月投注</th><th>单次最大</th><th>到访</th></tr></thead>
-        <tbody>${vip.tiers.map(row).join('')}</tbody>
+        <tbody>${res.checks.map(row).join('')}</tbody>
       </table>
       <div class="vip-metrics">
         <span>当前：投注 <b>${fmtShort(res.turnover)}</b></span>
@@ -1253,29 +1285,48 @@ const BJ = (() => {
       </div>`;
 
     const parts = [];
-    if (res.burst) parts.push(`流水集中在短期突击（连续 7 局窗口占 ${(res.share * 100).toFixed(0)}%），稳定性扣分，等级降一档；真实赌场邀约概率大幅降低`);
+    if (res.burst) parts.push(`流水集中在短期突击（连续 7 局窗口占 ${(res.share * 100).toFixed(0)}%），邀约概率减半（门槛仍按已达标显示）`);
     else if (res.days > 7) parts.push(`稳定性正常（连续 7 局窗口占 ${(res.share * 100).toFixed(0)}%），未触发突击扣分`);
     parts.push(`${vip.note ? vip.note + '；' : ''}到访天数按「局」模拟，积分与贵宾为两套独立评估`);
-    parts.push('贵宾资格永远由赌场评估邀约，系统只输出状态，不授予权限');
+    parts.push('卡为模拟状态，真实资格仍由赌场现场核定');
     el.vipNote.textContent = parts.join(' · ');
 
-    /* 随机准入：达标也可能不中，未达标也可能被抽中 */
+    /* 随机准入：达标也可能不中，未达标也可能被抽中；到手即保留 */
     if (el.vipInvite){
       if (!invite){
         el.vipInvite.innerHTML = `<span class="iv-idle">打完一局后，这里给出本局的随机准入结果</span>`;
       } else {
-        const pUsed = invite.invited === 2 ? invite.pTop : invite.p;
-        const pTxt = pUsed <= 0 ? '0%' : pUsed < 0.01 ? '<1%' : (pUsed * 100).toFixed(0) + '%';
-        const lvlName = invite.invited === 2 ? vip.tiers[vip.tiers.length - 1].name
-          : invite.invited === 1 ? vip.tiers[0].name : '';
-        const boost = invite.bigBet ? ' · 已触发大额单注通道' : '';
-        if (invite.invited){
+        const pct = x => x <= 0 ? '0%' : x < 0.01 ? '<1%' : (x * 100).toFixed(0) + '%';
+        const boost = invite.bigBet ? ' · 大额单注通道' : '';
+        const metBasic = invite.checks[0].met;
+        const metTop = hasTop && invite.checks[invite.checks.length - 1].met;
+        const nextBasic = Math.min(1, invite.p + 0.25);
+        const nextTop = Math.min(1, invite.pTop + 0.10);
+        if (vipCard === 2){
+          const gotNow = invite.invitedTop;
           el.vipInvite.innerHTML =
-            `<span class="iv ok">本局评估：抽中 <b>${lvlName}</b> 邀约（概率 ${pTxt}）${boost}</span>
-             <span class="iv-sub">随机准入：未达标也可能被抽中，达标也可能不中；仍只是候选，需赌场最终核定</span>`;
+            `<span class="iv ok">${gotNow ? `本局抽中顶层 <b>${topName}</b>（概率 ${pct(invite.pTop)}），已写入贵宾卡` : `已持有 <b>${topName}</b>（顶层隐藏卡）`}</span>
+             <span class="iv-sub">持卡状态保留，不因后续单局未中而收回；本局仍按程序重掷</span>`;
+        } else if (vipCard === 1){
+          const topLine = !hasTop ? ''
+            : invite.invitedTop ? `本局顶层抽中 <b>${topName}</b>（概率 ${pct(invite.pTop)}）`
+            : `本局顶层未中（概率 ${pct(invite.pTop)}${metTop ? `，下局保底 ${pct(nextTop)}` : ''}）`;
+          el.vipInvite.innerHTML =
+            `<span class="iv ok">已持有 <b>${basicName}</b> 贵宾卡</span>
+             <span class="iv-sub">${topLine ? topLine + '；' : ''}卡已保留，不因后续单局未中而收回</span>`;
+        } else if (invite.invited){
+          const nm = invite.invited === 2 ? topName : basicName;
+          const pp = invite.invited === 2 ? invite.pTop : invite.p;
+          el.vipInvite.innerHTML =
+            `<span class="iv ok">本局抽中 <b>${nm}</b> 邀约（概率 ${pct(pp)}）${boost}</span>
+             <span class="iv-sub">已写入贵宾卡并保留；未达标也可能被抽中，仍为候选，需赌场现场核定</span>`;
+        } else if (metBasic){
+          el.vipInvite.innerHTML =
+            `<span class="iv no">已达门槛，本局未中（本次概率 ${pct(invite.p)}）${boost}</span>
+             <span class="iv-sub">达标保底：下局概率 ${pct(nextBasic)}，最多 ${Math.max(1, Math.ceil((1 - invite.p) / 0.25))} 局内必得</span>`;
         } else {
           el.vipInvite.innerHTML =
-            `<span class="iv no">本局评估：未获邀约（本次概率 ${pTxt}）${boost}</span>
+            `<span class="iv no">未获邀约（本次概率 ${pct(invite.p)}）${boost}</span>
              <span class="iv-sub">每局重掷；未达标时按「投注 / 门槛」与「单次最大投注」线性给概率，大额单注可越过门槛直接抽</span>`;
         }
       }
@@ -1825,7 +1876,16 @@ const BJ = (() => {
         invite = CORE.vipChance({                                       // 每局重掷一次随机准入
           turnover: st.turnover, maxBet: maxStake,
           days: dayTurnovers.length, dayTurnovers
-        }, PROGRAMS[curVenue().prog].vip);
+        }, PROGRAMS[curVenue().prog].vip, null, vipMiss);
+        if (invite.invited > vipCard){                              // 邀约一旦到手就保留，不因下局未中而收回
+          vipCard = invite.invited;
+          vipCardRound = st.rounds;
+        }
+        const lastChk = invite.checks[invite.checks.length - 1];
+        vipMiss.basic = invite.checks[0].met && !invite.invitedBasic && vipCard < 1
+          ? vipMiss.basic + 1 : 0;
+        vipMiss.top = invite.checks.length > 1 && lastChk.met && !invite.invitedTop && vipCard < 2
+          ? vipMiss.top + 1 : 0;
         const busted = s.hands.some(h => val(h.cards) > 21 && !h.special);
         const kind = (s.hands[0] && s.hands[0].natBJ) ? 'bj' : busted ? 'bust'
                    : realPL > 0 ? 'w' : realPL < 0 ? 'l' : 'p';
@@ -2294,6 +2354,7 @@ const BJ = (() => {
     st = { rounds: 0, w: 0, l: 0, d: 0, bj: 0, side: 0, pl: 0, turnover: 0 };
     points = 0; beads = []; loseRun = 0; maxLose = 0; busts = 0; recent = [];
     maxStake = 0; dayTurnovers = []; invite = null;
+    vipCard = 0; vipCardRound = 0; vipMiss = { basic: 0, top: 0 };
     lastRound = null;
     phase = 'bet'; activeSeat = 0; activeHand = 0; busy = false;
     dealer = []; insuranceAmt = 0; flyKeys.clear();
