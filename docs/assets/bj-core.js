@@ -224,10 +224,10 @@
 
   /**
    * 中场积分：有效投注 / 每分所需投注额
-   * 新濠摩卡会 21 点不计分（no21Points），直接返回 0
+   * 新濠改按新濠会（Altira 会籍表）计分，400 MOP = 1 分
    */
   function pointsFor(turnover, prog) {
-    if (!prog || prog.no21Points || !prog.mopPerPoint) return 0;
+    if (!prog || !prog.mopPerPoint) return 0;
     return turnover / prog.mopPerPoint;
   }
 
@@ -252,7 +252,8 @@
       tier: cur[0],
       next: nxt ? nxt[0] : null,
       need: nextNeed != null ? Math.ceil(nextNeed - points) : null,
-      pct, known
+      pct, known,
+      idx, count: tiers.length
     };
   }
 
@@ -264,12 +265,15 @@
    *   · 流水集中突击（稳定性扣分）→ 概率减半
    *   · 顶层隐藏卡概率另算，未达标上限 20%
    *   · 已完全达标却没中：每局保底 +25pp（顶层 +10pp），直到摇中
+   *   · 中场会员卡等级匹配：最高 +10pp（顶层减半计入）
    * @param {function} rand 可注入的随机源（测试用），默认 Math.random
    * @param {object} pity 保底计数 { basic, top }：自上次达标未中以来的连续局数
+   * @param {number} bonus 会员等级匹配加成（0–0.10）
    */
-  function vipChance(stats, vip, rand, pity) {
+  function vipChance(stats, vip, rand, pity, bonus) {
     const r = rand || Math.random;
     pity = pity || {};
+    const mb = Math.max(0, Math.min(0.10, bonus || 0));
     const base = vipScore(stats, vip);
     const basic = base.checks[0];
     const top = base.checks[base.checks.length - 1];
@@ -285,6 +289,7 @@
     const bigBet = bigP >= 0.03;
     p += bigP;
     if (base.burst) p *= 0.5;
+    p += mb;
     if (metB) p += 0.25 * (pity.basic || 0);   // 达标保底不因突击扣分而打折
     p = Math.min(metB ? 1 : 0.75, p);
 
@@ -295,6 +300,7 @@
       if (top.met) pTop = 0.12;
       if (bigBet) pTop += Math.min(0.04, bigP * 0.15);
       if (base.burst) pTop *= 0.5;
+      pTop += mb * 0.5;
       if (top.met) pTop += 0.10 * (pity.top || 0);
       pTop = Math.min(top.met ? 1 : 0.2, pTop);
     }

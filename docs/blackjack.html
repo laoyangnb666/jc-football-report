@@ -840,14 +840,7 @@ body.fsmode .deck-panel .dp-read.dp-bank b.neg{color:#FCA5A5}
   </div>
 </main>
 
-<!-- 新濠摩卡会：21 点不计分弹窗 -->
-<div class="modal" id="melcoModal">
-  <div class="modal-box">
-    <h3>新濠摩卡会 · 21 点不计分</h3>
-    <p>摩卡会积分只来自角子机，21 点投注<b>不产生</b>摩卡积分；21 点贵宾归属<b>铂悦</b>体系，与摩卡积分相互独立。</p>
-    <button id="melcoOk">知道了</button>
-  </div>
-</div>
+<!-- 新濠会：21 点按有效投注计分（金卡/白金/钻石/麒麟/龙卡） -->
 
 <footer style="border-top:1px solid #E2DACA;padding:24px 0 44px;text-align:center;color:#6B6355;font-size:11px;line-height:1.85">
   <p style="max-width:860px;margin:0 auto 7px">
@@ -882,7 +875,6 @@ const BJ = (() => {
   const cfg = { venue: 0, room: 0, seats: 6, mySeat: 2, emptySeats: 0, bank: 200000, noCap: true };
   let HUMAN = 2;
   let seatNames = [];
-  let points = 0;
 
   const curCasino = () => CASINOS[cfg.venue];
   /** 当前台 = 场 × 房间 */
@@ -893,11 +885,31 @@ const BJ = (() => {
       key: c.id + ':' + r.name, name: c.name, op: c.op, room: r.name,
       decks: r.decks, csm: r.csm, soft17: r.s17 ? 's17' : 'h17', seats: r.seats,
       min: r.min, max: r.max, bj: c.bj, sur: c.sur, prog: c.prog,
-      bank: bankFor(r), note: r.note || ''
+      bank: bankFor(r), note: r.note || '', need: roomNeed(r)
     };
   }
   const betMin = () => curVenue().min;
   const betMax = () => cfg.noCap ? Infinity : curVenue().max;
+
+  /* 房间准入：普通场/中场/高额区不限；贵宾厅需基础贵宾卡；私人厅/主席厅需顶层隐藏卡 */
+  function roomNeed(r){
+    return r.name === '贵宾厅' ? 1
+      : (r.name === '私人厅' || r.name === '主席厅') ? 2 : 0;
+  }
+  const needName = n => n === 2 ? '顶层隐藏卡' : n === 1 ? '基础贵宾卡' : '';
+  function roomOpen(casinoIdx, roomIdx){
+    const c = CASINOS[casinoIdx];
+    return memOf(c.prog).card >= roomNeed(c.rooms[roomIdx]);
+  }
+  /* 会员匹配：中场积分卡等级越高，贵宾邀约概率加成越高（最高 +10pp） */
+  function memberBonus(progId){
+    const id = progId || curCasino().prog;
+    const prog = PROGRAMS[id];
+    const n = (prog.tiers || []).length;
+    if (n <= 1) return 0;
+    const t = CORE.tierOf(memOf(id).points, prog);
+    return (t.idx / (n - 1)) * 0.10;
+  }
 
   /* 算法层：全部在 assets/bj-core.js，这里只做薄封装 */
   const CORE = window.BJCore;
@@ -922,12 +934,17 @@ const BJ = (() => {
   let beads = [], loseRun = 0, maxLose = 0, busts = 0;
   let recent = [];
   let rc = 0;
-  /* 会员与贵宾评估用的累计量 */
-  let maxStake = 0, dayTurnovers = [];
-  let invite = null;   // 本局随机准入结果（每局重掷）
-  let vipCard = 0;     // 已获邀约并保留的贵宾卡：0 无 / 1 基础 / 2 顶层隐藏卡
-  let vipCardRound = 0;
-  let vipMiss = { basic: 0, top: 0 };   // 完全达标却未中：保底计数
+  /* 会员与贵宾：按「会员体系」独立累计，换台/换房不会清零 */
+  const MEM = {};
+  function memOf(progId){
+    if (!MEM[progId]) MEM[progId] = {
+      points: 0, turnover: 0, maxStake: 0, dayTurnovers: [],
+      card: 0, cardRound: 0, miss: { basic: 0, top: 0 }
+    };
+    return MEM[progId];
+  }
+  const mem = () => memOf(curCasino().prog);
+  let invite = null;   // 本桌最近一局的随机准入结果（仅显示）
   let flyKeys = new Set();   // 需要播放飞入动画的牌 key
 
   /* 资金曲线数据 */
@@ -949,7 +966,7 @@ const BJ = (() => {
      'myHands','myLive','ledger','curve','curveTip','curveLegend','cvPeak','cvDD','cvAvg','cvN','betBreak',
      'beads','beadCount','kvGrid','seatRows','recentRows','ptsBig','ptsTier','ptsBar','ptsNote','ptsVenue',
      'myZoneLabel','mySeatLabel','feltPayText','plMax','plMin','plEquip','venueHint','cfgVenue','cfgRoom','cfgSeats',
-     'tableTips','vipName','vipStatus','vipRows','vipNote','melcoModal','melcoOk','fsPts','ptsInline','vipInvite','vipHeld',
+     'tableTips','vipName','vipStatus','vipRows','vipNote','fsPts','ptsInline','vipInvite','vipHeld',
      'cfgMySeat','cfgEmpty','cfgBank','cfgCap','cfgApply',
      'stageTxt','sg1','sg2','sg3','sg4','sg5'
     ].forEach(k => el[k] = $(k));
@@ -1202,25 +1219,20 @@ const BJ = (() => {
   function renderPoints(){
     const v = curVenue();
     const prog = PROGRAMS[v.prog];
-    const t = CORE.tierOf(points, prog);
+    const m = mem();
+    const t = CORE.tierOf(m.points, prog);
     if (el.ptsVenue) el.ptsVenue.textContent = `${v.name} · ${prog.name}`;
-    if (el.ptsBig) el.ptsBig.textContent = prog.no21Points ? '不计分' : Math.round(points).toLocaleString();
-    if (el.ptsTier) el.ptsTier.textContent = prog.no21Points ? '—' : t.tier;
-    if (el.ptsInline) el.ptsInline.textContent = prog.no21Points
-      ? `${prog.name} · 21 点不计分`
-      : `${prog.name} · ${t.tier} · ${Math.round(points).toLocaleString()} 分`;
+    if (el.ptsBig) el.ptsBig.textContent = Math.round(m.points).toLocaleString();
+    if (el.ptsTier) el.ptsTier.textContent = t.tier;
+    if (el.ptsInline) el.ptsInline.textContent = `${prog.name} · ${t.tier} · ${Math.round(m.points).toLocaleString()} 分`;
     if (el.ptsBar) el.ptsBar.style.width = (t.pct == null ? 0 : t.pct).toFixed(1) + '%';
     if (el.ptsNote){
       const lines = [];
-      if (prog.no21Points){
-        lines.push(`有效投注 ${fmt(st.turnover)} · 21 点不累积摩卡积分`);
-        lines.push('摩卡会积分仅来自角子机；21 点贵宾走铂悦体系');
-      } else {
-        lines.push(`有效投注 ${fmt(st.turnover)} MOP · ${prog.conversion}`);
-        if (t.pct == null) lines.push(`${t.next ? '下一档 ' + t.next + '：' : ''}${prog.tiersNote}`);
-        else lines.push(`距${t.next}还差 ${t.need} 分（${prog.tiersNote}）`);
-      }
+      lines.push(`本卡系累计有效投注 ${fmt(m.turnover)} MOP · ${prog.conversion}`);
+      if (t.pct == null) lines.push(`${t.next ? '下一档 ' + t.next + '：' : ''}${prog.tiersNote}`);
+      else lines.push(`距${t.next}还差 ${t.need} 分（${prog.tiersNote}）`);
       lines.push(prog.tiers.map(([n, p]) => `${n} ${p == null ? '未公开' : p.toLocaleString()}`).join(' · '));
+      lines.push(`贵宾厅：${m.card >= 1 ? '已持卡，可入场' : '需基础贵宾卡'} · 私人厅/主席厅：${m.card >= 2 ? '已持顶层卡，可入场' : '需顶层隐藏卡'}`);
       el.ptsNote.textContent = lines.join('\n');
     }
   }
@@ -1231,35 +1243,36 @@ const BJ = (() => {
     const v = curVenue();
     const prog = PROGRAMS[v.prog];
     const vip = prog.vip;
+    const m = mem();
     const res = CORE.vipScore({
-      turnover: st.turnover, maxBet: maxStake,
-      days: dayTurnovers.length, dayTurnovers
+      turnover: m.turnover, maxBet: m.maxStake,
+      days: m.dayTurnovers.length, dayTurnovers: m.dayTurnovers
     }, vip);
 
     el.vipName.textContent = vip.name;
     const basicName = vip.tiers[0] ? vip.tiers[0].name : '—';
     const topName = vip.tiers[vip.tiers.length - 1].name;
     const hasTop = vip.tiers.length > 1;
-    const badge = vipCard === 2 ? '已持卡 · 顶层隐藏卡'
-      : vipCard === 1 ? '已持卡 · 基础贵宾'
+    const badge = m.card === 2 ? '已持卡 · 顶层隐藏卡'
+      : m.card === 1 ? '已持卡 · 基础贵宾'
       : ['暂不达标', '已达门槛 · 基础候选', '已达门槛 · 顶层候选'][res.metLevel];
     el.vipStatus.innerHTML = `<span class="vip-badge lv${res.metLevel}">${badge}</span>
       <span class="vip-hint">${
-        vipCard ? '贵宾厅会员卡已到手并保留，不会因后续单局未中而收回'
+        m.card ? '贵宾厅会员卡已到手并保留，不会因后续单局未中而收回'
         : res.metLevel === 0 ? '暂未进入贵宾候选池，继续积累投注'
         : `三项门槛已达${res.metLevel === 2 ? '（顶层）' : ''}，已进入邀约池；每局抽签，未中按局保底${res.burst ? '；流水突击，概率减半' : ''}`
       }</span>`;
 
     /* 已获邀约的卡：一旦到手就保留，不因后续单局未中而收回 */
     if (el.vipHeld){
-      if (!vipCard){
+      if (!m.card){
         el.vipHeld.style.display = 'none';
         el.vipHeld.innerHTML = '';
       } else {
-        const nm = vipCard === 2 ? topName : basicName;
+        const nm = m.card === 2 ? topName : basicName;
         el.vipHeld.style.display = 'flex';
         el.vipHeld.innerHTML =
-          `<div><b>${nm}</b><small>贵宾厅会员卡 · 第 ${vipCardRound} 局获邀约 · 已保留</small></div>
+          `<div><b>${nm}</b><small>贵宾厅会员卡 · 第 ${m.cardRound} 局获邀约 · 已保留</small></div>
            <span class="vh-tag">持有中</span>`;
       }
     }
@@ -1287,7 +1300,9 @@ const BJ = (() => {
     const parts = [];
     if (res.burst) parts.push(`流水集中在短期突击（连续 7 局窗口占 ${(res.share * 100).toFixed(0)}%），邀约概率减半（门槛仍按已达标显示）`);
     else if (res.days > 7) parts.push(`稳定性正常（连续 7 局窗口占 ${(res.share * 100).toFixed(0)}%），未触发突击扣分`);
-    parts.push(`${vip.note ? vip.note + '；' : ''}到访天数按「局」模拟，积分与贵宾为两套独立评估`);
+    const tierNow = CORE.tierOf(m.points, prog);
+    parts.push(`会员匹配：${prog.name} ${tierNow.tier}，贵宾邀约 +${Math.round(memberBonus() * 100)}pp`);
+    parts.push(`入场权限：贵宾厅${m.card >= 1 ? '可进' : '锁定'} · 私人厅/主席厅${m.card >= 2 ? '可进' : '锁定'}；${vip.note ? vip.note + '；' : ''}贵宾卡只由实战评估产生，不随选厅直接发放`);
     parts.push('卡为模拟状态，真实资格仍由赌场现场核定');
     el.vipNote.textContent = parts.join(' · ');
 
@@ -1302,12 +1317,12 @@ const BJ = (() => {
         const metTop = hasTop && invite.checks[invite.checks.length - 1].met;
         const nextBasic = Math.min(1, invite.p + 0.25);
         const nextTop = Math.min(1, invite.pTop + 0.10);
-        if (vipCard === 2){
+        if (m.card === 2){
           const gotNow = invite.invitedTop;
           el.vipInvite.innerHTML =
             `<span class="iv ok">${gotNow ? `本局抽中顶层 <b>${topName}</b>（概率 ${pct(invite.pTop)}），已写入贵宾卡` : `已持有 <b>${topName}</b>（顶层隐藏卡）`}</span>
              <span class="iv-sub">持卡状态保留，不因后续单局未中而收回；本局仍按程序重掷</span>`;
-        } else if (vipCard === 1){
+        } else if (m.card === 1){
           const topLine = !hasTop ? ''
             : invite.invitedTop ? `本局顶层抽中 <b>${topName}</b>（概率 ${pct(invite.pTop)}）`
             : `本局顶层未中（概率 ${pct(invite.pTop)}${metTop ? `，下局保底 ${pct(nextTop)}` : ''}）`;
@@ -1335,9 +1350,9 @@ const BJ = (() => {
 
   function fsPointsText(){
     const prog = PROGRAMS[curVenue().prog];
-    if (prog.no21Points) return '积分 不计（21 点）';
-    const t = CORE.tierOf(points, prog);
-    return `积分 ${Math.round(points).toLocaleString()} · ${t.tier}`;
+    const m = mem();
+    const t = CORE.tierOf(m.points, prog);
+    return `积分 ${Math.round(m.points).toLocaleString()} · ${t.tier}`;
   }
 
   /* ---------- 底部数据区 ---------- */
@@ -1869,23 +1884,26 @@ const BJ = (() => {
         if (Math.abs(check - realPL) > 0.01) console.warn('对账不平', { stakedTotal, payout, realPL });
         st.rounds++;
         st.pl += realPL;
-        st.turnover += stakedTotal;                       // 流水按「押出」累计
-        points += CORE.pointsFor(stakedTotal, PROGRAMS[curVenue().prog]);   // 新濠 21 点返回 0
-        if (stakedTotal > maxStake) maxStake = stakedTotal;                 // 单次最大投注
-        dayTurnovers.push(stakedTotal);                                     // 每局视作一个到访日
-        invite = CORE.vipChance({                                       // 每局重掷一次随机准入
-          turnover: st.turnover, maxBet: maxStake,
-          days: dayTurnovers.length, dayTurnovers
-        }, PROGRAMS[curVenue().prog].vip, null, vipMiss);
-        if (invite.invited > vipCard){                              // 邀约一旦到手就保留，不因下局未中而收回
-          vipCard = invite.invited;
-          vipCardRound = st.rounds;
+        st.turnover += stakedTotal;                       // 本桌流水
+        const m = mem();                                  // 会员累计按卡系独立保存
+        m.points += CORE.pointsFor(stakedTotal, PROGRAMS[curVenue().prog]);
+        m.turnover += stakedTotal;                        // 会员累计有效投注
+        if (stakedTotal > m.maxStake) m.maxStake = stakedTotal;
+        m.dayTurnovers.push(stakedTotal);                 // 每局视作一个到访日
+        invite = CORE.vipChance({                         // 每局重掷一次随机准入
+          turnover: m.turnover, maxBet: m.maxStake,
+          days: m.dayTurnovers.length, dayTurnovers: m.dayTurnovers
+        }, PROGRAMS[curVenue().prog].vip, null, m.miss, memberBonus());
+        if (invite.invited > m.card){                     // 邀约一旦到手就保留，不因下局未中而收回
+          m.card = invite.invited;
+          m.cardRound = st.rounds;
+          updateRoomSelect();                             // 持卡后解锁贵宾厅/私人厅
         }
         const lastChk = invite.checks[invite.checks.length - 1];
-        vipMiss.basic = invite.checks[0].met && !invite.invitedBasic && vipCard < 1
-          ? vipMiss.basic + 1 : 0;
-        vipMiss.top = invite.checks.length > 1 && lastChk.met && !invite.invitedTop && vipCard < 2
-          ? vipMiss.top + 1 : 0;
+        m.miss.basic = invite.checks[0].met && !invite.invitedBasic && m.card < 1
+          ? m.miss.basic + 1 : 0;
+        m.miss.top = invite.checks.length > 1 && lastChk.met && !invite.invitedTop && m.card < 2
+          ? m.miss.top + 1 : 0;
         const busted = s.hands.some(h => val(h.cards) > 21 && !h.special);
         const kind = (s.hands[0] && s.hands[0].natBJ) ? 'bj' : busted ? 'bust'
                    : realPL > 0 ? 'w' : realPL < 0 ? 'l' : 'p';
@@ -2163,10 +2181,17 @@ const BJ = (() => {
       updateSeatSelect();
     });
     el.cfgVenue.addEventListener('change', () => {
-      cfg.venue = +el.cfgVenue.value;
+      const idx = +el.cfgVenue.value;
+      const c = CASINOS[idx];
+      if (!c.rooms.some((r, i) => roomOpen(idx, i))){
+        flash(`<b>${c.name}</b> 全部为贵宾厅/私人厅，需先在该卡系取得贵宾卡。已保留原场。`);
+        el.cfgVenue.value = String(cfg.venue);
+        return;
+      }
+      cfg.venue = idx;
       cfg.room = 0;
       updateRoomSelect();
-      const r = curCasino().rooms[0];
+      const r = curCasino().rooms[cfg.room];
       el.cfgBank.value = bankFor(r);
       el.cfgSeats.value = String(r.seats);
     });
@@ -2177,10 +2202,6 @@ const BJ = (() => {
       el.cfgSeats.value = String(r.seats);        // 房间默认门数，可再手动改
     });
     el.cfgApply.addEventListener('click', applySettings);
-    if (el.melcoOk) el.melcoOk.addEventListener('click', () => el.melcoModal.classList.remove('on'));
-    if (el.melcoModal) el.melcoModal.addEventListener('click', e => {
-      if (e.target === el.melcoModal) el.melcoModal.classList.remove('on');
-    });
 
     $('chips').addEventListener('click', e => {
       const c = e.target.closest('.chip');
@@ -2352,9 +2373,8 @@ const BJ = (() => {
 
   function resetSession(){
     st = { rounds: 0, w: 0, l: 0, d: 0, bj: 0, side: 0, pl: 0, turnover: 0 };
-    points = 0; beads = []; loseRun = 0; maxLose = 0; busts = 0; recent = [];
-    maxStake = 0; dayTurnovers = []; invite = null;
-    vipCard = 0; vipCardRound = 0; vipMiss = { basic: 0, top: 0 };
+    beads = []; loseRun = 0; maxLose = 0; busts = 0; recent = [];
+    invite = null;                     // 换台只清本桌展示，会员积分与贵宾卡按卡系保留
     lastRound = null;
     phase = 'bet'; activeSeat = 0; activeHand = 0; busy = false;
     dealer = []; insuranceAmt = 0; flyKeys.clear();
@@ -2385,16 +2405,36 @@ const BJ = (() => {
 
   function updateRoomSelect(){
     if (!el.cfgRoom) return;
-    const rooms = curCasino().rooms;
-    cfg.room = Math.min(cfg.room, rooms.length - 1);
-    el.cfgRoom.innerHTML = rooms.map((r, i) =>
-      `<option value="${i}">${r.name} · ${fmt(r.min)}–${fmt(r.max)}</option>`).join('');
+    const c = curCasino();
+    const rooms = c.rooms;
+    const open = rooms.map((r, i) => roomOpen(cfg.venue, i));
+    if (!open[cfg.room]){
+      const first = open.findIndex(Boolean);
+      cfg.room = first >= 0 ? first : 0;
+    }
+    el.cfgRoom.innerHTML = rooms.map((r, i) => {
+      const need = roomNeed(r);
+      const locked = !open[i];
+      const mark = need ? (locked ? `（需${needName(need)}）` : '（持卡可进）') : '';
+      return `<option value="${i}"${locked ? ' disabled' : ''}>${r.name} · ${fmt(r.min)}–${fmt(r.max)}${mark}</option>`;
+    }).join('');
     el.cfgRoom.value = String(cfg.room);
   }
 
   function applySettings(){
-    cfg.venue = Math.min(+el.cfgVenue.value || 0, CASINOS.length - 1);
-    cfg.room = Math.max(0, +el.cfgRoom.value || 0);
+    const venueIdx = Math.min(+el.cfgVenue.value || 0, CASINOS.length - 1);
+    const roomIdx = Math.max(0, +el.cfgRoom.value || 0);
+    /* 房间准入校验：没有对应贵宾卡不能进贵宾厅/私人厅 */
+    if (!roomOpen(venueIdx, roomIdx)){
+      const c = CASINOS[venueIdx], r = c.rooms[roomIdx];
+      el.cfgVenue.value = String(cfg.venue);
+      el.cfgRoom.value = String(cfg.room);
+      updateRoomSelect();
+      flash(`<b>${c.name} · ${r.name}</b> 需持<b>${needName(roomNeed(r))}</b>才能入场；你目前没有这张卡。先在该卡系的中场积累并取得贵宾卡。`);
+      return;
+    }
+    cfg.venue = venueIdx;
+    cfg.room = roomIdx;
     const v = curVenue();
     cfg.seats = +el.cfgSeats.value;
     cfg.emptySeats = +el.cfgEmpty.value;
@@ -2404,7 +2444,6 @@ const BJ = (() => {
     humanBet = Math.max(v.min, Math.min(humanBet, cfg.bank));
     setupTable();
     flash(`已切到 <b>${v.op} · ${v.name} · ${v.room}</b>：${cfg.seats} 门、你坐第 ${HUMAN + 1} 门、本金 ${fmt(cfg.bank)}。`);
-    if (PROGRAMS[v.prog].no21Points && el.melcoModal) el.melcoModal.classList.add('on');
   }
 
   function boot(){

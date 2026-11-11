@@ -306,10 +306,12 @@ def vip_score(turnover: float, max_bet: float, days: int, day_turnovers, vip_tie
     return {"level": level, "metLevel": met_level, "burst": burst, "share": share, "checks": checks}
 
 
-def vip_chance(turnover, max_bet, days, day_turnovers, vip_tiers, rand=None, pity=None) -> dict:
-    """随机准入：达标可能不中，未达标也可能被抽中；完全达标未中则按局保底。"""
+def vip_chance(turnover, max_bet, days, day_turnovers, vip_tiers, rand=None, pity=None,
+               bonus=0.0) -> dict:
+    """随机准入：达标可能不中，未达标也可能被抽中；完全达标未中按局保底；会员等级可加成。"""
     rnd = rand or random.random
     pity = pity or {}
+    mb = max(0.0, min(0.10, bonus or 0.0))
     base = vip_score(turnover, max_bet, days, day_turnovers, vip_tiers)
     basic, top = vip_tiers[0], vip_tiers[-1]
     ratio = min(turnover / basic["turnover"], 1.5) if basic["turnover"] else 0.0
@@ -322,6 +324,7 @@ def vip_chance(turnover, max_bet, days, day_turnovers, vip_tiers, rand=None, pit
     p += big_p
     if base["burst"]:
         p *= 0.5
+    p += mb
     if met_basic:
         p += 0.25 * pity.get("basic", 0)   # 达标保底不因突击扣分而打折
     p = min(1.0 if met_basic else 0.75, p)
@@ -337,6 +340,7 @@ def vip_chance(turnover, max_bet, days, day_turnovers, vip_tiers, rand=None, pit
             p_top += min(0.04, big_p * 0.15)
         if base["burst"]:
             p_top *= 0.5
+        p_top += mb * 0.5
         if met_top:
             p_top += 0.10 * pity.get("top", 0)
         p_top = min(1.0 if met_top else 0.2, p_top)
@@ -366,6 +370,7 @@ def check() -> None:
     assert abs(points_for(500000, 5000) - 100) < 1e-9
     assert abs(points_for(500000, 25) - 20000) < 1e-9
     assert points_for(500000, 5000, no21=True) == 0.0
+    assert points_for(8_000_000, 400) == 20000.0        # 新濠会：400 MOP = 1 分
     tiers = [("金卡", 0), ("红宝石", 888), ("钻石", 8888)]
     assert tier_of(500, tiers)["tier"] == "金卡"
     assert tier_of(900, tiers)["tier"] == "红宝石"
@@ -391,6 +396,10 @@ def check() -> None:
     assert ch_ok["invited"] >= 1 and ch_ok["p"] >= 0.55
     ch_big = vip_chance(1_000_000, 40_000, 3, [400_000] * 3, vip, rand=lambda: 0.0)
     assert ch_big["bigBet"] and ch_big["p"] > ch_low["p"]
+    # 会员等级匹配：同样的流水，高等级会员概率更高
+    ch_mb0 = vip_chance(1_000_000, 1_000, 3, [400_000] * 3, vip, rand=lambda: 0.99, bonus=0.0)
+    ch_mb1 = vip_chance(1_000_000, 1_000, 3, [400_000] * 3, vip, rand=lambda: 0.99, bonus=0.10)
+    assert abs(ch_mb1["p"] - ch_mb0["p"] - 0.10) < 1e-9
     # 达标首摇仍可能不中；连续未中后保底必中（p 到 100%）
     ch_met_miss = vip_chance(12_000_000, 20_000, 12, [1_000_000] * 12, vip, rand=lambda: 0.999)
     assert ch_met_miss["invited"] == 0
