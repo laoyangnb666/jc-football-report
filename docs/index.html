@@ -45,7 +45,7 @@
         <div class="rv">
           <div class="kicker"><i></i>China Sports Lottery · Institutional Pricing</div>
           <h1>把盘口还原成概率。<span class="serif">再让概率说话。</span></h1>
-          <p class="lead">
+          <p class="lead" data-i18n="idx.lead">
             一个面向中国竞彩足球的开源分析体系。去水还原市场真实概率，用主客分离的得失球建立与盘口独立的强度模型，
             再把两者与公众资金流三方对照，逐场给出可复算的预测与完整购买方案。
           </p>
@@ -53,7 +53,7 @@
             <a class="btn btn-green" href="simulator.html">打开模拟投注</a>
             <a class="btn btn-ghost" href="skill.html">阅读 Skill 文档</a>
           </div>
-          <div class="cta-note">62 场实盘回测样本（四轮） · 全部数字可依 <span class="mono">scripts/analyze.js</span> 复算</div>
+          <div class="cta-note" data-i18n="idx.ctaNote">62 场实盘回测样本（四轮） · 全部数字可依 <span class="mono">scripts/analyze.js</span> 复算</div>
         </div>
 
         <div class="stage">
@@ -109,27 +109,27 @@
     <div class="wrap">
       <div class="rv">
         <div class="kicker"><i></i>为什么不是又一个预测工具</div>
-        <h2 class="sec-title">目标不是猜对结果，<br>而是把概率估准。</h2>
-        <p class="sec-sub">博彩机构不关心谁会赢，只关心概率定得准不准、风险怎么对冲。这套体系按同一套逻辑搭起来：去水、独立建模、逐场回测。</p>
+        <h2 class="sec-title" data-i18n="idx.whyTitle">目标不是猜对结果，<br>而是把概率估准。</h2>
+        <p class="sec-sub" data-i18n="idx.whySub">博彩机构不关心谁会赢，只关心概率定得准不准、风险怎么对冲。这套体系按同一套逻辑搭起来：去水、独立建模、逐场回测。</p>
       </div>
       <div class="cards">
         <div class="card rv">
           <div class="num">01 / DE-VIG</div>
-          <h3>先去水，再谈价值</h3>
-          <p>竞彩胜平负与让球盘 margin 稳定在 13.8%–14.0%，返还率约 86%。任何概率比较都必须先剔除这层抽水，否则会把抽水误读成边际。</p>
-          <div class="foot">P(i) = (1/odds_i) / Σ(1/odds_j)</div>
+          <h3 data-i18n="idx.c1h">先去水，再谈价值</h3>
+          <p data-i18n="idx.c1p">竞彩胜平负与让球盘 margin 稳定在 13.8%–14.0%，返还率约 86%。任何概率比较都必须先剔除这层抽水，否则会把抽水误读成边际。</p>
+          <div class="foot" data-i18n="idx.c1foot">P(i) = (1/odds_i) / Σ(1/odds_j)</div>
         </div>
         <div class="card rv">
           <div class="num">02 / OWN MODEL</div>
-          <h3>模型不能只读盘口</h3>
-          <p>用总进球赔率反解胜平负，本质是复述盘口——偏差恒小于 3pp。本体系改用主客分离的得失球建立独立强度模型，再与市场按 k=0.35 融合。</p>
-          <div class="foot">λ = (1−k)·λ市场 + k·λ独立</div>
+          <h3 data-i18n="idx.c2h">模型不能只读盘口</h3>
+          <p data-i18n="idx.c2p">用总进球赔率反解胜平负，本质是复述盘口——偏差恒小于 3pp。本体系改用主客分离的得失球建立独立强度模型，再与市场按 k=0.35 融合。</p>
+          <div class="foot" data-i18n="idx.c2foot">λ = (1−k)·λ市场 + k·λ独立</div>
         </div>
         <div class="card rv">
           <div class="num">03 / BACKTEST</div>
-          <h3>回测先于结论</h3>
-          <p>每轮先给上一轮打分，把「实际命中率」与「盘口隐含概率」对照，再用结果改规则。冷端价值、人气缺口都在回测里被证伪并删除。</p>
-          <div class="foot">实际兑现 vs 盘口隐含</div>
+          <h3 data-i18n="idx.c3h">回测先于结论</h3>
+          <p data-i18n="idx.c3p">每轮先给上一轮打分，把「实际命中率」与「盘口隐含概率」对照，再用结果改规则。冷端价值、人气缺口都在回测里被证伪并删除。</p>
+          <div class="foot" data-i18n="idx.c3foot">实际兑现 vs 盘口隐含</div>
         </div>
       </div>
     </div>
@@ -141,12 +141,12 @@
       <div class="rv">
         <div class="kicker"><i></i>本轮在售</div>
         <h2 class="sec-title">22 场，逐场给结论。</h2>
-        <p class="sec-sub">点击任意一场，带着赔率与模型概率进入模拟投注，自己算一遍边际。级别：主推 / 小注 / 观察。</p>
+        <p class="sec-sub" data-i18n="idx.fxSub">点击任意一场，带着赔率与模型概率进入模拟投注，自己算一遍边际。级别：主推 / 小注 / 观察。</p>
         <table class="tbl" id="fixtureTable">
           <thead><tr><th>编号</th><th>对阵</th><th>开赛</th><th>让</th><th>λ</th><th>胜平负</th><th>总进球</th><th>级别</th><th>方案</th></tr></thead>
           <tbody></tbody>
         </table>
-        <p class="sec-sub" style="margin-top:14px;font-size:12.6px">
+        <p class="sec-sub" style="margin-top:14px;font-size:12.6px" data-i18n="idx.fxNote">
           数据快照 2026-11-08 21:30（北京时间，周日 22 场）。v6 起报告分「数据分析 / 逐场预测」两篇；22 场中仅 1 场 EV 转正，其余明确不推荐。
         </p>
       </div>
@@ -159,8 +159,8 @@
       <div class="method">
         <div class="rv">
           <div class="kicker"><i></i>方法论</div>
-          <h2 class="sec-title">五步，<br>从盘口到方案。</h2>
-          <p class="sec-sub">每一步都落成脚本里的一个函数，报告里的每个数字都能追回这一条链。</p>
+          <h2 class="sec-title" data-i18n="idx.methodTitle">五步，<br>从盘口到方案。</h2>
+          <p class="sec-sub" data-i18n="idx.methodSub">每一步都落成脚本里的一个函数，报告里的每个数字都能追回这一条链。</p>
           <div style="margin-top:26px" class="chips">
             <span class="chip a"><b>devig</b> 去水</span>
             <span class="chip a"><b>grid</b> 比分矩阵</span>
@@ -171,11 +171,11 @@
           <div style="margin-top:26px"><a class="btn btn-ghost btn-sm" href="skill.html">查看完整文档 →</a></div>
         </div>
         <div class="steps rv">
-          <div class="step"><span class="n">01</span><div><h4>回测上一轮</h4><p>拿到已完赛比分，逐市场算命中率，与盘口隐含概率对照。</p></div><span class="m">backtest()</span></div>
-          <div class="step"><span class="n">02</span><div><h4>三源采集</h4><p>竞彩官网赔率与官方伤停、捷报 18 家初盘与即时盘、主客分离得失球。</p></div><span class="m">A / B / C / D</span></div>
-          <div class="step"><span class="n">03</span><div><h4>λ 三来源</h4><p>市场映像 + 独立强度 + 伤停修正，融合后产出 12×12 比分矩阵。</p></div><span class="m">k = 0.35</span></div>
-          <div class="step"><span class="n">04</span><div><h4>逐场预测</h4><p>胜平负 → 总进球区间与 8 桶 → 比分 top-5 分布。永不给单值比分。</p></div><span class="m">predictMatch()</span></div>
-          <div class="step"><span class="n">05</span><div><h4>购买方案</h4><p>级别、玩法、选项、赔率、仓位、否决条件——每场写清买不买、怎么买。</p></div><span class="m">4 级判定</span></div>
+          <div class="step"><span class="n">01</span><div><h4 data-i18n="idx.step1h">回测上一轮</h4><p data-i18n="idx.step1p">拿到已完赛比分，逐市场算命中率，与盘口隐含概率对照。</p></div><span class="m">backtest()</span></div>
+          <div class="step"><span class="n">02</span><div><h4 data-i18n="idx.step2h">三源采集</h4><p data-i18n="idx.step2p">竞彩官网赔率与官方伤停、捷报 18 家初盘与即时盘、主客分离得失球。</p></div><span class="m">A / B / C / D</span></div>
+          <div class="step"><span class="n">03</span><div><h4 data-i18n="idx.step3h">λ 三来源</h4><p data-i18n="idx.step3p">市场映像 + 独立强度 + 伤停修正，融合后产出 12×12 比分矩阵。</p></div><span class="m">k = 0.35</span></div>
+          <div class="step"><span class="n">04</span><div><h4 data-i18n="idx.step4h">逐场预测</h4><p data-i18n="idx.step4p">胜平负 → 总进球区间与 8 桶 → 比分 top-5 分布。永不给单值比分。</p></div><span class="m">predictMatch()</span></div>
+          <div class="step"><span class="n">05</span><div><h4 data-i18n="idx.step5h">购买方案</h4><p data-i18n="idx.step5p">级别、玩法、选项、赔率、仓位、否决条件——每场写清买不买、怎么买。</p></div><span class="m">4 级判定</span></div>
         </div>
       </div>
     </div>
@@ -186,8 +186,8 @@
     <div class="wrap">
       <div class="rv">
         <div class="kicker"><i></i>回测校准</div>
-        <h2 class="sec-title">先承认不准，<br>再谈哪里准。</h2>
-        <p class="sec-sub">四轮累计（二~四轮 40 场可评）。第四轮为超级冷门夜：米兰 1.16 / 勒沃库森 1.16 / 桑德兰 1.24 三场超短赔齐爆冷，但伤停修正阈值（≤−0.15 降级）成功拦下米兰与药厂两场。</p>
+        <h2 class="sec-title" data-i18n="idx.btTitle">先承认不准，<br>再谈哪里准。</h2>
+        <p class="sec-sub" data-i18n="idx.btSub">四轮累计（二~四轮 40 场可评）。第四轮为超级冷门夜：米兰 1.16 / 勒沃库森 1.16 / 桑德兰 1.24 三场超短赔齐爆冷，但伤停修正阈值（≤−0.15 降级）成功拦下米兰与药厂两场。</p>
         <table class="tbl rv">
           <thead><tr><th>口径</th><th>命中</th><th>四轮累计</th><th>结论</th></tr></thead>
           <tbody>
@@ -200,7 +200,7 @@
             <tr><td>比分 top-1</td><td class="num">0 / 23</td><td class="num">0%</td><td><span class="pill warn">永不给单值比分</span></td></tr>
           </tbody>
         </table>
-        <p class="sec-sub" style="margin-top:20px;font-size:12.8px">
+        <p class="sec-sub" style="margin-top:20px;font-size:12.8px" data-i18n="idx.btNote">
           校准纪律：单轮 30 场左右的样本，标准误普遍在 8–10pp。任何小于 15pp 的偏差都不写进结论，只进待验证清单。
         </p>
       </div>
@@ -212,8 +212,8 @@
     <div class="wrap">
       <div class="rv">
         <div class="kicker"><i></i>数据源</div>
-        <h2 class="sec-title">四层源，<br>每条数字能追回原页。</h2>
-        <p class="sec-sub">同一字段多源冲突时，按「官方 &gt; 交易所成交 &gt; 锐利庄 &gt; 聚合均价 &gt; 媒体」取舍，并在报告里写明采用哪一源。</p>
+        <h2 class="sec-title" data-i18n="idx.srcTitle">四层源，<br>每条数字能追回原页。</h2>
+        <p class="sec-sub" data-i18n="idx.srcSub">同一字段多源冲突时，按「官方 &gt; 交易所成交 &gt; 锐利庄 &gt; 聚合均价 &gt; 媒体」取舍，并在报告里写明采用哪一源。</p>
       </div>
       <div class="chips rv">
         <span class="chip a"><b>A</b>竞彩官网 · 全场次与全部玩法赔率、支持率、官方去水概率</span>
@@ -239,39 +239,39 @@
     <div class="wrap">
       <div class="rv">
         <div class="kicker"><i></i>报告产出</div>
-        <h2 class="sec-title">数据分析与预测，<br>分两篇写。</h2>
-        <p class="sec-sub">第一篇只摆事实，第二篇只给结论。读者只看第二篇能做决策，只看第一篇能核查依据。</p>
+        <h2 class="sec-title" data-i18n="idx.repTitle">数据分析与预测，<br>分两篇写。</h2>
+        <p class="sec-sub" data-i18n="idx.repSub">第一篇只摆事实，第二篇只给结论。读者只看第二篇能做决策，只看第一篇能核查依据。</p>
       </div>
       <div class="reports">
         <a class="rep rv" href="https://github.com/laoyangnb666/jc-football-report" target="_blank" rel="noopener">
           <div class="thumb"><i></i><i></i><i></i><i></i><i></i><i></i></div>
           <div class="meta">
-            <h4>数据分析与预测购买方案 v3</h4>
-            <p>数据分析 / 逐场预测两篇式 · 周日 22 场在售 · 可小注 1 / 观察 6 / 不推荐 6 / 回避 9，每场含胜平负、比分、总进球与买不买。</p>
+            <h4 data-i18n="idx.rep1h">数据分析与预测购买方案 v3</h4>
+            <p data-i18n="idx.rep1p">数据分析 / 逐场预测两篇式 · 周日 22 场在售 · 可小注 1 / 观察 6 / 不推荐 6 / 回避 9，每场含胜平负、比分、总进球与买不买。</p>
             <div class="tag">2026-11-08 · v6 · PDF</div>
           </div>
         </a>
         <a class="rep rv" href="skill.html">
           <div class="thumb"><i></i><i></i><i></i><i></i><i></i><i></i></div>
           <div class="meta">
-            <h4>Skill 文档</h4>
-            <p>铁律、七步流程、逐场判定规则、购买方案层、数据源口径与交付前自检清单。</p>
+            <h4 data-i18n="idx.rep2h">Skill 文档</h4>
+            <p data-i18n="idx.rep2p">铁律、七步流程、逐场判定规则、购买方案层、数据源口径与交付前自检清单。</p>
             <div class="tag">SKILL.md · 站内阅读</div>
           </div>
         </a>
         <a class="rep rv" href="https://github.com/laoyangnb666/jc-football-report/blob/main/references/model-and-calibration.md" target="_blank" rel="noopener">
           <div class="thumb"><i></i><i></i><i></i><i></i><i></i><i></i></div>
           <div class="meta">
-            <h4>模型定义与校准结果</h4>
-            <p>比率法 + 样本量收缩的数学定义、四轮回测结论、超短赔降级依据、待验证清单与校准纪律。</p>
+            <h4 data-i18n="idx.rep3h">模型定义与校准结果</h4>
+            <p data-i18n="idx.rep3p">比率法 + 样本量收缩的数学定义、四轮回测结论、超短赔降级依据、待验证清单与校准纪律。</p>
             <div class="tag">references / model-and-calibration.md</div>
           </div>
         </a>
         <a class="rep rv" href="https://github.com/laoyangnb666/jc-football-report/blob/main/scripts/analyze.js" target="_blank" rel="noopener">
           <div class="thumb"><i></i><i></i><i></i><i></i><i></i><i></i></div>
           <div class="meta">
-            <h4>分析内核 analyze.js</h4>
-            <p>零依赖单文件：去水、Dixon-Coles、独立强度、融合、逐场预测、购买方案、回测。</p>
+            <h4 data-i18n="idx.rep4h">分析内核 analyze.js</h4>
+            <p data-i18n="idx.rep4p">零依赖单文件：去水、Dixon-Coles、独立强度、融合、逐场预测、购买方案、回测。</p>
             <div class="tag">scripts / analyze.js</div>
           </div>
         </a>
@@ -284,8 +284,8 @@
     <div class="wrap">
       <div class="band rv">
         <div>
-          <h3>把这套方法，<span class="serif">变成你自己的模型。</span></h3>
-          <p>克隆仓库、装进 skills 目录，跑一行 <span class="mono">node scripts/analyze.js</span> 就能看到完整输出。不依赖任何付费数据。</p>
+          <h3 data-i18n="idx.bandH">把这套方法，<span class="serif">变成你自己的模型。</span></h3>
+          <p data-i18n="idx.bandP">克隆仓库、装进 skills 目录，跑一行 <span class="mono">node scripts/analyze.js</span> 就能看到完整输出。不依赖任何付费数据。</p>
         </div>
         <div class="cta-row">
           <a class="btn btn-dark" href="https://github.com/laoyangnb666/jc-football-report" target="_blank" rel="noopener">查看仓库</a>
@@ -312,7 +312,7 @@
         <a href="https://github.com/laoyangnb666/jc-football-report/blob/main/LICENSE" target="_blank" rel="noopener">MIT License</a>
       </div>
     </div>
-    <p class="disclaimer">
+    <p class="disclaimer" data-i18n="idx.disclaimer">
       本项目是统计与定价方法论的开源实现，仅供研究与学习使用。所有概率均为模型与盘口的推算值，<b>不构成任何投注建议，不承诺任何收益</b>。
       回测样本仅 62 场，标准误在 8–10pp，任何小于 15pp 的偏差都不具统计显著性。博彩具有极高风险，参与即可能损失全部本金；请遵守所在地区法律法规，未满 18 周岁禁止参与。
     </p>
@@ -320,6 +320,8 @@
 </footer>
 
 <script src="assets/data.js"></script>
+<script src="assets/i18n.js"></script>
+<script src="assets/i18n-index.js"></script>
 <script>
 (function(){
   const D = window.JC_DATA;

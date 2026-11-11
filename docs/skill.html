@@ -36,10 +36,10 @@
 <header class="doc-hero">
   <div class="wrap">
     <div class="kicker"><i></i>SKILL.md · v3</div>
-    <h1 style="font-size:clamp(30px,4.2vw,52px);line-height:1.1;letter-spacing:-.04em;font-weight:500;margin-bottom:12px">
+    <h1 style="font-size:clamp(30px,4.2vw,52px);line-height:1.1;letter-spacing:-.04em;font-weight:500;margin-bottom:12px" data-i18n="sk.title">
       Skill 文档：<span class="serif" style="color:var(--green)">方法与纪律。</span>
     </h1>
-    <p class="lead" style="color:#41453F;font-size:15px;max-width:640px;line-height:1.78">
+    <p class="lead" style="color:#41453F;font-size:15px;max-width:640px;line-height:1.78" data-i18n="sk.lead">
       这份文档是报告的生成规范，不是使用说明。它规定流程顺序、判定阈值、必须披露的字段和交付前的自检项。
       任何一轮报告都必须能对着这份文档逐条核对。
     </p>
@@ -63,39 +63,39 @@
     </aside>
 
     <article class="doc">
-      <p>产出一份可复算的报告：把赔率还原成概率，用<b>盘口之外的独立信息</b>做出自己的概率，再把两者与公众资金流三方对照，并对每一场写出综合预测与购买方案。</p>
+      <p data-i18n="sk.intro">产出一份可复算的报告：把赔率还原成概率，用<b>盘口之外的独立信息</b>做出自己的概率，再把两者与公众资金流三方对照，并对每一场写出综合预测与购买方案。</p>
 
       <h2 id="rules" class="anchor">一、铁律</h2>
       <ol>
-        <li><b>每一场必须有综合预测。</b>在售 N 场就写 N 行，顺序固定为 比分（top-5 分布）→ 总进球（区间 + 大/小）→ 胜平负。不允许只写焦点场。</li>
-        <li><b>每一场必须有购买方案。</b>落到具体玩法与选项（主胜/平/客胜/让球一侧/总进球某桶/回避），并给出仓位与否决条件。理由里至少含一个数字。</li>
-        <li><b>比分永不给单值。</b>两轮回测 top1 命中 0/23，top3 42.9%，top5 71.4%。只给带概率的排名分布和累计覆盖率。</li>
-        <li><b>模型必须有盘口之外的输入。</b>只用盘口反解 λ 再回推概率，是复述盘口而不是预测（偏差恒 &lt;3pp）。必须接入捷报的主客分离得失球。</li>
-        <li>报告只做定价与情报分析，不承诺收益。概率是模型与盘口的推算值。</li>
-        <li>所有数字必须来自脚本输出，不得手写估算。</li>
-        <li>每个进入模型的数字都要能追到源；不能追源的进文字并标「待验证」。</li>
-        <li><b>回测先于结论。</b>每轮必须把上一轮已完赛场次跑一遍 <code>backtest()</code>，把「实际命中率 vs 盘口隐含概率」写进报告，再据此调整阈值。</li>
-        <li>本 Skill 只沉淀方法与版式，不保存任何一轮的具体赔率、场次或结论。</li>
+        <li data-i18n="sk.r1"><b>每一场必须有综合预测。</b>在售 N 场就写 N 行，顺序固定为 比分（top-5 分布）→ 总进球（区间 + 大/小）→ 胜平负。不允许只写焦点场。</li>
+        <li data-i18n="sk.r2"><b>每一场必须有购买方案。</b>落到具体玩法与选项（主胜/平/客胜/让球一侧/总进球某桶/回避），并给出仓位与否决条件。理由里至少含一个数字。</li>
+        <li data-i18n="sk.r3"><b>比分永不给单值。</b>两轮回测 top1 命中 0/23，top3 42.9%，top5 71.4%。只给带概率的排名分布和累计覆盖率。</li>
+        <li data-i18n="sk.r4"><b>模型必须有盘口之外的输入。</b>只用盘口反解 λ 再回推概率，是复述盘口而不是预测（偏差恒 &lt;3pp）。必须接入捷报的主客分离得失球。</li>
+        <li data-i18n="sk.r5">报告只做定价与情报分析，不承诺收益。概率是模型与盘口的推算值。</li>
+        <li data-i18n="sk.r6">所有数字必须来自脚本输出，不得手写估算。</li>
+        <li data-i18n="sk.r7">每个进入模型的数字都要能追到源；不能追源的进文字并标「待验证」。</li>
+        <li data-i18n="sk.r8"><b>回测先于结论。</b>每轮必须把上一轮已完赛场次跑一遍 <code>backtest()</code>，把「实际命中率 vs 盘口隐含概率」写进报告，再据此调整阈值。</li>
+        <li data-i18n="sk.r9">本 Skill 只沉淀方法与版式，不保存任何一轮的具体赔率、场次或结论。</li>
       </ol>
 
       <h2 id="flow" class="anchor">二、七步流程</h2>
-      <p>按顺序执行，不要跳步。</p>
+      <p data-i18n="sk.flowP">按顺序执行，不要跳步。</p>
       <table>
         <thead><tr><th>#</th><th>步骤</th><th>要点</th></tr></thead>
         <tbody>
-          <tr><td>1</td><td><b>回测上一轮</b></td><td>拿到已完赛比分，用 <code>backtest(preds, results)</code> 跑逐市场命中率，与待验证清单核对。<b>这一步在采集新数据之前做。</b></td></tr>
-          <tr><td>2</td><td>采集</td><td>竞彩官网在售场次（全部玩法 + 支持率 + 官方概率）、捷报逐场（主客分离得失球、盘路、18 家初盘与即时盘、天气）、直播吧与搜索补齐伤停/动机。</td></tr>
-          <tr><td>3</td><td>建模</td><td><code>predictMatch(row)</code> 一次产出 λ（市场 + 独立 + 伤停修正）、比分分布、总进球桶与区间、胜平负、让球、双方进球、半全场。</td></tr>
-          <tr><td>4</td><td>判定与方案</td><td><code>verdict</code> 给简明判定，<code>rec</code> 给完整购买方案。不要手改阈值。</td></tr>
-          <tr><td>5</td><td>补齐逻辑</td><td>按分析框架八节检查表逐项过，标出进模型 / 进文字 / 因缺数据降级。</td></tr>
-          <tr><td>6</td><td>组装</td><td>按两篇式结构写 HTML：第一篇只摆事实，第二篇只给结论。</td></tr>
-          <tr><td>7</td><td>渲染与交付</td><td>A4、printBackground、margin 0；PDF 落到工作区，交付链接 + 3 个核心结论。</td></tr>
+          <tr><td>1</td><td><b>回测上一轮</b></td><td data-i18n="sk.f1">拿到已完赛比分，用 <code>backtest(preds, results)</code> 跑逐市场命中率，与待验证清单核对。<b>这一步在采集新数据之前做。</b></td></tr>
+          <tr><td>2</td><td>采集</td><td data-i18n="sk.f2">竞彩官网在售场次（全部玩法 + 支持率 + 官方概率）、捷报逐场（主客分离得失球、盘路、18 家初盘与即时盘、天气）、直播吧与搜索补齐伤停/动机。</td></tr>
+          <tr><td>3</td><td>建模</td><td data-i18n="sk.f3"><code>predictMatch(row)</code> 一次产出 λ（市场 + 独立 + 伤停修正）、比分分布、总进球桶与区间、胜平负、让球、双方进球、半全场。</td></tr>
+          <tr><td>4</td><td>判定与方案</td><td data-i18n="sk.f4"><code>verdict</code> 给简明判定，<code>rec</code> 给完整购买方案。不要手改阈值。</td></tr>
+          <tr><td>5</td><td>补齐逻辑</td><td data-i18n="sk.f5">按分析框架八节检查表逐项过，标出进模型 / 进文字 / 因缺数据降级。</td></tr>
+          <tr><td>6</td><td>组装</td><td data-i18n="sk.f6">按两篇式结构写 HTML：第一篇只摆事实，第二篇只给结论。</td></tr>
+          <tr><td>7</td><td>渲染与交付</td><td data-i18n="sk.f7">A4、printBackground、margin 0；PDF 落到工作区，交付链接 + 3 个核心结论。</td></tr>
         </tbody>
       </table>
 
       <h2 id="verdict" class="anchor">三、逐场判定规则</h2>
       <p>先算四个量：</p>
-      <pre><code>dev[i]  去水概率
+      <pre data-i18n="sk.vCode"><code>dev[i]  去水概率
 Δ[i]    = 支持率 − 去水概率        （pp）
 md[i]   = 模型概率 − 去水概率      （pp）
 ev[i]   = p × odds − 1</code></pre>
@@ -110,13 +110,13 @@ ev[i]   = p × odds − 1</code></pre>
           <tr><td>其余</td><td>中性</td><td>模型偏差 3.1pp，人气 Δ 5pp，无结构性错价</td></tr>
         </tbody>
       </table>
-      <div class="callout">
+      <div class="callout" data-i18n="sk.vCallout">
         <b>为什么删除「冷端价值小注」：</b>第一轮回测中，冷端选项（Δ ≤ −8pp）实际兑现 30.0%、盘口隐含 26.3%，只高 3.7pp；
         热端兑现 59.1% 对隐含 49.2%。30 样本的标准误约 8pp，两者都落在噪声内。<b>Δ 不是定价信号，只是风险提示。</b>
       </div>
 
       <h2 id="recommend" class="anchor">四、购买方案层</h2>
-      <p>每场必须给出完整方案，不允许只写「关注/观望」就结束。</p>
+      <p data-i18n="sk.recP">每场必须给出完整方案，不允许只写「关注/观望」就结束。</p>
       <table>
         <thead><tr><th>级别</th><th>含义</th><th>仓位</th></tr></thead>
         <tbody>
@@ -126,12 +126,12 @@ ev[i]   = p × odds − 1</code></pre>
           <tr><td><span class="pill dark">回避</span></td><td>人气过热（Δ ≥ +15pp）且模型不支持</td><td>0，并注明为什么</td></tr>
         </tbody>
       </table>
-      <h4>超短赔主推规则</h4>
-      <p>去水第一方向概率 ≥ 66% <b>且</b> 模型同向 <b>且</b> 该侧伤停修正 ≥ −0.15 <b>且</b> 资金方向无分歧 → 主推单关。任何一条不满足即降级为观察，理由写明。</p>
-      <p>方案概率采用<b>跨轮回测经验值 91.7%（11/12，12 样本，标准误约 8pp）</b>，不是模型输出，报告中必须加星号注明。</p>
-      <h4>焦点场加详</h4>
-      <p>人气 Δ ≥ 15pp、伤停修正 ≥ 0.2、价格移动 ≥ 0.15 三者居其一即为焦点场，方案必须包含：主选与备选玩法、比分娱乐仓建议（≤0.5%/注，取比分分布 top2）、「什么情况下放弃」的临场否决条件。</p>
-      <pre><code>周三004 费内巴切 vs 利物浦｜主推｜焦点
+      <h4 data-i18n="sk.recH4a">超短赔主推规则</h4>
+      <p data-i18n="sk.recPa">去水第一方向概率 ≥ 66% <b>且</b> 模型同向 <b>且</b> 该侧伤停修正 ≥ −0.15 <b>且</b> 资金方向无分歧 → 主推单关。任何一条不满足即降级为观察，理由写明。</p>
+      <p data-i18n="sk.recPb">方案概率采用<b>跨轮回测经验值 91.7%（11/12，12 样本，标准误约 8pp）</b>，不是模型输出，报告中必须加星号注明。</p>
+      <h4 data-i18n="sk.recH4b">焦点场加详</h4>
+      <p data-i18n="sk.recPc">人气 Δ ≥ 15pp、伤停修正 ≥ 0.2、价格移动 ≥ 0.15 三者居其一即为焦点场，方案必须包含：主选与备选玩法、比分娱乐仓建议（≤0.5%/注，取比分分布 top2）、「什么情况下放弃」的临场否决条件。</p>
+      <pre data-i18n="sk.recCode"><code>周三004 费内巴切 vs 利物浦｜主推｜焦点
   主选：胜平负（单关）客胜 @1.33｜去水 66.0% / 隐含 75.2%｜仓位 1–2%
   理由：超短赔区跨轮回测 11/12=91.7%；模型同向；费内巴切换帅 + 5 人伤
   否决条件：临场首发显示萨拉赫/范戴克全部轮休 → 放弃
@@ -148,20 +148,20 @@ ev[i]   = p × odds − 1</code></pre>
           <tr><td>D</td><td>联网搜索</td><td>xG/xGA、官方公告、裁判、联赛形势、换帅与预计首发</td><td>每个数字必须能点回原页</td></tr>
         </tbody>
       </table>
-      <p>扩展源（按缺口启用）：球探 <code>zq.titan007.com</code>（盘路与标准盘对照）、捷报资料库、500 彩票网、OddsPortal / Oddspedia（跨庄变价方向）、Betfair / Smarkets（真实成交）、FBref / Understat（xG）、Sofascore / FotMob（首发）、Transfermarkt（伤停与身价）、中国天气网。</p>
-      <div class="callout">
+      <p data-i18n="sk.srcP">扩展源（按缺口启用）：球探 <code>zq.titan007.com</code>（盘路与标准盘对照）、捷报资料库、500 彩票网、OddsPortal / Oddspedia（跨庄变价方向）、Betfair / Smarkets（真实成交）、FBref / Understat（xG）、Sofascore / FotMob（首发）、Transfermarkt（伤停与身价）、中国天气网。</p>
+      <div class="callout" data-i18n="sk.srcCallout">
         <b>B 层是命脉。</b>没有主客分离得失球，独立模型无法建立，报告退回「盘口复述」状态——此时必须在数据卫生层写明
         「独立模型缺失，本报告仅为盘口分析」。
       </div>
-      <h4>解析陷阱</h4>
+      <h4 data-i18n="sk.srcH4">解析陷阱</h4>
       <ul>
-        <li>捷报指数页表格用<b>大写</b> <code>&lt;TR&gt;</code> <code>&lt;TD&gt;</code>，正则必须加 <code>re.I</code>。</li>
-        <li>部分公司（如立博）不开亚盘，只有 12 个数据列。<b>不要删除空单元格来对齐列</b>，否则整体错位，会算出「主胜 1.06」这类荒谬值。</li>
-        <li>解析后做合理性校验：三项欧赔均 ≥ 1.01 且倒数和落在 1.00–1.30，不通过就不计入均值。</li>
+        <li data-i18n="sk.srcLi1">捷报指数页表格用<b>大写</b> <code>&lt;TR&gt;</code> <code>&lt;TD&gt;</code>，正则必须加 <code>re.I</code>。</li>
+        <li data-i18n="sk.srcLi2">部分公司（如立博）不开亚盘，只有 12 个数据列。<b>不要删除空单元格来对齐列</b>，否则整体错位，会算出「主胜 1.06」这类荒谬值。</li>
+        <li data-i18n="sk.srcLi3">解析后做合理性校验：三项欧赔均 ≥ 1.01 且倒数和落在 1.00–1.30，不通过就不计入均值。</li>
       </ul>
 
       <h2 id="skeleton" class="anchor">六、报告骨架</h2>
-      <p><b>两篇式</b>：第一篇只摆事实，第二篇只给结论。读者只看第二篇能做决策，只看第一篇能核查依据。</p>
+      <p data-i18n="sk.skelP"><b>两篇式</b>：第一篇只摆事实，第二篇只给结论。读者只看第二篇能做决策，只看第一篇能核查依据。</p>
       <table>
         <thead><tr><th>篇</th><th>章节</th><th>内容</th></tr></thead>
         <tbody>
@@ -179,7 +179,7 @@ ev[i]   = p × odds − 1</code></pre>
       </table>
 
       <h2 id="combo" class="anchor">七、串关的结构性事实</h2>
-      <p>每腿 <code>p × odds</code> 恒等于 <code>1/(1+margin)</code>。margin 13.9% 时：</p>
+      <p data-i18n="sk.comboP">每腿 <code>p × odds</code> 恒等于 <code>1/(1+margin)</code>。margin 13.9% 时：</p>
       <table>
         <thead><tr><th>串关</th><th>返还率</th><th>说明</th></tr></thead>
         <tbody>
@@ -189,7 +189,7 @@ ev[i]   = p × odds − 1</code></pre>
           <tr><td>五串</td><td class="num">0.524</td><td>0.878⁵</td></tr>
         </tbody>
       </table>
-      <blockquote>串关 EV 必然为负，倍率越高越负。这不是选腿的问题，是结构问题。报告必须列出至少三组实测串关并给出 EV，结论固定为「单关优先」。</blockquote>
+      <blockquote data-i18n="sk.comboQuote">串关 EV 必然为负，倍率越高越负。这不是选腿的问题，是结构问题。报告必须列出至少三组实测串关并给出 EV，结论固定为「单关优先」。</blockquote>
 
       <h2 id="api" class="anchor">八、核心 API</h2>
       <table>
@@ -211,7 +211,7 @@ ev[i]   = p × odds − 1</code></pre>
         </tbody>
       </table>
       <h4>独立强度模型（比率法 + 收缩）</h4>
-      <pre><code>hg  = 主队主场场均进球     hga = 主队主场场均失球
+      <pre data-i18n="sk.ratioCode"><code>hg  = 主队主场场均进球     hga = 主队主场场均失球
 ag  = 客队客场场均进球     aga = 客队客场场均失球
 
 lgHome = (hg + aga) / 2        // 联赛基准，两估计互相印证
@@ -225,20 +225,20 @@ defA = shrink(aga / lgHome, 客队客场场次)
 
 λ主 = lgHome · attH · defA
 λ客 = lgAway · attA · defH</code></pre>
-      <p>为什么必须主客分离：主场和客场是两支不同的球队。用总数据拟合会把「主场强、客场弱」的球队抹平。</p>
+      <p data-i18n="sk.ratioP">为什么必须主客分离：主场和客场是两支不同的球队。用总数据拟合会把「主场强、客场弱」的球队抹平。</p>
 
       <h2 id="checklist" class="anchor">九、交付前自检</h2>
       <ul>
-        <li>回测层已完成，且每个命中率都配了「盘口隐含」对照</li>
-        <li>场次数 = 综合预测行数 = 购买方案行数</li>
-        <li>每场都有 比分分布 / 总进球 / 胜平负 三段，无「待定」</li>
-        <li><b>没有任何一处出现单一比分预测</b></li>
-        <li>λ 注明了市场值、独立值、伤停修正与融合权重 k</li>
-        <li>表格数字与 <code>predictMatch</code> 输出逐字一致</li>
-        <li>串关全部标注 EV，结论为单关优先</li>
-        <li>数据卫生八条逐项有状态，缺项写明原因</li>
-        <li>尾页含源清单、访问时间（分钟级）、缺失字段、风险披露</li>
-        <li>PDF 已落到工作区，链接可用</li>
+        <li data-i18n="sk.checkLi1">回测层已完成，且每个命中率都配了「盘口隐含」对照</li>
+        <li data-i18n="sk.checkLi2">场次数 = 综合预测行数 = 购买方案行数</li>
+        <li data-i18n="sk.checkLi3">每场都有 比分分布 / 总进球 / 胜平负 三段，无「待定」</li>
+        <li data-i18n="sk.checkLi4"><b>没有任何一处出现单一比分预测</b></li>
+        <li data-i18n="sk.checkLi5">λ 注明了市场值、独立值、伤停修正与融合权重 k</li>
+        <li data-i18n="sk.checkLi6">表格数字与 <code>predictMatch</code> 输出逐字一致</li>
+        <li data-i18n="sk.checkLi7">串关全部标注 EV，结论为单关优先</li>
+        <li data-i18n="sk.checkLi8">数据卫生八条逐项有状态，缺项写明原因</li>
+        <li data-i18n="sk.checkLi9">尾页含源清单、访问时间（分钟级）、缺失字段、风险披露</li>
+        <li data-i18n="sk.checkLi10">PDF 已落到工作区，链接可用</li>
       </ul>
 
       <h2 id="refs" class="anchor">参考文件</h2>
@@ -254,7 +254,7 @@ defA = shrink(aga / lgHome, 客队客场场次)
         </tbody>
       </table>
 
-      <div class="callout" style="margin-top:28px">
+      <div class="callout" style="margin-top:28px" data-i18n="sk.end">
         想直接试一遍？<a href="simulator.html" style="color:var(--green);font-weight:500">打开模拟投注</a>
       <a href="blackjack.html">21 点</a>，
         用本轮 11 场的真实赔率与模型概率自己算边际。
@@ -278,11 +278,13 @@ defA = shrink(aga / lgHome, 客队客场场次)
         <a href="https://github.com/laoyangnb666/jc-football-report/blob/main/LICENSE" target="_blank" rel="noopener">MIT License</a>
       </div>
     </div>
-    <p class="disclaimer">
+    <p class="disclaimer" data-i18n="sk.disclaimer">
       本项目是统计与定价方法论的开源实现，仅供研究与学习使用。所有概率均为模型与盘口的推算值，<b>不构成任何投注建议，不承诺任何收益</b>。
       回测样本仅 49 场，标准误在 8–10pp，任何小于 15pp 的偏差都不具统计显著性。博彩具有极高风险，参与即可能损失全部本金；请遵守所在地区法律法规，未满 18 周岁禁止参与。
     </p>
   </div>
 </footer>
+<script src="assets/i18n.js"></script>
+<script src="assets/i18n-skill.js"></script>
 </body>
 </html>
