@@ -388,6 +388,18 @@ body.fsmode .betpanel,body.fsmode .curve-card,body.fsmode .data-stack{display:no
 .vip-invite .iv.no{color:#B3202A}
 .vip-invite .iv-sub{display:block;font-size:9px;color:#8A8272;margin-top:2px}
 .vip-invite .iv-idle{font-size:9.5px;color:#9A927F}
+/* 会员卡申请 */
+.apply-box{margin-top:4px}
+.apply-top{display:flex;justify-content:space-between;font-size:10px;font-weight:600;color:#2A3B31;margin-bottom:4px}
+.apply-bars{display:flex;flex-direction:column;gap:3px}
+.apply-bars>div{position:relative;display:flex;align-items:center;gap:6px;font-size:8.6px;color:#6B6355;background:#F2EDE0;border-radius:2px;overflow:hidden;padding:2px 5px}
+.apply-bars>div>i{position:absolute;left:0;top:0;bottom:0;background:rgba(47,122,79,.22);z-index:0}
+.apply-bars>div>span,.apply-bars>div>b{position:relative;z-index:1}
+.apply-bars>div>b{margin-left:auto;font-family:Inter,monospace;color:#2A3B31}
+.apply-btn{margin-top:6px;width:100%;padding:5px 8px;border-radius:3px;border:1px solid #2F7A4F;background:#2F7A4F;color:#fff;font-size:9.5px;cursor:pointer}
+.apply-btn:disabled{border-color:#CFC7B4;background:#E7E1D2;color:#9A927F;cursor:not-allowed}
+.pts-apply{margin-top:6px}
+.room-rule{font-size:8.8px;color:#7A7466;line-height:1.6;margin-top:4px}
 /* 已获邀约的贵宾卡（持卡状态，不因单局未中而收回） */
 .vip-held{display:none;align-items:center;justify-content:space-between;gap:10px;
   margin:0 0 9px;padding:8px 11px;border-radius:10px;
@@ -747,6 +759,7 @@ body.fsmode .deck-panel .dp-read.dp-bank b.neg{color:#FCA5A5}
         <div class="setrow"><label>房间</label><select id="cfgRoom"></select></div>
         <div class="setrow"><label>门数</label>
           <select id="cfgSeats">
+            <option value="4">4 门</option>
             <option value="5">5 门</option><option value="6" selected>6 门</option>
             <option value="7">7 门</option><option value="8">8 门</option>
           </select>
@@ -758,6 +771,9 @@ body.fsmode .deck-panel .dp-read.dp-bank b.neg{color:#FCA5A5}
         <div class="setrow"><label>本金</label><input id="cfgBank" type="number" min="1000" step="1000"></div>
         <div class="setrow"><label>单注上限</label>
           <select id="cfgCap"><option value="1">不设上限</option><option value="0">按场馆限额</option></select>
+        </div>
+        <div class="setrow"><label>厅房准入</label>
+          <select id="cfgUnlock"><option value="0" selected>按会员卡</option><option value="1">解锁全部厅房（体验）</option></select>
         </div>
         <button class="btn-apply" id="cfgApply">应用并重置本场</button>
         <div class="hint" id="venueHint"></div>
@@ -820,6 +836,7 @@ body.fsmode .deck-panel .dp-read.dp-bank b.neg{color:#FCA5A5}
         <div><span class="pts-big" id="ptsBig">0</span><span class="pts-tier" id="ptsTier">普通</span></div>
         <div class="pts-bar"><i id="ptsBar" style="width:0%"></i></div>
         <div class="pts-note" id="ptsNote">累计流水 0 · 距银卡还差 500 分</div>
+        <div class="pts-apply" id="ptsApply"></div>
       </div>
 
       <div class="side-card">
@@ -864,58 +881,53 @@ const BJ = (() => {
   const EN = !!(window.I18N && window.I18N.lang === 'en');
   const SUITS = ['♠','♥','♦','♣'];
   const RANKS = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
-  const CUT_BACK = 30;
 
   /* 娱乐场目录：来自 assets/bj-casinos.js（21 家 / 45 张台 / 6 套会员体系） */
   const CATALOG = window.BJ_CASINOS;
   const PROGRAMS = CATALOG.programs;
   const CASINOS = CATALOG.casinos;
-  const bankFor = r => (r.name === '贵宾厅' || r.name === '私人厅' || r.name === '主席厅')
-    ? Math.max(1000000, r.max * 5)
-    : r.name === '普通场' ? Math.max(20000, r.max * 5)
-    : Math.max(150000, r.max * 10);
+  const bankFor = r => {
+    const rank = r.rank == null ? 1 : r.rank;
+    if (rank >= 6) return Math.max(3000000, r.max * 4);
+    if (rank >= 4) return Math.max(1500000, r.max * 4);
+    if (rank >= 3) return Math.max(800000, r.max * 5);
+    if (rank === 0) return Math.max(20000, r.max * 5);
+    return Math.max(150000, r.max * 8);
+  };
 
-  const cfg = { venue: 0, room: 0, seats: 6, mySeat: 2, emptySeats: 0, bank: 200000, noCap: true };
+  const cfg = { venue: 0, room: 0, seats: 6, mySeat: 2, emptySeats: 0, bank: 200000, noCap: true, unlock: false };
   let HUMAN = 2;
   let seatNames = [];
 
   const curCasino = () => CASINOS[cfg.venue];
-  /** 当前台 = 场 × 房间 */
+  /** 当前台 = 场 × 房间；每张台自带完整台规 */
   function curVenue(){
     const c = curCasino();
     const r = c.rooms[Math.min(cfg.room, c.rooms.length - 1)] || c.rooms[0];
     return {
       key: c.id + ':' + r.name, name: c.name, op: c.op, room: r.name,
-      decks: r.decks, csm: r.csm, soft17: r.s17 ? 's17' : 'h17', seats: r.seats,
-      min: r.min, max: r.max, bj: c.bj, sur: c.sur, prog: c.prog,
-      bank: bankFor(r), note: r.note || '', need: roomNeed(r)
+      rank: r.rank, need: r.need,
+      decks: r.decks, csm: r.csm, s17: !!r.s17, soft17: r.s17 ? 's17' : 'h17', seats: r.seats,
+      min: r.min, max: r.max, bj: r.bj, sur: !!r.sur, prog: c.prog,
+      das: r.das !== false, resplitA: !!r.resplitA, hitSplitA: !!r.hitSplitA,
+      maxSplit: r.maxSplit || 4, fiveCard: !!r.fiveCard, ins: r.ins !== false, even: r.even !== false,
+      burn: r.burn == null ? 1 : r.burn, pen: r.pen || 0.75, dealStyle: r.dealStyle || 'two-pass',
+      bank: bankFor(r), note: r.note || ''
     };
   }
   const betMin = () => curVenue().min;
   const betMax = () => cfg.noCap ? Infinity : curVenue().max;
 
-  /* 房间准入：普通场/中场/高额区不限；贵宾厅需基础贵宾卡；私人厅/主席厅需顶层隐藏卡 */
-  function roomNeed(r){
-    return r.name === '贵宾厅' ? 1
-      : (r.name === '私人厅' || r.name === '主席厅') ? 2 : 0;
-  }
-  const needName = n => EN
-    ? (n === 2 ? 'top hidden card' : n === 1 ? 'basic VIP card' : '')
-    : (n === 2 ? '顶层隐藏卡' : n === 1 ? '基础贵宾卡' : '');
+  /* 房间准入：按厅的 need 与当前卡等级比较（0 自由 / 1 基础 / 2 私人 / 3 主席 / 4 超级） */
+  function roomNeed(r){ return r && r.need != null ? r.need : 0; }
+  const CARD_NAMES = ['', '基础贵宾卡', '私人贵宾卡', '主席卡', '超级贵宾卡'];
+  const CARD_NAMES_EN = ['', 'basic VIP card', 'private VIP card', 'Chairman card', 'Super VIP card'];
+  const needName = n => n ? (EN ? CARD_NAMES_EN[n] : CARD_NAMES[n]) : '';
   function roomOpen(casinoIdx, roomIdx){
+    if (cfg.unlock) return true;          // 体验模式：全部厅房开放，仅用于查看不同台规
     const c = CASINOS[casinoIdx];
     return memOf(c.prog).card >= roomNeed(c.rooms[roomIdx]);
   }
-  /* 会员匹配：中场积分卡等级越高，贵宾邀约概率加成越高（最高 +10pp） */
-  function memberBonus(progId){
-    const id = progId || curCasino().prog;
-    const prog = PROGRAMS[id];
-    const n = (prog.tiers || []).length;
-    if (n <= 1) return 0;
-    const t = CORE.tierOf(memOf(id).points, prog);
-    return (t.idx / (n - 1)) * 0.10;
-  }
-
   /* 算法层：全部在 assets/bj-core.js，这里只做薄封装 */
   const CORE = window.BJCore;
   const cv = r => CORE.cardValue(r);
@@ -944,12 +956,11 @@ const BJ = (() => {
   function memOf(progId){
     if (!MEM[progId]) MEM[progId] = {
       points: 0, turnover: 0, maxStake: 0, dayTurnovers: [],
-      card: 0, cardRound: 0, miss: { basic: 0, top: 0 }
+      card: 0, cardRound: 0
     };
     return MEM[progId];
   }
   const mem = () => memOf(curCasino().prog);
-  let invite = null;   // 本桌最近一局的随机准入结果（仅显示）
   let flyKeys = new Set();   // 需要播放飞入动画的牌 key
 
   /* 资金曲线数据 */
@@ -969,24 +980,26 @@ const BJ = (() => {
      'sideView','stRounds','stWDL','stBJ','stSide','stBank','stPL','simOut','shoeLeft','shoeStack',
      'discN','discStack','cntLeft','cntBurn','cntRC','cntTC','countHint','countBox','deckPanel',
      'myHands','myLive','ledger','curve','curveTip','curveLegend','cvPeak','cvDD','cvAvg','cvN','betBreak',
-     'beads','beadCount','kvGrid','seatRows','recentRows','ptsBig','ptsTier','ptsBar','ptsNote','ptsVenue',
+     'beads','beadCount','kvGrid','seatRows','recentRows','ptsBig','ptsTier','ptsBar','ptsNote','ptsVenue','ptsApply',
      'myZoneLabel','mySeatLabel','feltPayText','plMax','plMin','plEquip','venueHint','cfgVenue','cfgRoom','cfgSeats',
      'tableTips','vipName','vipStatus','vipRows','vipNote','fsPts','ptsInline','vipInvite','vipHeld',
-     'cfgMySeat','cfgEmpty','cfgBank','cfgCap','cfgApply',
+     'cfgMySeat','cfgEmpty','cfgBank','cfgCap','cfgUnlock','cfgApply',
      'stageTxt','sg1','sg2','sg3','sg4','sg5'
     ].forEach(k => el[k] = $(k));
   }
 
   /* ---------- 牌靴 ---------- */
   function buildShoe(){
-    shoe = CORE.buildShoe(curVenue().decks);
+    const v = curVenue();
+    shoe = CORE.buildShoe(v.decks);
     shoeSize = shoe.length;
-    cutAt = shoeSize - CUT_BACK;
+    // 穿透率：pen 为本靴发出的比例，剩余 (1−pen) 时换靴
+    cutAt = Math.max(12, Math.round(shoeSize * (1 - v.pen)));
     discards = 0; rc = 0;
   }
   function draw(){
     if (equipment === 'csm'){ if (shoe.length < 12) buildShoe(); }
-    else if (shoe.length <= cutAt){ buildShoe(); flash('过白咭，重新洗牌。'); }
+    else if (shoe.length <= cutAt){ buildShoe(); flash(EN ? 'Cut card reached — reshuffling.' : '过白咭，重新洗牌。'); }
     const c = shoe.pop();
     rc += CORE.hiLo(c.r);
     return c;
@@ -1073,7 +1086,7 @@ const BJ = (() => {
           rows += `<div class="doorcards others">${h.cards.map((c, ci) =>
             cardHTML(c, `s${i}h${hi}c${ci}`, 'sm', true)).join('')}</div>
             <div class="doorfoot"><span class="betchip">${fmt(h.bet)}</span>
-              <span class="totbadge ${bust ? 'bust' : bj ? 'bj' : ''}">${v}${isSoft(h.cards) && !bust ? '软' : ''}</span>
+              <span class="totbadge ${bust ? 'bust' : bj ? 'bj' : ''}">${v}${isSoft(h.cards) && !bust ? (EN ? ' soft' : '软') : ''}</span>
               ${tag}</div>`;
         });
         body = rows;
@@ -1148,7 +1161,7 @@ const BJ = (() => {
           cardHTML(c, `s${HUMAN}h${hi}c${ci}`, 'big', true)).join('')}</div>
         <div class="handfoot">
           <span class="betchip">${fmt(h.bet)}</span>
-          <span class="totbadge ${bust ? 'bust' : bj ? 'bj' : ''}">${v}${isSoft(h.cards) && !bust ? '软' : ''}</span>
+          <span class="totbadge ${bust ? 'bust' : bj ? 'bj' : ''}">${v}${isSoft(h.cards) && !bust ? (EN ? ' soft' : '软') : ''}</span>
           ${res}
         </div></div>`;
     }).join('');
@@ -1182,19 +1195,23 @@ const BJ = (() => {
   function addBet(v){
     if (phase !== 'bet' || busy) return;
     v = Math.floor(v);
-    if (!v || v <= 0){ flash('下注金额必须大于 0。'); return; }
+    if (!v || v <= 0){ flash(EN ? 'The bet must be greater than 0.' : '下注金额必须大于 0。'); return; }
     if (humanBet + v > betMax()){
-      flash(`单注上限 <b>${fmt(betMax())}</b>，已押 ${fmt(humanBet)}。`);
+      flash(EN
+        ? `Table cap <b>${fmt(betMax())}</b>; already staked ${fmt(humanBet)}.`
+        : `单注上限 <b>${fmt(betMax())}</b>，已押 ${fmt(humanBet)}。`);
       return;
     }
     humanBet += v;
     betStack.push(v);
-    flash(`加 <b>${fmt(v)}</b>，当前 <b>${fmt(humanBet)}</b>（${betStack.length} 枚）。`);
+    flash(EN
+      ? `Added <b>${fmt(v)}</b>; total <b>${fmt(humanBet)}</b> (${betStack.length} chips).`
+      : `加 <b>${fmt(v)}</b>，当前 <b>${fmt(humanBet)}</b>（${betStack.length} 枚）。`);
     render();
   }
   function undoBet(){
     if (phase !== 'bet' || busy) return;
-    if (!betStack.length){ flash('桌上没有筹码了。'); return; }
+    if (!betStack.length){ flash(EN ? 'No chips left on the table.' : '桌上没有筹码了。'); return; }
     const v = betStack.pop();
     humanBet = Math.max(0, humanBet - v);
     render();
@@ -1249,9 +1266,22 @@ const BJ = (() => {
       if (t.pct == null) lines.push(`${t.next ? '下一档 ' + t.next + '：' : ''}${prog.tiersNote}`);
       else lines.push(`距${t.next}还差 ${t.need} 分（${prog.tiersNote}）`);
       lines.push(prog.tiers.map(([n, p]) => `${n} ${p == null ? '未公开' : p.toLocaleString()}`).join(' · '));
-      lines.push(`贵宾厅：${m.card >= 1 ? '已持卡，可入场' : '需基础贵宾卡'} · 私人厅/主席厅：${m.card >= 2 ? '已持顶层卡，可入场' : '需顶层隐藏卡'}`);
+      lines.push(`贵宾厅：${m.card >= 1 ? '已持卡，可入场' : '需基础贵宾卡'} · 私人厅/主席厅：${m.card >= 2 ? `已持${needName(m.card)}，可入场` : '需私人贵宾卡'}`);
       }
       el.ptsNote.textContent = lines.join('\n');
+    }
+    if (el.ptsApply){
+      const cp = CORE.cardProgress(m, prog);
+      if (!cp.next){
+        el.ptsApply.innerHTML = `<div class="apply-top"><b>${EN ? 'Top tier reached' : '已达最高档'}</b></div>`;
+      } else {
+        el.ptsApply.innerHTML = `
+          <div class="apply-top"><b>${EN ? 'Next: ' : '下一档：'}${cp.next}</b><span>${Math.round(cp.pct * 100)}%</span></div>
+          <div class="apply-bars"><div><span>${EN ? 'Points' : '积分'}</span><i style="width:${(cp.pct * 100).toFixed(0)}%"></i><b>${Math.round(m.points).toLocaleString()} / ${(cp.needPts || 0).toLocaleString()}</b></div></div>
+          <div class="room-rule">${EN
+            ? 'Mid-floor tiers upgrade automatically once points are reached.'
+            : '中场卡按积分自动升级，无需申请；贵宾卡需在下方「贵宾候选评估」提交申请。'}</div>`;
+      }
     }
   }
 
@@ -1268,34 +1298,31 @@ const BJ = (() => {
     }, vip);
 
     el.vipName.textContent = vip.name;
-    const basicName = vip.tiers[0] ? vip.tiers[0].name : '—';
-    const topName = vip.tiers[vip.tiers.length - 1].name;
-    const hasTop = vip.tiers.length > 1;
-    const badge = m.card === 2 ? (EN ? 'Held · top hidden card' : '已持卡 · 顶层隐藏卡')
-      : m.card === 1 ? (EN ? 'Held · basic VIP' : '已持卡 · 基础贵宾')
+    const badge = m.card ? (EN ? `Held · ${needName(m.card)}` : `已持卡 · ${needName(m.card)}`)
       : (EN ? ['Not qualified yet', 'Qualified · basic pool', 'Qualified · top pool']
             : ['暂不达标', '已达门槛 · 基础候选', '已达门槛 · 顶层候选'])[res.metLevel];
     el.vipStatus.innerHTML = `<span class="vip-badge lv${res.metLevel}">${badge}</span>
       <span class="vip-hint">${
         EN
-          ? (m.card ? 'Your VIP card is held and will not be revoked if a later round misses'
-              : res.metLevel === 0 ? 'Not in the VIP pool yet — keep building turnover'
-              : `All three thresholds met${res.metLevel === 2 ? ' (top tier)' : ''}; you are in the invitation pool. A draw runs every round, with a floor when you miss${res.burst ? '; turnover spike, probability halved' : ''}`)
-          : (m.card ? '贵宾厅会员卡已到手并保留，不会因后续单局未中而收回'
-              : res.metLevel === 0 ? '暂未进入贵宾候选池，继续积累投注'
-              : `三项门槛已达${res.metLevel === 2 ? '（顶层）' : ''}，已进入邀约池；每局抽签，未中按局保底${res.burst ? '；流水突击，概率减半' : ''}`)
+          ? (m.card ? `VIP card held (${needName(m.card)}) — rooms at that level stay open`
+              : res.metLevel === 0 ? 'Below all VIP thresholds — keep building turnover, max bet and visit days'
+              : `All three thresholds met${res.metLevel === 2 ? ' (top tier)' : ''}; submit the application below to have the card issued${res.burst ? '; turnover is concentrated in a short window, so review may take longer' : ''}`)
+          : (m.card ? `已持${needName(m.card)}，对应厅房长期开放`
+              : res.metLevel === 0 ? '三维门槛未达，继续积累有效投注 / 单次最大投注 / 到访天数'
+              : `三项门槛已达${res.metLevel === 2 ? '（顶层）' : ''}，在下方提交申请即可获批发卡${res.burst ? '；流水集中在短期，人工复核会更慢' : ''}`)
       }</span>`;
 
-    /* 已获邀约的卡：一旦到手就保留，不因后续单局未中而收回 */
+    /* 已获批的卡：一旦到手就保留，不随换台或后续投注不足而收回 */
     if (el.vipHeld){
       if (!m.card){
         el.vipHeld.style.display = 'none';
         el.vipHeld.innerHTML = '';
       } else {
-        const nm = m.card === 2 ? topName : basicName;
+        const heldTier = vip.tiers.find(t => (t.card || 1) === m.card) || vip.tiers[0];
+        const nm = heldTier ? heldTier.name : '—';
         el.vipHeld.style.display = 'flex';
         el.vipHeld.innerHTML =
-          `<div><b>${nm}</b><small>${EN ? `VIP card · invitation won in round ${m.cardRound} · retained` : `贵宾厅会员卡 · 第 ${m.cardRound} 局获邀约 · 已保留`}</small></div>
+          `<div><b>${nm}</b><small>${EN ? `VIP card · approved in round ${m.cardRound} · retained` : `贵宾厅会员卡 · 第 ${m.cardRound} 局获批 · 已保留`}</small></div>
            <span class="vh-tag">${EN ? 'Held' : '持有中'}</span>`;
       }
     }
@@ -1322,73 +1349,62 @@ const BJ = (() => {
 
     const parts = [];
     if (res.burst) parts.push(EN
-      ? `Turnover is concentrated in short bursts (7-round window = ${(res.share * 100).toFixed(0)}%); invitation probability halved (thresholds still shown as met)`
-      : `流水集中在短期突击（连续 7 局窗口占 ${(res.share * 100).toFixed(0)}%），邀约概率减半（门槛仍按已达标显示）`);
+      ? `Turnover is concentrated in a short window (7-round share = ${(res.share * 100).toFixed(0)}%); review may take longer, but thresholds still count as met`
+      : `流水集中在短期（连续 7 局窗口占 ${(res.share * 100).toFixed(0)}%），复核会更慢，但门槛仍按已达标计`);
     else if (res.days > 7) parts.push(EN
-      ? `Stable pattern (7-round window = ${(res.share * 100).toFixed(0)}%); no burst penalty`
-      : `稳定性正常（连续 7 局窗口占 ${(res.share * 100).toFixed(0)}%），未触发突击扣分`);
+      ? `Stable pattern (7-round share = ${(res.share * 100).toFixed(0)}%)`
+      : `稳定性正常（连续 7 局窗口占 ${(res.share * 100).toFixed(0)}%）`);
     const tierNow = CORE.tierOf(m.points, prog);
     parts.push(EN
-      ? `Membership match: ${prog.name} ${tierNow.tier}, VIP invitation +${Math.round(memberBonus() * 100)}pp`
-      : `会员匹配：${prog.name} ${tierNow.tier}，贵宾邀约 +${Math.round(memberBonus() * 100)}pp`);
+      ? `Mid-floor card: ${prog.name} ${tierNow.tier} (separate system from VIP cards)`
+      : `中场卡：${prog.name} ${tierNow.tier}（与贵宾卡是两套体系）`);
     parts.push(EN
-      ? `Access: VIP room ${m.card >= 1 ? 'open' : 'locked'} · private/chairman room ${m.card >= 2 ? 'open' : 'locked'}. Cards come only from play evaluation, never from picking a room`
-      : `入场权限：贵宾厅${m.card >= 1 ? '可进' : '锁定'} · 私人厅/主席厅${m.card >= 2 ? '可进' : '锁定'}；${vip.note ? vip.note + '；' : ''}贵宾卡只由实战评估产生，不随选厅直接发放`);
+      ? `Access: VIP room ${m.card >= 1 ? 'open' : 'locked'} · private/chairman room ${m.card >= 2 ? 'open' : 'locked'}. Cards are issued only after you apply with qualifying play`
+      : `入场权限：贵宾厅${m.card >= 1 ? '可进' : '锁定'} · 私人厅/主席厅${m.card >= 2 ? '可进' : '锁定'}；${vip.note ? vip.note + '；' : ''}贵宾卡需三维达标后主动申请获批，不随选厅直接发放`);
     parts.push(EN ? 'Card status is simulated; real eligibility is decided on the casino floor' : '卡为模拟状态，真实资格仍由赌场现场核定');
     el.vipNote.textContent = parts.join(' · ');
 
-    /* 随机准入：达标也可能不中，未达标也可能被抽中；到手即保留 */
+    /* 申请制：三维门槛线性评分，达标即可提交申请；不再随机发放 */
     if (el.vipInvite){
-      if (!invite){
-        el.vipInvite.innerHTML = `<span class="iv-idle">${EN ? 'After a round, the random admission result for that round appears here' : '打完一局后，这里给出本局的随机准入结果'}</span>`;
+      const progv = CORE.vipProgress({
+        turnover: m.turnover, maxBet: m.maxStake, days: m.dayTurnovers.length
+      }, vip, m.card);
+      if (!progv.next){
+        el.vipInvite.innerHTML = `<span class="iv ok">${EN
+          ? 'All VIP tiers approved — super VIP card held.'
+          : '全部贵宾档位已获批，已持超级贵宾卡。'}</span>`;
       } else {
-        const pct = x => x <= 0 ? '0%' : x < 0.01 ? '<1%' : (x * 100).toFixed(0) + '%';
-        const boost = invite.bigBet ? (EN ? ' · large-bet channel' : ' · 大额单注通道') : '';
-        const metBasic = invite.checks[0].met;
-        const metTop = hasTop && invite.checks[invite.checks.length - 1].met;
-        const nextBasic = Math.min(1, invite.p + 0.25);
-        const nextTop = Math.min(1, invite.pTop + 0.10);
-        if (m.card === 2){
-          const gotNow = invite.invitedTop;
-          el.vipInvite.innerHTML = EN
-            ? `<span class="iv ok">${gotNow ? `Drew top tier <b>${topName}</b> this round (p ${pct(invite.pTop)}), written to your card` : `Already holding <b>${topName}</b> (top hidden card)`}</span>
-             <span class="iv-sub">Card status is retained and not revoked on a later miss; this round still rolls normally</span>`
-            : `<span class="iv ok">${gotNow ? `本局抽中顶层 <b>${topName}</b>（概率 ${pct(invite.pTop)}），已写入贵宾卡` : `已持有 <b>${topName}</b>（顶层隐藏卡）`}</span>
-             <span class="iv-sub">持卡状态保留，不因后续单局未中而收回；本局仍按程序重掷</span>`;
-        } else if (m.card === 1){
-          const topLine = !hasTop ? ''
-            : invite.invitedTop ? (EN ? `Top tier drawn this round: <b>${topName}</b> (p ${pct(invite.pTop)})` : `本局顶层抽中 <b>${topName}</b>（概率 ${pct(invite.pTop)}）`)
-            : (EN ? `Top tier missed this round (p ${pct(invite.pTop)}${metTop ? `, floor next round ${pct(nextTop)}` : ''})`
-                  : `本局顶层未中（概率 ${pct(invite.pTop)}${metTop ? `，下局保底 ${pct(nextTop)}` : ''}）`);
-          el.vipInvite.innerHTML = EN
-            ? `<span class="iv ok">Holding <b>${basicName}</b> VIP card</span>
-             <span class="iv-sub">${topLine ? topLine + '; ' : ''}card retained, not revoked on a later miss</span>`
-            : `<span class="iv ok">已持有 <b>${basicName}</b> 贵宾卡</span>
-             <span class="iv-sub">${topLine ? topLine + '；' : ''}卡已保留，不因后续单局未中而收回</span>`;
-        } else if (invite.invited){
-          const nm = invite.invited === 2 ? topName : basicName;
-          const pp = invite.invited === 2 ? invite.pTop : invite.p;
-          el.vipInvite.innerHTML = EN
-            ? `<span class="iv ok">Invitation drawn: <b>${nm}</b> (p ${pct(pp)})${boost}</span>
-             <span class="iv-sub">Written to your card and retained; unqualified players can still be drawn, pending floor verification</span>`
-            : `<span class="iv ok">本局抽中 <b>${nm}</b> 邀约（概率 ${pct(pp)}）${boost}</span>
-             <span class="iv-sub">已写入贵宾卡并保留；未达标也可能被抽中，仍为候选，需赌场现场核定</span>`;
-        } else if (metBasic){
-          el.vipInvite.innerHTML = EN
-            ? `<span class="iv no">Thresholds met, no draw this round (p ${pct(invite.p)})${boost}</span>
-             <span class="iv-sub">Floor guarantee: next round ${pct(nextBasic)}, guaranteed within ${Math.max(1, Math.ceil((1 - invite.p) / 0.25))} rounds</span>`
-            : `<span class="iv no">已达门槛，本局未中（本次概率 ${pct(invite.p)}）${boost}</span>
-             <span class="iv-sub">达标保底：下局概率 ${pct(nextBasic)}，最多 ${Math.max(1, Math.ceil((1 - invite.p) / 0.25))} 局内必得</span>`;
-        } else {
-          el.vipInvite.innerHTML = EN
-            ? `<span class="iv no">No invitation (p ${pct(invite.p)})${boost}</span>
-             <span class="iv-sub">Rolled every round; below threshold the probability scales linearly with turnover/threshold and max single bet, and a large single bet can draw directly</span>`
-            : `<span class="iv no">未获邀约（本次概率 ${pct(invite.p)}）${boost}</span>
-             <span class="iv-sub">每局重掷；未达标时按「投注 / 门槛」与「单次最大投注」线性给概率，大额单注可越过门槛直接抽</span>`;
-        }
+        const t = progv.next;
+        el.vipInvite.innerHTML = `
+          <div class="apply-box">
+            <div class="apply-top"><b>${t.name}</b><span>${Math.round(t.pct * 100)}%</span></div>
+            <div class="apply-bars">
+              <div><span>${EN ? '6-month turnover' : '6 个月有效投注'}</span><i style="width:${(t.rt * 100).toFixed(0)}%"></i><b>${fmtShort(m.turnover)} / ${fmtShort(t.turnover)}</b></div>
+              <div><span>${EN ? 'Max single bet' : '单次最大投注'}</span><i style="width:${(t.rm * 100).toFixed(0)}%"></i><b>${fmtShort(m.maxStake)} / ${fmtShort(t.maxBet)}</b></div>
+              <div><span>${EN ? 'Visit days' : '到访天数'}</span><i style="width:${(t.rd * 100).toFixed(0)}%"></i><b>${m.dayTurnovers.length} / ${t.days}</b></div>
+            </div>
+            <button class="apply-btn" id="vipApplyBtn" ${t.met ? '' : 'disabled'}>${t.met
+              ? (EN ? 'Apply for this card' : '申请此卡')
+              : (EN ? 'Requirements not met yet' : '三维门槛未全部达标')}</button>
+          </div>`;
+        const ab = document.getElementById('vipApplyBtn');
+        if (ab) ab.addEventListener('click', () => {
+          const now = CORE.vipProgress({
+            turnover: m.turnover, maxBet: m.maxStake, days: m.dayTurnovers.length
+          }, vip, m.card);
+          if (!now.next || !now.next.met){ flash(EN ? 'Requirements not met.' : '门槛未达标。'); return; }
+          m.card = now.next.card;
+          m.cardRound = st.rounds;
+          updateRoomSelect();
+          flash(EN
+            ? `<b>${now.next.name}</b> approved and written to your card; rooms unlocked.`
+            : `<b>${now.next.name}</b> 已批准并写入贵宾卡，对应厅房已解锁。`);
+          renderVip(); render();
+        });
       }
     }
   }
+
 
   function fsPointsText(){
     const prog = PROGRAMS[curVenue().prog];
@@ -1403,18 +1419,22 @@ const BJ = (() => {
     const v = curVenue();
     const lines = EN ? [
       `Dealer ${v.soft17 === 'h17' ? 'hits soft 17 — bad for players' : 'stands on soft 17'}; must hit hard 16 and below`,
-      `${v.decks} decks · ${v.csm ? 'CSM: running count is meaningless, do not size bets on it' : 'Shoe: about 30 cards behind the cut card, a true count is usable'}`,
+      `${v.decks} decks · ${v.csm ? 'CSM: running count is meaningless, do not size bets on it' : `Shoe: cut card about ${cutAt} cards from the end, a true count is usable`}`,
       v.bj === 1.5 ? 'Blackjack pays 3:2 — standard' : 'Blackjack pays only 6:5: about 1.4% worse than 3:2, a clear long-run loss',
       v.sur ? 'Early surrender allowed: hard 16 vs 9/10 and hard 15 vs 10 can be given up for half' : 'No early surrender: hard 16 against a strong card must be played out',
       `Limits ${fmt(v.min)}–${cfg.noCap ? 'no cap (current setting)' : fmt(v.max)}; below the minimum no deal`,
-      `You sit at box ${HUMAN + 1}: ${HUMAN === 0 ? 'first base, acts first' : HUMAN === seats.length - 1 ? 'third base, sees the most cards' : 'middle box, information and action order in between'}`
+      `You sit at box ${HUMAN + 1}: ${HUMAN === 0 ? 'first base, acts first' : HUMAN === seats.length - 1 ? 'third base, sees the most cards' : 'middle box, information and action order in between'}`,
+      `DAS ${v.das ? 'allowed' : 'not allowed'} · split up to ${v.maxSplit} hands · split aces ${v.resplitA ? 'can be resplit' : 'cannot be resplit'}${v.hitSplitA ? ' and may be hit again' : ' and receive one card only'}`,
+      `${v.fiveCard ? 'Five-card rule: five cards without busting can be given up for half' : 'No five-card rule'} · burn ${v.burn} card(s) · ${v.dealStyle === 'per-box' ? 'cards dealt box by box' : 'two-pass deal'}`
     ] : [
       `庄家${v.soft17 === 'h17' ? '软 17 继续要牌，对玩家不利' : '软 17 停牌'}，硬 16 及以下必博`,
-      `${v.decks} 副牌 · ${v.csm ? '洗牌机：流水数无效，别按真数加注' : '牌靴：白咭前最后约 30 张，可用真数'}`,
+      `${v.decks} 副牌 · ${v.csm ? '洗牌机：流水数无效，别按真数加注' : `牌靴：白咭插在最后约 ${cutAt} 张处，可用真数`}`,
       v.bj === 1.5 ? 'Blackjack 赔 3:2，标准赔付' : 'Blackjack 只赔 6:5：比 3:2 少约 1.4% 期望，长期明显吃亏',
       v.sur ? '允许早投降：硬 16 对 9/10、硬 15 对 10 可弃一半' : '不设早投降：硬 16 对强牌只能硬扛',
       `限红 ${fmt(v.min)}–${cfg.noCap ? '无上限（当前设定）' : fmt(v.max)}，低于最低注不能发牌`,
-      `你坐第 ${HUMAN + 1} 门：${HUMAN === 0 ? '贴牌靴，先拿牌' : HUMAN === seats.length - 1 ? '末门，看到的信息最多' : '中间门，信息与行动顺序居中'}`
+      `你坐第 ${HUMAN + 1} 门：${HUMAN === 0 ? '贴牌靴，先拿牌' : HUMAN === seats.length - 1 ? '末门，看到的信息最多' : '中间门，信息与行动顺序居中'}`,
+      `${v.das ? '分牌后可加注' : '分牌后不可加注'} · 最多分 ${v.maxSplit} 门 · 分 A ${v.resplitA ? '可再分' : '不可再分'}${v.hitSplitA ? '、可继续要牌' : '、各只补一张'}`,
+      `${v.fiveCard ? '有五张牌规则：五张不爆可弃赔半注' : '无五张牌规则'} · 每局销 ${v.burn} 张 · ${v.dealStyle === 'per-box' ? '逐门发牌' : '两轮发牌'}`
     ];
     el.tableTips.innerHTML = lines.map(t => `<div>${t}</div>`).join('');
   }
@@ -1429,7 +1449,7 @@ const BJ = (() => {
         return `<i class="bead ${k || 'empty'}"${k ? ` title="第 ${st.rounds - shown.length + (i - blank) + 1} 局"` : ''}></i>`;
       }).join('');
     }
-    if (el.beadCount) el.beadCount.textContent = st.rounds + ' 局';
+    if (el.beadCount) el.beadCount.textContent = EN ? `${st.rounds} rounds` : `${st.rounds} 局`;
 
     if (el.kvGrid){
       const rate = st.rounds ? st.w / st.rounds * 100 : 0;
@@ -1475,6 +1495,7 @@ const BJ = (() => {
   }
 
   function renderButtons(){
+    const v = curVenue();
     const inPlay = phase === 'player' && seats[activeSeat] && seats[activeSeat].human;
     const h = inPlay ? seats[HUMAN].hands[activeHand] : null;
     const bank = seats[HUMAN].bank;
@@ -1482,18 +1503,21 @@ const BJ = (() => {
     el.btnDeal.disabled = !ready;
     el.btnHit.disabled = !inPlay;
     el.btnStand.disabled = !inPlay;
-    el.btnDbl.disabled = !(inPlay && h && h.cards.length === 2 && !h.dbl && bank >= h.bet);
+    el.btnDbl.disabled = !(inPlay && h && h.cards.length === 2 && !h.dbl && bank >= h.bet
+      && (!h.fromSplit || v.das));
     el.btnSplit.disabled = !(inPlay && h && h.cards.length === 2 && !h.dbl &&
-      sameRank(h.cards[0].r, h.cards[1].r) && seats[HUMAN].hands.length < 4 && bank >= h.bet);
+      sameRank(h.cards[0].r, h.cards[1].r) && seats[HUMAN].hands.length < v.maxSplit
+      && !(h.fromSplit && h.cards[0].r === 'A' && !v.resplitA) && bank >= h.bet);
     el.btnSur.disabled = !(inPlay && h && h.cards.length === 2 && !h.dbl && !h.fromSplit &&
-      curVenue().sur && dealer[0] && dealer[0].r !== 'A');
-    el.btnFive.disabled = !(inPlay && h && h.cards.length >= 5 && val(h.cards) <= 21 && dealer[0] && dealer[0].r !== 'A');
-    const ins = phase === 'insurance';
+      v.sur && dealer[0] && dealer[0].r !== 'A');
+    el.btnFive.disabled = !(inPlay && h && h.cards.length >= 5 && val(h.cards) <= 21
+      && v.fiveCard && dealer[0] && dealer[0].r !== 'A');
+    const ins = phase === 'insurance' && v.ins;
     el.btnIns.disabled = !ins;
     el.btnInsFull.disabled = !ins;
     el.btnNoIns.disabled = !ins;
-    el.btnEven.disabled = phase !== 'even';
-    el.btnNoEven.disabled = phase !== 'even';
+    el.btnEven.disabled = !(phase === 'even' && v.even);
+    el.btnNoEven.disabled = !(phase === 'even' && v.even);
   }
 
   function setStage(n){
@@ -1539,13 +1563,13 @@ const BJ = (() => {
   /* ---------- 开局（顺序发牌 + 动画） ---------- */
   async function deal(){
     if (phase !== 'bet' || busy) return;
-    if (humanBet < betMin()){ flash(`最低注 <b>${fmt(betMin())}</b>，先点筹码或输入金额。`); return; }
+    if (humanBet < betMin()){ flash(EN ? `Minimum bet <b>${fmt(betMin())}</b> — add chips or type an amount.` : `最低注 <b>${fmt(betMin())}</b>，先点筹码或输入金额。`); return; }
     const me = seats[HUMAN];
     const outlay = humanBet + sideBetTotal();
     // 允许透支下注：资产可以被打成负数（信用/签单模拟）
     if (me.bank < outlay && !me.overdraftWarned){
       me.overdraftWarned = true;
-      flash('注码超过余额：本局按<b>信用签单</b>结算，余额可为负。');
+      flash(EN ? 'Stake exceeds balance: this round settles on <b>credit</b>; the balance may go negative.' : '注码超过余额：本局按<b>信用签单</b>结算，余额可为负。');
     }
 
     busy = true;
@@ -1573,22 +1597,36 @@ const BJ = (() => {
     }
     me.hands = [newHand(humanBet)];
 
-    // 销牌（第四条）
-    burn(1);
+    // 销牌（按本场台规张数）
+    burn(curVenue().burn);
     render();
     await wait(100);
 
-    // 顺序发牌：先各门第一张，再各门第二张（第五条第2款）
-    for (let round = 0; round < 2; round++){
+    // 发牌顺序：two-pass（先各门第一张再第二张）/ per-box（逐门发两张）
+    const dealTwoPass = curVenue().dealStyle !== 'per-box';
+    if (dealTwoPass){
+      for (let round = 0; round < 2; round++){
+        for (let i = 0; i < seats.length; i++){
+          const s = seats[i];
+          if (!s.hands.length) continue;
+          const c = draw();
+          s.hands[0].cards.push(c);
+          flyKeys.add(`s${i}h0c${round}`);
+          render();
+          await wait(160);
+        }
+      }
+    } else {
       for (let i = 0; i < seats.length; i++){
         const s = seats[i];
         if (!s.hands.length) continue;
-        const c = draw();
-        const ci = round;
-        s.hands[0].cards.push(c);
-        flyKeys.add(`s${i}h0c${ci}`);
-        render();
-        await wait(160);
+        for (let round = 0; round < 2; round++){
+          const c = draw();
+          s.hands[0].cards.push(c);
+          flyKeys.add(`s${i}h0c${round}`);
+          render();
+          await wait(130);
+        }
       }
     }
     // 庄家一张明牌
@@ -1609,14 +1647,18 @@ const BJ = (() => {
 
     busy = false;
 
-    if (dealer[0].r === 'A'){
-      if (isBJ(me.hands[0])){
-        phase = 'even';
-        flash('你拿到 <b>Blackjack</b>，庄家明牌是 A。规章第十条第三款：可改收<b>等额</b>（1 倍稳收），也可坚持要 3:2。');
-        render(); return;
-      }
+    if (dealer[0].r === 'A' && curVenue().even && isBJ(me.hands[0])){
+      phase = 'even';
+      flash(EN
+        ? 'You have <b>Blackjack</b> and the dealer shows an A. You may take <b>even money</b> (1:1) or insist on 3:2.'
+        : '你拿到 <b>Blackjack</b>，庄家明牌是 A。规章第十条第三款：可改收<b>等额</b>（1 倍稳收），也可坚持要 3:2。');
+      render(); return;
+    }
+    if (dealer[0].r === 'A' && curVenue().ins && !isBJ(me.hands[0])){
       phase = 'insurance';
-      flash('庄家明牌 <b>A</b>。规章第十二条：保险可为原注的<b>一半至全数</b>，庄家 Blackjack 时赔 2:1。');
+      flash(EN
+        ? 'Dealer shows <b>A</b>. Insurance may be <b>half to the full</b> original bet and pays 2:1 if the dealer has blackjack.'
+        : '庄家明牌 <b>A</b>。规章第十二条：保险可为原注的<b>一半至全数</b>，庄家 Blackjack 时赔 2:1。');
       render(); return;
     }
     startPlayer();
@@ -1655,7 +1697,7 @@ const BJ = (() => {
     const s = seats[activeSeat];
     render();
     if (s.human){
-      flash(renderHint() || '你的回合。');
+      flash(renderHint() || (EN ? 'Your turn.' : '你的回合。'));
     } else {
       timer = setTimeout(aiTurn, 430);
     }
@@ -1664,10 +1706,13 @@ const BJ = (() => {
     const s = seats[activeSeat], h = s.hands[activeHand];
     if (!h || h.done){ activeHand++; nextTurn(); return; }
     const up = cv(dealer[0].r);
-    const act = basicStrategy(h.cards, up,
-      h.cards.length === 2 && !h.dbl && s.bank >= h.bet,
-      h.cards.length === 2 && sameRank(h.cards[0].r, h.cards[1].r) && !h.fromSplit && !h.dbl && s.hands.length < 4 && s.bank >= h.bet,
-      h.cards.length === 2 && !h.fromSplit && !h.dbl && up !== 11);
+    const vv = curVenue();
+    const act = basicStrategy(h.cards, up, {
+      canDouble: h.cards.length === 2 && !h.dbl && s.bank >= h.bet && (!h.fromSplit || vv.das),
+      canSplit: h.cards.length === 2 && sameRank(h.cards[0].r, h.cards[1].r) && !h.fromSplit && !h.dbl && s.hands.length < vv.maxSplit && s.bank >= h.bet,
+      canSurrender: h.cards.length === 2 && !h.fromSplit && !h.dbl && up !== 11 && vv.sur,
+      h17: !vv.s17
+    });
 
     if (act === 'STAND'){ h.done = true; h.act = '停牌'; }
     else if (act === 'HIT'){
@@ -1683,6 +1728,7 @@ const BJ = (() => {
   }
 
   function doSplit(s, h){
+    const v = curVenue();
     const c2 = h.cards.pop();
     const ace = c2.r === 'A';
     const nh = newHand(h.bet);
@@ -1692,7 +1738,8 @@ const BJ = (() => {
     h.fromSplit = true;
     s.hands.splice(activeHand + 1, 0, nh);
     checkSpecial(h); checkSpecial(nh);
-    if (ace){ h.done = true; nh.done = true; }
+    // 分 A：默认各补一张即停；主席厅/超级贵宾厅可按台规继续要牌
+    if (ace && !v.hitSplitA){ h.done = true; nh.done = true; }
     else if (val(h.cards) >= 21) h.done = true;
   }
 
@@ -1729,16 +1776,18 @@ const BJ = (() => {
   }
   function split(){
     if (!myTurn()) return;
+    const v = curVenue();
     const s = seats[HUMAN], h = s.hands[activeHand];
-    if (s.hands.length >= 4) return;
+    if (s.hands.length >= v.maxSplit) return;
     if (!(h.cards.length === 2 && sameRank(h.cards[0].r, h.cards[1].r) && !h.dbl)) return;
+    if (h.fromSplit && h.cards[0].r === 'A' && !v.resplitA) return;
     doSplit(s, h);
     if (h.done){ activeHand++; nextTurn(); return; }
     render();
   }
   function surrender(){
     if (!myTurn()) return;
-    if (!curVenue().sur){ flash('这个场子的台规不允许早投降。'); return; }
+    if (!curVenue().sur){ flash(EN ? 'This table does not allow early surrender.' : '这个场子的台规不允许早投降。'); return; }
     const h = seats[HUMAN].hands[activeHand];
     if (h.cards.length !== 2 || h.fromSplit || h.dbl || (dealer[0] && dealer[0].r === 'A')) return;
     h.surrendered = true; h.done = true;
@@ -1746,6 +1795,7 @@ const BJ = (() => {
   }
   function fiveCard(){
     if (!myTurn()) return;
+    if (!curVenue().fiveCard){ flash(EN ? 'This table does not offer the five-card rule.' : '这个场子的台规没有五张牌规则。'); return; }
     const h = seats[HUMAN].hands[activeHand];
     if (h.cards.length < 5 || val(h.cards) > 21 || (dealer[0] && dealer[0].r === 'A')) return;
     h.five = true; h.done = true;
@@ -1758,12 +1808,14 @@ const BJ = (() => {
     const me = seats[HUMAN];
     if (kind === 'none'){
       insuranceAmt = 0;
-      flash('不投保。庄家第二张牌要等全部闲家行动完才补。');
+      flash(EN ? 'No insurance. The dealer takes the second card only after every box has acted.' : '不投保。庄家第二张牌要等全部闲家行动完才补。');
     } else {
       const amt = kind === 'half' ? Math.floor(humanBet / 2) : humanBet;
       me.bank -= amt;            // 这是本局唯一一次扣保险（可透支）
       insuranceAmt = amt;
-      flash(`已投保 <b>${fmt(amt)}</b>。全部闲家行动完后庄家才补第二张牌（无底牌制），那时才结算保险。`);
+      flash(EN
+        ? `Insured <b>${fmt(amt)}</b>. With no hole card the dealer draws the second card after all boxes act; insurance settles then.`
+        : `已投保 <b>${fmt(amt)}</b>。全部闲家行动完后庄家才补第二张牌（无底牌制），那时才结算保险。`);
     }
     startPlayer();
   }
@@ -1771,14 +1823,16 @@ const BJ = (() => {
     if (phase !== 'even') return;
     const me = seats[HUMAN], h = me.hands[0];
     h.closed = true; h.done = true;
-    h.result = '等额'; h.plRes = 1;
-    flash(`已选收<b>等额</b>。本局按 1 倍原注结算，庄家真是 Blackjack 你不亏不赚。`);
+    h.result = EN ? 'even money' : '等额'; h.plRes = 1;
+    flash(EN
+      ? 'Even money taken: this round settles at 1:1, so a dealer blackjack neither wins nor loses you anything.'
+      : '已选收<b>等额</b>。本局按 1 倍原注结算，庄家真是 Blackjack 你不亏不赚。');
     render();
     startPlayer();
   }
   function noEven(){
     if (phase !== 'even') return;
-    flash('拒收等额，坚持 3:2。');
+    flash(EN ? 'Even money declined — playing for the full 3:2.' : '拒收等额，坚持 3:2。');
     startPlayer();
   }
 
@@ -1807,7 +1861,7 @@ const BJ = (() => {
             await wait(320);
             continue;
           }
-          if (v === 17 && soft17 === 'h17' && isSoft(dealer)){
+          if (v === 17 && !curVenue().s17 && isSoft(dealer)){
             const k = dealer.length;
             dealer.push(draw());
             flyKeys.add('d' + k);
@@ -1828,6 +1882,10 @@ const BJ = (() => {
   function settle(dBJ){
     phase = 'done'; setStage(4);
     const dv = val(dealer);
+    /* 结算标签按语言输出，避免结算提示与门位标签中英混杂 */
+    const RL = EN
+      ? { w: 'win', l: 'lose', p: 'push', bust: 'bust', five: 'five-card', bonus: 'bonus', surr: 'surrender', ret: 'returned' }
+      : { w: '胜', l: '负', p: '和', bust: '爆', five: '五张牌', bonus: '彩金', surr: '放弃', ret: '退回' };
 
     for (const s of seats){
       if (!s.hands.length) continue;
@@ -1844,21 +1902,21 @@ const BJ = (() => {
         if (sb.key === 'pair'){
           const win = !!a && !!b && sameRank(a.r, b.r);
           sb.state = win ? 'win' : 'lose';
-          if (win){ ret = humanBet * 12; desc = '对子 1:11'; sideWin++; if (s.human) st.side++; }
-          else desc = '对子未中';
+          if (win){ ret = humanBet * 12; desc = EN ? 'pair 11:1' : '对子 1:11'; sideWin++; if (s.human) st.side++; }
+          else desc = EN ? 'pair missed' : '对子未中';
         } else if (sb.key === 'seven'){
           const both7 = !!a && !!b && a.r === '7' && b.r === '7';
-          if (!both7) desc = '7 未中';
+          if (!both7) desc = EN ? '7 missed' : '7 未中';
           else {
             const suited2 = a.s === b.s;
             const third = s.hands[0].cards[2];
             if (third && third.r === '7'){
               const suited3 = suited2 && third.s === a.s;
               const pay = suited3 ? 5000 : 500;
-              sb.state = 'win'; ret = humanBet * (pay + 1); desc = `三张 7 ${pay}:1`;
+              sb.state = 'win'; ret = humanBet * (pay + 1); desc = `${EN ? 'three 7s' : '三张 7'} ${pay}:1`;
             } else {
               const pay = suited2 ? 150 : 50;
-              sb.state = 'win'; ret = humanBet * (pay + 1); desc = `两张 7 ${pay}:1`;
+              sb.state = 'win'; ret = humanBet * (pay + 1); desc = `${EN ? 'two 7s' : '两张 7'} ${pay}:1`;
             }
             sideWin++; if (s.human) st.side++;
           }
@@ -1866,8 +1924,9 @@ const BJ = (() => {
           const sum = (a.r === 'A' ? 1 : cv(a.r)) + (b.r === 'A' ? 1 : cv(b.r));
           const win = (sum > 13 && sb.dir === 'over') || (sum < 13 && sb.dir === 'under');
           sb.state = win ? 'win' : 'lose';
-          if (win){ ret = humanBet * 2; desc = `13${sb.dir === 'over' ? '上' : '下'}中`; sideWin++; if (s.human) st.side++; }
-          else desc = `13${sb.dir === 'over' ? '上' : '下'}未中`;
+          const ou = EN ? (sb.dir === 'over' ? 'over 13' : 'under 13') : `13${sb.dir === 'over' ? '上' : '下'}`;
+          if (win){ ret = humanBet * 2; desc = `${ou} ${EN ? 'hit' : '中'}`; sideWin++; if (s.human) st.side++; }
+          else desc = `${ou} ${EN ? 'missed' : '未中'}`;
         }
         payout += ret;
         if (desc) sideLines.push(`${desc} ${ret > 0 ? '+' + fmt(ret - humanBet) : fmt(-humanBet)}`);
@@ -1880,46 +1939,46 @@ const BJ = (() => {
       const mainLines = [];
 
       if (s.hands.some(h => h.closed)){
-        for (const h of s.hands) if (h.closed){ payout += h.bet * 2; mainLines.push(`等额 +${fmt(h.bet)}`); }
+        for (const h of s.hands) if (h.closed){ payout += h.bet * 2; mainLines.push(`${EN ? 'even money' : '等额'} +${fmt(h.bet)}`); }
       }
 
       if (dBJ){
         const nat = live.filter(h => h.natBJ);
         if (nat.length){
-          nat.forEach(h => { h.result = '和'; h.plRes = 0; payout += h.bet; mainLines.push('和局 退回'); });
+          nat.forEach(h => { h.result = RL.p; h.plRes = 0; payout += h.bet; mainLines.push(EN ? `push ${RL.ret}` : `和局 ${RL.ret}`); });
         } else if (live.length){
           payout += Math.min(orig, staked);
-          live.forEach(h => { h.result = '原注'; h.plRes = -1; });
-          mainLines.push(`原注 -${fmt(Math.min(orig, staked))}`);
+          live.forEach(h => { h.result = EN ? 'original' : '原注'; h.plRes = -1; });
+          mainLines.push(`${EN ? 'original' : '原注'} -${fmt(Math.min(orig, staked))}`);
         }
       } else {
         for (const h of live){
           const hv = val(h.cards);
           const label = h.cards.map(c => c.r).join('');
-          if (h.surrendered){ h.result = '放弃'; h.plRes = -0.5; payout += h.bet * 0.5; mainLines.push(`放弃 -${fmt(h.bet * 0.5)}`); continue; }
-          if (h.five){ h.result = '五张牌'; h.plRes = -0.5; payout += h.bet * 0.5; mainLines.push(`五张牌 -${fmt(h.bet * 0.5)}`); continue; }
+          if (h.surrendered){ h.result = RL.surr; h.plRes = -0.5; payout += h.bet * 0.5; mainLines.push(`${RL.surr} -${fmt(h.bet * 0.5)}`); continue; }
+          if (h.five){ h.result = RL.five; h.plRes = -0.5; payout += h.bet * 0.5; mainLines.push(`${RL.five} -${fmt(h.bet * 0.5)}`); continue; }
           if (h.special){
             payout += h.bet * (h.special + 1);
-            h.result = '彩金'; h.plRes = h.special;
-            mainLines.push(`彩金 +${fmt(h.bet * h.special)}`);
+            h.result = RL.bonus; h.plRes = h.special;
+            mainLines.push(`${RL.bonus} +${fmt(h.bet * h.special)}`);
             if (s.human) st.side++;
             continue;   // 彩金即时结算，不再与庄家比牌（否则会重复赔付）
           }
-          if (hv > 21){ if (!h.special){ h.result = '爆'; h.plRes = -1; mainLines.push(`${label} 爆 -${fmt(h.bet)}`); } continue; }
+          if (hv > 21){ if (!h.special){ h.result = RL.bust; h.plRes = -1; mainLines.push(`${label} ${RL.bust} -${fmt(h.bet)}`); } continue; }
           const bjPay = curVenue().bj;
           if (h.natBJ){ payout += h.bet * (1 + bjPay); h.result = 'BJ'; h.plRes = bjPay;
             mainLines.push(`Blackjack +${fmt(h.bet * bjPay)}`); if (s.human) st.bj++; continue; }
-          if (dv > 21 || hv > dv){ payout += h.bet * 2; h.result = '胜'; h.plRes = 1; mainLines.push(`${label} 胜 +${fmt(h.bet)}`); }
-          else if (hv === dv){ payout += h.bet; h.result = '和'; h.plRes = 0; mainLines.push(`${label} 和`); }
-          else { h.result = '负'; h.plRes = -1; mainLines.push(`${label} 负 -${fmt(h.bet)}`); }
+          if (dv > 21 || hv > dv){ payout += h.bet * 2; h.result = RL.w; h.plRes = 1; mainLines.push(`${label} ${RL.w} +${fmt(h.bet)}`); }
+          else if (hv === dv){ payout += h.bet; h.result = RL.p; h.plRes = 0; mainLines.push(`${label} ${RL.p}`); }
+          else { h.result = RL.l; h.plRes = -1; mainLines.push(`${label} ${RL.l} -${fmt(h.bet)}`); }
         }
       }
 
       // ---- 保险（已扣过，此处只加返还） ----
       let insLine = '';
       if (s.human && insuranceAmt > 0){
-        if (dBJ){ payout += insuranceAmt * 3; insLine = `赢 +${fmt(insuranceAmt * 2)}`; }
-        else { insLine = `损失 -${fmt(insuranceAmt)}`; }
+        if (dBJ){ payout += insuranceAmt * 3; insLine = EN ? `won +${fmt(insuranceAmt * 2)}` : `赢 +${fmt(insuranceAmt * 2)}`; }
+        else { insLine = EN ? `lost -${fmt(insuranceAmt)}` : `损失 -${fmt(insuranceAmt)}`; }
         insuranceAmt = 0;
       }
 
@@ -1939,20 +1998,7 @@ const BJ = (() => {
         m.turnover += stakedTotal;                        // 会员累计有效投注
         if (stakedTotal > m.maxStake) m.maxStake = stakedTotal;
         m.dayTurnovers.push(stakedTotal);                 // 每局视作一个到访日
-        invite = CORE.vipChance({                         // 每局重掷一次随机准入
-          turnover: m.turnover, maxBet: m.maxStake,
-          days: m.dayTurnovers.length, dayTurnovers: m.dayTurnovers
-        }, PROGRAMS[curVenue().prog].vip, null, m.miss, memberBonus());
-        if (invite.invited > m.card){                     // 邀约一旦到手就保留，不因下局未中而收回
-          m.card = invite.invited;
-          m.cardRound = st.rounds;
-          updateRoomSelect();                             // 持卡后解锁贵宾厅/私人厅
-        }
-        const lastChk = invite.checks[invite.checks.length - 1];
-        m.miss.basic = invite.checks[0].met && !invite.invitedBasic && m.card < 1
-          ? m.miss.basic + 1 : 0;
-        m.miss.top = invite.checks.length > 1 && lastChk.met && !invite.invitedTop && m.card < 2
-          ? m.miss.top + 1 : 0;
+        // 申请制：不再每局随机发卡，只累计数据，由玩家主动申请
         const busted = s.hands.some(h => val(h.cards) > 21 && !h.special);
         const kind = (s.hands[0] && s.hands[0].natBJ) ? 'bj' : busted ? 'bust'
                    : realPL > 0 ? 'w' : realPL < 0 ? 'l' : 'p';
@@ -1984,11 +2030,17 @@ const BJ = (() => {
     render();
     renderLedger();
     const net = lastRound.net;
-    const dealerTxt = dBJ ? '庄家 <b>Blackjack</b>（OBBO：分门与加注部分退回）' : `庄家 <b>${dv}</b> 点`;
-    const bits = [`<b>主注</b> ${lastRound.main || '—'}`];
-    if (lastRound.side) bits.push(`<b>附加注</b> ${lastRound.side}`);
-    if (lastRound.ins) bits.push(`<b>保险</b> ${lastRound.ins}`);
-    flash(`${dealerTxt}　${bits.join('　·　')}　→　
+    const dealerTxt = EN
+      ? (dBJ ? 'Dealer <b>Blackjack</b> (OBBO: split/double stakes partly returned)' : `Dealer <b>${dv}</b>`)
+      : (dBJ ? '庄家 <b>Blackjack</b>（OBBO：分门与加注部分退回）' : `庄家 <b>${dv}</b> 点`);
+    const bits = [EN ? `<b>Main</b> ${lastRound.main || '—'}` : `<b>主注</b> ${lastRound.main || '—'}`];
+    if (lastRound.side) bits.push(EN ? `<b>Side</b> ${lastRound.side}` : `<b>附加注</b> ${lastRound.side}`);
+    if (lastRound.ins) bits.push(EN ? `<b>Insurance</b> ${lastRound.ins}` : `<b>保险</b> ${lastRound.ins}`);
+    flash(EN
+      ? `${dealerTxt}　${bits.join('　·　')}　→　
+      staked <b>${fmt(lastRound.stake)}</b> · returned <b>${fmt(lastRound.ret)}</b>　
+      <span class="hl">round ${net > 0 ? '+' : ''}${fmt(net)}</span>`
+      : `${dealerTxt}　${bits.join('　·　')}　→　
       押出 <b>${fmt(lastRound.stake)}</b> · 收回 <b>${fmt(lastRound.ret)}</b>　
       <span class="hl">本局 ${net > 0 ? '+' : ''}${fmt(net)}</span>`);
 
@@ -2145,7 +2197,7 @@ const BJ = (() => {
 
     let marks = `<line x1="${px.toFixed(1)}" y1="${g.pad.t}" x2="${px.toFixed(1)}" y2="${(g.pad.t + g.ph).toFixed(1)}"
       stroke="#C9A227" stroke-width="1" stroke-dasharray="3 3"/>`;
-    let tip = `<div class="tr">第 ${i} 局</div>`, anchorY = null;
+    let tip = `<div class="tr">${EN ? `Round ${i}` : `第 ${i} 局`}</div>`, anchorY = null;
     curveSeries.forEach(s => {
       const p = s.data[i];
       if (!p) return;
@@ -2177,19 +2229,22 @@ const BJ = (() => {
     if (el.curveTip) el.curveTip.style.opacity = 0;
   }
 
-  /* ---------- 基本策略：CORE.basicStrategy ---------- */
-  function basicStrategy(cards, up, canDbl, canSplit, canSurr){
-    return CORE.basicStrategy(cards, up, { canDouble: !!canDbl, canSplit: !!canSplit, canSurrender: !!canSurr });
+  /* ---------- 基本策略：CORE.basicStrategy（对象参数，h17 由本场台规决定） ---------- */
+  function basicStrategy(cards, up, o){
+    return CORE.basicStrategy(cards, up, Object.assign({ h17: !curVenue().s17 }, o || {}));
   }
 
   function renderHint(){
     const h = seats[HUMAN].hands[activeHand];
     if (!h) return '';
     const up = cv(dealer[0].r);
-    const a = basicStrategy(h.cards, up,
-      h.cards.length === 2 && !h.dbl && seats[HUMAN].bank >= h.bet,
-      h.cards.length === 2 && sameRank(h.cards[0].r, h.cards[1].r) && !h.fromSplit && !h.dbl && seats[HUMAN].hands.length < 4,
-      h.cards.length === 2 && !h.fromSplit && !h.dbl && up !== 11);
+    const v = curVenue();
+    const a = basicStrategy(h.cards, up, {
+      canDouble: h.cards.length === 2 && !h.dbl && seats[HUMAN].bank >= h.bet && (!h.fromSplit || v.das),
+      canSplit: h.cards.length === 2 && sameRank(h.cards[0].r, h.cards[1].r) && !h.fromSplit && !h.dbl && seats[HUMAN].hands.length < v.maxSplit,
+      canSurrender: h.cards.length === 2 && !h.fromSplit && !h.dbl && up !== 11 && v.sur,
+      h17: !v.s17
+    });
     const zh = { HIT:'搏牌', STAND:'不搏', DOUBLE:'加注', SPLIT:'分门', SURR:'放弃' };
     const en = { HIT:'hit', STAND:'stand', DOUBLE:'double', SPLIT:'split', SURR:'surrender' };
     if (EN) return `Your turn. Basic strategy says <span class="hl">${en[a]}</span> &nbsp;on ${val(h.cards)}${isSoft(h.cards) ? ' (soft)' : ''} vs dealer ${dealer[0].r}`;
@@ -2201,9 +2256,13 @@ const BJ = (() => {
   }
 
   /* ---------- 模拟器：CORE.simulate ---------- */
-  function simulate(n){
+  function simulate(n, o){
     const v = curVenue();
-    return CORE.simulate(n, { decks: v.decks, soft17: soft17, bjPay: v.bj });
+    /* 以本场台规为默认值，允许调用方覆盖（模拟器传入同一套参数） */
+    return CORE.simulate(n, Object.assign({
+      decks: v.decks, soft17: v.soft17, bjPay: v.bj,
+      sur: v.sur, das: v.das, maxSplit: v.maxSplit, fiveCard: v.fiveCard
+    }, o || {}));
   }
 
   /* ---------- 全屏 ---------- */
@@ -2237,7 +2296,9 @@ const BJ = (() => {
       const idx = +el.cfgVenue.value;
       const c = CASINOS[idx];
       if (!c.rooms.some((r, i) => roomOpen(idx, i))){
-        flash(`<b>${c.name}</b> 全部为贵宾厅/私人厅，需先在该卡系取得贵宾卡。已保留原场。`);
+        flash(EN
+        ? `<b>${c.name}</b> is all VIP/private rooms — you need a VIP card on this programme first. Previous venue kept.`
+        : `<b>${c.name}</b> 全部为贵宾厅/私人厅，需先在该卡系取得贵宾卡。已保留原场。`);
         el.cfgVenue.value = String(cfg.venue);
         return;
       }
@@ -2268,7 +2329,7 @@ const BJ = (() => {
     });
     $('betAdd').addEventListener('click', () => {
       const v = Math.floor(+$('betInput').value);
-      if (!v || v <= 0){ flash('先输入下注金额（100–10,000）。'); return; }
+      if (!v || v <= 0){ flash(EN ? 'Enter a bet amount first.' : '先输入下注金额。'); return; }
       addBet(v);
       $('betInput').value = '';
     });
@@ -2295,25 +2356,28 @@ const BJ = (() => {
     });
     $('equipSeg').addEventListener('click', e => {
       const b = e.target.closest('button'); if (!b) return;
-      $('equipSeg').querySelectorAll('button').forEach(x => x.classList.remove('on'));
-      b.classList.add('on');
-      equipment = b.dataset.v;
-      $('plEquip').textContent = `${equipment === 'csm' ? '洗牌机' : '牌靴'} · ${curVenue().decks} 副`;
-      $('countHint').textContent = equipment === 'csm'
-        ? `${curVenue().name} 用连续洗牌机：用过的牌随即放回，流水数失去意义。`
-        : `${curVenue().name} 用 ${curVenue().decks} 副牌靴，白咭插在最后 30 张处。`;
-      buildShoe(); render();
+      const v = curVenue();
+      flash(EN
+        ? `Dealing at ${v.name} · ${v.room} is fixed by house rules: ${v.csm ? 'CSM' : 'shoe'} · ${v.decks} decks.`
+        : `本场台规固定为${v.csm ? '洗牌机' : '牌靴'} · ${v.decks} 副，不可更改。`);
+      syncTableChrome();
     });
     $('h17Seg').addEventListener('click', e => {
       const b = e.target.closest('button'); if (!b) return;
-      $('h17Seg').querySelectorAll('button').forEach(x => x.classList.remove('on'));
-      b.classList.add('on');
-      soft17 = b.dataset.v;
+      const v = curVenue();
+      flash(EN
+        ? `Soft 17 at ${v.name} · ${v.room} is fixed: dealer ${v.s17 ? 'stands' : 'hits'}.`
+        : `本场软 17 固定为「${v.s17 ? '停牌' : '要牌'}」，不可更改。`);
+      syncTableChrome();
     });
     $('simRun').addEventListener('click', () => {
+      const v = curVenue();
       el.simOut.textContent = EN ? 'Running 100,000 rounds…' : '正在跑 100,000 局…';
       setTimeout(() => {
-        const r = simulate(100000);
+        const r = simulate(100000, {
+          decks: v.decks, soft17: v.soft17, bjPay: v.bj,
+          sur: v.sur, das: v.das, maxSplit: v.maxSplit, fiveCard: v.fiveCard
+        });
         const he = Math.abs(r.ev);
         el.simOut.textContent = EN
 ? `Main game · ${r.hands.toLocaleString()} hands · basic strategy
@@ -2399,22 +2463,27 @@ Scope: side bets excluded; splits and doubles settled OBBO.`
     if (el.plEquip) el.plEquip.textContent = EN ? `${v.csm ? 'CSM' : 'Shoe'} · ${v.decks} decks` : `${v.csm ? '洗牌机' : '牌靴'} · ${v.decks} 副`;
     if (el.countHint) el.countHint.textContent = EN
       ? (v.csm
-        ? `${v.name} uses a continuous shuffler: played cards go straight back, so the running count is meaningless.`
-        : `${v.name} uses a ${v.decks}-deck shoe; the cut card sits about 30 cards from the end.`)
+        ? `${v.name} · ${v.room} uses a continuous shuffler: played cards go straight back, so the running count is meaningless.`
+        : `${v.name} · ${v.room}: ${v.decks}-deck shoe, cut card about ${cutAt} cards from the end (${Math.round(v.pen * 100)}% penetration).`)
       : (v.csm
-        ? `${v.name} 用连续洗牌机：用过的牌随即放回，流水数失去意义。`
-        : `${v.name} 用 ${v.decks} 副牌靴，白咭插在最后 30 张处。`);
+        ? `${v.name} · ${v.room} 用连续洗牌机：用过的牌随即放回，流水数失去意义。`
+        : `${v.name} · ${v.room}：${v.decks} 副牌靴，白咭插在最后约 ${cutAt} 张处（穿透 ${Math.round(v.pen * 100)}%）。`);
     if (el.venueHint){
       const prog = PROGRAMS[v.prog];
       const ladder = prog.tiers.map(([n, p]) => `${n} ${p == null ? (EN ? 'undisclosed' : '未公开') : p.toLocaleString()}`).join(' → ');
+      const rules = EN
+        ? `${v.decks} decks · ${v.csm ? 'CSM' : 'Shoe'} · ${v.s17 ? 'S17' : 'H17'} · BJ ${v.bj === 1.5 ? '3:2' : '6:5'} · ` +
+          `${v.sur ? 'early surrender' : 'no surrender'} · ${v.das ? 'DAS' : 'no DAS'} · ` +
+          `${v.fiveCard ? 'five-card rule' : 'no five-card'} · split ${v.maxSplit} · burn ${v.burn} · ${v.dealStyle === 'per-box' ? 'per-box deal' : 'two-pass deal'}`
+        : `${v.decks} 副 · ${v.csm ? '洗牌机' : '牌靴'} · ${v.s17 ? '软17停' : '软17要'} · BJ ${v.bj === 1.5 ? '3:2' : '6:5'} · ` +
+          `${v.sur ? '可早投降' : '无早投降'} · ${v.das ? '分牌可加注' : '分牌不可加注'} · ` +
+          `${v.fiveCard ? '有五张牌' : '无五张牌'} · 最多分 ${v.maxSplit} 门 · 销 ${v.burn} 张 · ${v.dealStyle === 'per-box' ? '逐门发牌' : '两轮发牌'}`;
       el.venueHint.innerHTML = EN
-        ? `<b>${v.op} · ${v.name} · ${v.room}</b><br>` +
-          `${v.decks} decks · ${v.csm ? 'CSM' : 'Shoe'} · dealer stands on 17 · BJ ${v.bj === 1.5 ? '3:2' : '6:5'} · ` +
+        ? `<b>${v.op} · ${v.name} · ${v.room}</b><br>${rules}<br>` +
           `limits ${fmt(v.min)}–${cfg.noCap ? 'no cap' : fmt(v.max)}<br>` +
-          `<span class="venue-tag">${prog.name} · ${prog.brand}</span><br>` +
+          `<span class="venue-tag">${prog.brand}</span><br>` +
           `<span style="font-size:9.5px;color:#8A8272">${ladder}</span>`
-        : `<b>${v.op} · ${v.name} · ${v.room}</b><br>` +
-          `${v.decks} 副 · ${v.csm ? '洗牌机' : '牌靴'} · 庄家 17 点停 · BJ ${v.bj === 1.5 ? '3:2' : '6:5'} · ` +
+        : `<b>${v.op} · ${v.name} · ${v.room}</b><br>${rules}<br>` +
           `限红 ${fmt(v.min)}–${cfg.noCap ? '无上限' : fmt(v.max)}<br>${v.note}<br>` +
           `<span class="venue-tag">${prog.name} · ${prog.brand}</span><br>` +
           `<span style="font-size:9.5px;color:#8A8272">${ladder}</span><br>` +
@@ -2424,6 +2493,7 @@ Scope: side bets excluded; splits and doubles settled OBBO.`
     if (el.cfgSeats) el.cfgSeats.value = String(cfg.seats);
     if (el.cfgEmpty) el.cfgEmpty.value = String(cfg.emptySeats);
     if (el.cfgCap) el.cfgCap.value = cfg.noCap ? '1' : '0';
+    if (el.cfgUnlock) el.cfgUnlock.value = cfg.unlock ? '1' : '0';
     if (el.cfgVenue) el.cfgVenue.value = String(cfg.venue);
     updateRoomSelect();
     document.querySelectorAll('#equipSeg button').forEach(b => b.classList.toggle('on', b.dataset.v === equipment));
@@ -2442,8 +2512,7 @@ Scope: side bets excluded; splits and doubles settled OBBO.`
   function resetSession(){
     st = { rounds: 0, w: 0, l: 0, d: 0, bj: 0, side: 0, pl: 0, turnover: 0 };
     beads = []; loseRun = 0; maxLose = 0; busts = 0; recent = [];
-    invite = null;                     // 换台只清本桌展示，会员积分与贵宾卡按卡系保留
-    lastRound = null;
+    lastRound = null;                  // 换台只清本桌展示，会员积分与贵宾卡按卡系保留
     phase = 'bet'; activeSeat = 0; activeHand = 0; busy = false;
     dealer = []; insuranceAmt = 0; flyKeys.clear();
     seats.forEach(s => { s.hands = []; s.side = []; s.pendingBet = 0; s.bank = s.start; s.overdraftWarned = false; });
@@ -2483,7 +2552,10 @@ Scope: side bets excluded; splits and doubles settled OBBO.`
     el.cfgRoom.innerHTML = rooms.map((r, i) => {
       const need = roomNeed(r);
       const locked = !open[i];
-      const mark = need ? (EN ? (locked ? ` (requires ${needName(need)})` : ' (card required to enter)') : (locked ? `（需${needName(need)}）` : '（持卡可进）')) : '';
+      const mark = need
+        ? (cfg.unlock ? (EN ? ' (demo unlocked)' : '（体验解锁）')
+          : (EN ? (locked ? ` (requires ${needName(need)})` : ' (card held)') : (locked ? `（需${needName(need)}）` : '（持卡可进）')))
+        : '';
       return `<option value="${i}"${locked ? ' disabled' : ''}>${r.name} · ${fmt(r.min)}–${fmt(r.max)}${mark}</option>`;
     }).join('');
     el.cfgRoom.value = String(cfg.room);
@@ -2492,23 +2564,26 @@ Scope: side bets excluded; splits and doubles settled OBBO.`
   function applySettings(){
     const venueIdx = Math.min(+el.cfgVenue.value || 0, CASINOS.length - 1);
     const roomIdx = Math.max(0, +el.cfgRoom.value || 0);
+    cfg.unlock = el.cfgUnlock && el.cfgUnlock.value === '1';
     /* 房间准入校验：没有对应贵宾卡不能进贵宾厅/私人厅 */
     if (!roomOpen(venueIdx, roomIdx)){
       const c = CASINOS[venueIdx], r = c.rooms[roomIdx];
       el.cfgVenue.value = String(cfg.venue);
       el.cfgRoom.value = String(cfg.room);
       updateRoomSelect();
-      flash(`<b>${c.name} · ${r.name}</b> 需持<b>${needName(roomNeed(r))}</b>才能入场；你目前没有这张卡。先在该卡系的中场积累并取得贵宾卡。`);
+      flash(EN
+        ? `<b>${c.name} · ${r.name}</b> requires the <b>${needName(roomNeed(r))}</b>; you do not hold it. Build turnover on this programme's main floor to earn the card first.`
+        : `<b>${c.name} · ${r.name}</b> 需持<b>${needName(roomNeed(r))}</b>才能入场；你目前没有这张卡。先在该卡系的中场积累并取得贵宾卡。`);
       return;
     }
     cfg.venue = venueIdx;
     cfg.room = roomIdx;
     const v = curVenue();
-    cfg.seats = +el.cfgSeats.value;
-    cfg.emptySeats = +el.cfgEmpty.value;
+    cfg.seats = Math.max(4, Math.min(8, +el.cfgSeats.value || v.seats));
+    cfg.emptySeats = Math.max(0, Math.min(cfg.seats - 1, +el.cfgEmpty.value || 0));
     cfg.bank = Math.max(1000, Math.floor(+el.cfgBank.value || v.bank));
     cfg.noCap = el.cfgCap.value === '1';
-    cfg.mySeat = Math.min(+el.cfgMySeat.value, cfg.seats - 1);
+    cfg.mySeat = Math.max(0, Math.min(+el.cfgMySeat.value || 0, cfg.seats - 1));
     humanBet = Math.max(v.min, Math.min(humanBet, cfg.bank));
     setupTable();
     flash(EN
@@ -2530,6 +2605,7 @@ Scope: side bets excluded; splits and doubles settled OBBO.`
     deal, hit, stand, dbl, split, surrender, fiveCard, insurance, even, noEven,
     enterFS, exitFS,
     _boot: boot, _sim: simulate,
+    _mem: () => MEM,
     _probe: () => ({ phase, busy, bank: seats[HUMAN] && seats[HUMAN].bank, st: { ...st } })
   };
 })();

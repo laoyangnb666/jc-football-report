@@ -56,13 +56,15 @@
   }
 
   /**
-   * 基本策略（6/8 副、庄家 17 停、DAS 口径）
-   * @returns {'HIT'|'STAND'|'DOUBLE'|'SPLIT'|'SURR'}
+   * 基本策略（按台规参数化）
+   * o: { canDouble, canSplit, canSurrender, h17, das }
+   * h17 影响软 18 对 2 是否加注；das 影响分牌后加注的可用性（由调用方传入 canDouble）
    */
   function basicStrategy(cards, up, o) {
     const canDbl = !!(o && o.canDouble);
     const canSplit = !!(o && o.canSplit);
     const canSurr = !!(o && o.canSurrender);
+    const h17 = !!(o && o.h17);
     const tot = handValue(cards), soft = isSoft(cards);
 
     if (canSplit) {
@@ -83,7 +85,8 @@
       if (tot >= 19) return 'STAND';
       if (tot === 18) {
         if (up >= 3 && up <= 6) return canDbl ? 'DOUBLE' : 'STAND';
-        if (up === 2 || up === 7 || up === 8) return 'STAND';
+        if (up === 2) return (h17 && canDbl) ? 'DOUBLE' : 'STAND';
+        if (up === 7 || up === 8) return 'STAND';
         return 'HIT';
       }
       if (tot === 17) return (up >= 3 && up <= 6 && canDbl) ? 'DOUBLE' : 'HIT';
@@ -141,6 +144,10 @@
     const decks = o.decks || 6;
     const h17 = o.soft17 === 'h17';
     const bjPay = o.bjPay == null ? 1.5 : o.bjPay;
+    const allowSur = o.sur !== false;
+    const allowDas = o.das !== false;
+    const maxSplit = o.maxSplit || 4;
+    const allowFive = !!o.fiveCard;
     let bank = 0, hands = 0, sumSq = 0;
 
     let sh = buildShoe(decks);
@@ -161,10 +168,10 @@
             const tot = handValue(h.cards);
             if (tot >= 21) { h.done = true; break; }
             const isPair = h.cards.length === 2 && sameRank(h.cards[0].r, h.cards[1].r);
-            const canDbl = h.cards.length === 2 && !h.dbl;
-            const canSplit = isPair && !h.fromSplit && !h.dbl && list.length < 4;
-            const canSurr = h.cards.length === 2 && !h.fromSplit && !h.dbl && up !== 11;
-            const act = basicStrategy(h.cards, up, { canDouble: canDbl, canSplit, canSurrender: canSurr });
+            const canDbl = h.cards.length === 2 && !h.dbl && (!h.fromSplit || allowDas);
+            const canSplit = isPair && !h.fromSplit && !h.dbl && list.length < maxSplit;
+            const canSurr = allowSur && h.cards.length === 2 && !h.fromSplit && !h.dbl && up !== 11;
+            const act = basicStrategy(h.cards, up, { canDouble: canDbl, canSplit, canSurrender: canSurr, h17 });
 
             if (act === 'STAND') h.done = true;
             else if (act === 'HIT') h.cards.push(tk());
@@ -258,65 +265,6 @@
   }
 
   /**
-   * 随机准入（邀约概率模型）
-   * 达标也可能不中，未达标也可能被抽中：
-   *   · 基础概率按「累计投注 / 基础门槛」线性给（最高 55%）
-   *   · 单次投注按「单次最大 / 门槛单注」线性加分，2 倍门槛封顶 28%
-   *   · 流水集中突击（稳定性扣分）→ 概率减半
-   *   · 顶层隐藏卡概率另算，未达标上限 20%
-   *   · 已完全达标却没中：每局保底 +25pp（顶层 +10pp），直到摇中
-   *   · 中场会员卡等级匹配：最高 +10pp（顶层减半计入）
-   * @param {function} rand 可注入的随机源（测试用），默认 Math.random
-   * @param {object} pity 保底计数 { basic, top }：自上次达标未中以来的连续局数
-   * @param {number} bonus 会员等级匹配加成（0–0.10）
-   */
-  function vipChance(stats, vip, rand, pity, bonus) {
-    const r = rand || Math.random;
-    pity = pity || {};
-    const mb = Math.max(0, Math.min(0.10, bonus || 0));
-    const base = vipScore(stats, vip);
-    const basic = base.checks[0];
-    const top = base.checks[base.checks.length - 1];
-
-    const ratio = basic && basic.turnover ? Math.min(stats.turnover / basic.turnover, 1.5) : 0;
-    const metB = !!(basic && basic.met);
-    let p = Math.min(0.55, ratio * 0.38);
-    if (metB) p = 0.55;
-
-    // 大额单注通道：按「单次最大投注 / 门槛单注」线性加分，2 倍门槛时到顶
-    const bigP = basic && basic.maxBet
-      ? Math.min(0.28, stats.maxBet / basic.maxBet * 0.18) : 0;
-    const bigBet = bigP >= 0.03;
-    p += bigP;
-    if (base.burst) p *= 0.5;
-    p += mb;
-    if (metB) p += 0.25 * (pity.basic || 0);   // 达标保底不因突击扣分而打折
-    p = Math.min(metB ? 1 : 0.75, p);
-
-    let pTop = 0;
-    if (top && top !== basic) {
-      const rTop = top.turnover ? Math.min(stats.turnover / top.turnover, 1.2) : 0;
-      pTop = Math.min(0.12, rTop * 0.09);
-      if (top.met) pTop = 0.12;
-      if (bigBet) pTop += Math.min(0.04, bigP * 0.15);
-      if (base.burst) pTop *= 0.5;
-      pTop += mb * 0.5;
-      if (top.met) pTop += 0.10 * (pity.top || 0);
-      pTop = Math.min(top.met ? 1 : 0.2, pTop);
-    }
-
-    const rollBasic = r();
-    const rollTop = r();
-    const invitedBasic = rollBasic < p;
-    const invitedTop = pTop > 0 && rollTop < pTop;
-
-    return {
-      ...base, p, pTop, bigBet, invitedBasic, invitedTop,
-      invited: invitedTop ? 2 : invitedBasic ? 1 : 0
-    };
-  }
-
-  /**
    * 贵宾候选评分（四维）：6 个月有效投注 A / 单次最大投注 B / 到访天数 C / 稳定性 D
    * 稳定性：若 80% 以上流水集中在连续 7 天以内 → 降一档
    * 注意：只输出候选状态，绝不授予权限
@@ -358,8 +306,59 @@
     return { level, metLevel, burst, share, checks, turnover, maxBet, days };
   }
 
+  /**
+   * 中场会员卡进度（申请制）
+   * 返回当前档、下一档、积分缺口与线性进度 0–1
+   */
+  function cardProgress(m, prog) {
+    const points = (m && m.points) || 0;
+    const tiers = (prog && prog.tiers) || [['—', 0]];
+    let idx = 0;
+    for (let i = 0; i < tiers.length; i++) {
+      const need = tiers[i][1];
+      if (need != null && points >= need) idx = i;
+    }
+    const cur = tiers[idx];
+    const nxt = tiers[idx + 1] || null;
+    const needPts = nxt && nxt[1] != null ? nxt[1] : null;
+    const pct = needPts != null
+      ? Math.min(1, Math.max(0, (points - cur[1]) / (needPts - cur[1])))
+      : 1;
+    return {
+      idx, count: tiers.length, tier: cur[0],
+      next: nxt ? nxt[0] : null, needPts, remain: needPts != null ? Math.max(0, Math.ceil(needPts - points)) : 0,
+      pct, canApply: needPts != null && points >= needPts
+    };
+  }
+
+  /**
+   * 贵宾卡进度（三维门槛线性化）
+   * 每档给出 turnover / maxBet / days 三个完成度，取最小值作为该档完成度
+   * met = 三维全部达标；held 为已持有卡级，next 为下一张可申请的卡
+   */
+  function vipProgress(stats, vip, held) {
+    const turnover = (stats && stats.turnover) || 0;
+    const maxBet = (stats && stats.maxBet) || 0;
+    const days = (stats && stats.days) || 0;
+    const checks = ((vip && vip.tiers) || []).map(t => {
+      const rt = Math.min(1, turnover / t.turnover);
+      const rm = t.maxBet ? Math.min(1, maxBet / t.maxBet) : 1;
+      const rd = t.days ? Math.min(1, days / t.days) : 1;
+      const pct = Math.min(rt, rm, rd);
+      return {
+        name: t.name, card: t.card || 1, top: !!t.top,
+        turnover: t.turnover, maxBet: t.maxBet, days: t.days,
+        rt, rm, rd, pct, met: rt >= 1 && rm >= 1 && rd >= 1
+      };
+    });
+    const have = Math.max(0, held || 0);
+    const next = checks.find(c => c.card > have) || null;
+    return { checks, card: have, next };
+  }
+
   g.BJCore = {
     SUITS, RANKS, cardValue, buildShoe, handValue, isSoft, isBlackjack,
-    sameRank, hiLo, basicStrategy, handReturn, simulate, pointsFor, tierOf, vipScore, vipChance
+    sameRank, hiLo, basicStrategy, handReturn, simulate, pointsFor, tierOf, vipScore,
+    cardProgress, vipProgress
   };
 })(window);
