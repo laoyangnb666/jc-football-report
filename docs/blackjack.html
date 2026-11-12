@@ -1407,33 +1407,52 @@ const BJ = (() => {
     }
   }
 
-  /* ---------- 会员卡卡面：有官方图用官方图，其余自绘 ---------- */
+  /* ---------- 会员卡卡面：有官方图用官方图，无官方图用 AI 生成图 ---------- */
   const CARD_ART = {
     sands: ['sands_gold', 'sands_ruby1', 'sands_ruby2', 'sands_ruby3',
             'sands_dia1', 'sands_dia2', 'sands_dia3', 'sands_apex', 'sands_apex', 'sands_apex'],
     melco: ['melco_gold', 'melco_platinum', 'melco_diamond',
             'melco_ruby', 'melco_dragon', 'melco_emperor'],
-    sjm: ['sjm_emerald', 'sjm_gold', 'sjm_platinum', 'sjm_diamond']
+    sjm: ['sjm_emerald', 'sjm_gold', 'sjm_platinum', 'sjm_diamond'],
+    galaxy: ['gal_royal', 'gal_noble', 'gal_eminent', 'gal_prestige', 'gal_sov', 'gal_apex'],
+    wynn: ['wyn_red', 'wyn_silver', 'wyn_gold', 'wyn_plat', 'wyn_black', 'wyn_chair'],
+    mgm: ['mgm_sapp', 'mgm_pearl', 'mgm_plat', 'mgm_seal', 'mgm_diam', 'mgm_bdia']
   };
   /* 官方图原始尺寸：写进 img 的 width/height，换档时高度不会塌成 0 */
   const ART_DIM = {
     sands: [480, 304],
     sjm: [620, 395],
-    melco: [360, 560]
+    melco: [360, 560],
+    galaxy: [720, 480],
+    wynn: [720, 480],
+    mgm: [720, 480],
+    vip: [720, 480]
   };
+  /* AI 生成图（非官方）：提示语区分「官方卡面 / AI 卡面」 */
+  const ART_GEN = new Set(['galaxy', 'wynn', 'mgm', 'vip']);
   function cardArtOf(progId, idx){
     const list = CARD_ART[progId];
     if (!list || idx < 0 || idx >= list.length) return null;
     return 'assets/cards/' + list[idx] + '.webp';
   }
+  function vipArtOf(card){
+    return card >= 1 && card <= 4 ? 'assets/cards/vip' + card + '.webp' : null;
+  }
   /* 进场时把本卡系的官方图全部预载，升档换图时不用等网络，也就不会出现空白窗口 */
   const ART_PRELOADED = {};
   const ART_FAILED = new Set();   /* 加载失败的官方图，后续直接走自绘卡面 */
   function preloadArt(progId){
-    const list = CARD_ART[progId];
-    if (!list || ART_PRELOADED[progId]) return;
-    ART_PRELOADED[progId] = 1;
-    list.forEach(n => { const im = new Image(); im.src = 'assets/cards/' + n + '.webp'; });
+    if (!ART_PRELOADED[progId]){
+      const list = CARD_ART[progId];
+      if (list){
+        ART_PRELOADED[progId] = 1;
+        list.forEach(n => { const im = new Image(); im.src = 'assets/cards/' + n + '.webp'; });
+      }
+    }
+    if (!ART_PRELOADED.__vip){
+      ART_PRELOADED.__vip = 1;
+      [1, 2, 3, 4].forEach(k => { const im = new Image(); im.src = 'assets/cards/vip' + k + '.webp'; });
+    }
   }
 
   /* ---------- 会员卡卡面（中场卡 / 贵宾卡，按等级换肤） ---------- */
@@ -1508,19 +1527,23 @@ const BJ = (() => {
       if (el.mcHint) el.mcHint.textContent = EN ? 'Drawn face' : '自绘卡面';
     };
 
-    const art = (m.card >= 1 ? null : cardArtOf(v.prog, t.idx));
+    const art = (m.card >= 1 ? vipArtOf(m.card) : cardArtOf(v.prog, t.idx));
+    const artKind = (m.card >= 1 || ART_GEN.has(v.prog)) ? 'gen' : 'official';
+    const hintFor = () => artKind === 'gen'
+      ? (EN ? 'AI card art' : 'AI 卡面')
+      : (EN ? 'Official card art' : '官方卡面');
     const useArt = art && !ART_FAILED.has(art);
     if (useArt){
-      /* 同一张官方图只建一次 DOM：升级换图才重建，避免每局重设 src 造成高度塌陷 */
+      /* 同一张图只建一次 DOM：升级换图才重建，避免每局重设 src 造成高度塌陷 */
       if (el.mcCard.dataset.art === art){
         const capT = el.mcCard.querySelector('.mc-cap-t');
         const capP = el.mcCard.querySelector('.mc-pips');
         if (capT) capT.textContent = `${typeLabel} · ${tierName}`;
         if (capP) capP.innerHTML = pips;
-        if (el.mcHint) el.mcHint.textContent = EN ? 'Official card art' : '官方卡面';
+        if (el.mcHint) el.mcHint.textContent = hintFor();
       } else {
-        const dim = ART_DIM[v.prog] || [480, 304];
-        el.mcCard.className = 'mcard art' + (v.prog === 'melco' ? ' portrait' : '');
+        const dim = ART_DIM[m.card >= 1 ? 'vip' : v.prog] || [720, 454];
+        el.mcCard.className = 'mcard art' + (v.prog === 'melco' && m.card < 1 ? ' portrait' : '');
         el.mcCard.dataset.art = art;
         el.mcCard.innerHTML =
           `<img class="mc-art" src="${art}" width="${dim[0]}" height="${dim[1]}"
@@ -1533,7 +1556,7 @@ const BJ = (() => {
           ART_FAILED.add(art);
           renderMemberCard();
         }, { once: true });
-        if (el.mcHint) el.mcHint.textContent = EN ? 'Official card art' : '官方卡面';
+        if (el.mcHint) el.mcHint.textContent = hintFor();
       }
     } else {
       drawFace();
