@@ -50,7 +50,8 @@ I18N.extend({
     '押': 'Stake',
     '积分': 'Points',
     '退出全屏 ESC': 'Exit full screen · ESC',
-    '点筹码累加 · H 搏牌 / S 不搏 / D 加注': 'Click chips to stack · H hit / S stand / D double',
+    'Space 开局 · H 搏牌 · S 不搏 · D 加注 · P 分门 · R 放弃 · V 五张牌 · 1/2 保险 · N 不保 · E 等额':
+      'Space deal · H hit · S stand · D double · P split · R surrender · V five-card · 1/2 insurance · N no · E even money',
 
     /* 操作按钮 */
     '开局 · 发牌': 'Deal',
@@ -288,7 +289,7 @@ I18N.extend({
     'bj.title': 'One six-box table,<br>you sit at <em>box 3 only</em>.',
     'bj.hint': 'Clicking a chip <b>adds</b> to the stack: 500 to start, two more clicks of 500 makes 1,500; you can also type an amount (300–10,000). “Undo” removes the last chip, “Clear” resets to zero.',
     'bj.sideHint': 'Side-bet house edges run <b>6.6%–31.25%</b> — one to two orders of magnitude worse than the main game.',
-    'bj.msg': 'Pick chips below (minimum 300), then press <b>Deal</b>. <b>Box 3 is yours</b>; the other five belong to the table.',
+    'bj.msg': 'Pick chips below (minimum 300), then press <b>Space</b> or <b>Deal</b>. <b>Box 3 is yours</b>; the other five belong to the table.',
     'bj.countLabel': 'Count',
     'bj.cntRemain': 'Remaining',
     'bj.cntBurn': 'Burned',

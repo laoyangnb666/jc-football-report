@@ -193,6 +193,14 @@
 .btn-bj.gold:hover:not(:disabled){background:#DDB63A}
 .btn-bj.warn{border-color:#E2BEBE;color:#942C2C}
 .btn-bj.warn:hover:not(:disabled){background:#FDF4F4;border-color:#B33}
+/* 快捷键角标 */
+.actbar kbd,.betctl kbd,.dp-btn kbd{display:inline-block;margin-left:6px;min-width:14px;padding:0 3px;
+  font:600 9px/15px "Inter",monospace;text-align:center;color:#7E7866;background:#F2EEE0;
+  border:1px solid #DCD5C2;border-radius:4px;font-style:normal;vertical-align:1px}
+.btn-bj.pri kbd{color:#EBD98F;background:rgba(255,255,255,.14);border-color:rgba(235,217,143,.38)}
+.btn-bj.gold kbd{color:#4A3A06;background:rgba(255,255,255,.5);border-color:rgba(74,58,6,.25)}
+.btn-bj.warn kbd{color:#942C2C;background:#FDF4F4;border-color:#EBCDCD}
+.dp-btn kbd{color:#D9CFAF;background:rgba(255,255,255,.1);border-color:rgba(235,217,143,.3)}
 .spacer{flex:1}
 .btn-ico{width:34px;height:34px;padding:0;display:flex;align-items:center;justify-content:center;border-radius:8px;border:1px solid #DAD3C0;background:#fff;cursor:pointer;color:#4A5450}
 .btn-ico:hover{border-color:#0C3A28;color:#0C3A28}
@@ -599,9 +607,9 @@ body.fsmode .deck-panel .dp-read.dp-bank b.neg{color:#FCA5A5}
           </div>
           <div class="betctl">
             <input id="betInput" class="betinput" type="number" min="100" max="10000" step="100" placeholder="自定义金额">
-            <button class="btn-mini" id="betAdd">加</button>
-            <button class="btn-mini" id="betUndo">撤回</button>
-            <button class="btn-mini ghost" id="betClear">清空</button>
+            <button class="btn-mini" id="betAdd">加<kbd>Enter</kbd></button>
+            <button class="btn-mini" id="betUndo">撤回<kbd>Z</kbd></button>
+            <button class="btn-mini ghost" id="betClear">清空<kbd>X</kbd></button>
           </div>
           <div class="betline"><span>本局原注</span><b id="betView">500</b></div>
           <div class="betline"><span>筹码构成</span><small id="betBreak">500 × 1</small></div>
@@ -638,32 +646,32 @@ body.fsmode .deck-panel .dp-read.dp-bank b.neg{color:#FCA5A5}
           <span class="dp-read">押 <b id="fsBet">500</b></span>
           <span class="dp-read dp-bank">余额 <b id="fsBank">100,000</b></span>
           <span class="dp-read dp-pts" id="fsPts">积分 0</span>
-          <button class="dp-btn" data-bet="undo">撤回</button>
-          <button class="dp-btn" data-bet="clear">清空</button>
-          <span class="dp-hint">点筹码累加 · H 搏牌 / S 不搏 / D 加注</span>
+          <button class="dp-btn" data-bet="undo">撤回<kbd>Z</kbd></button>
+          <button class="dp-btn" data-bet="clear">清空<kbd>X</kbd></button>
+          <span class="dp-hint">Space 开局 · H 搏牌 · S 不搏 · D 加注 · P 分门 · R 放弃 · V 五张牌 · 1/2 保险 · N 不保 · E 等额</span>
           <button class="fs-exit" onclick="BJ.exitFS()">退出全屏 ESC</button>
         </div>
 
         <div class="actbar">
-          <button class="btn-bj pri" id="btnDeal" onclick="BJ.deal()">开局 · 发牌</button>
-          <button class="btn-bj" id="btnHit" onclick="BJ.hit()" disabled>搏牌</button>
-          <button class="btn-bj" id="btnStand" onclick="BJ.stand()" disabled>不搏</button>
-          <button class="btn-bj" id="btnDbl" onclick="BJ.dbl()" disabled>加注</button>
-          <button class="btn-bj" id="btnSplit" onclick="BJ.split()" disabled>分门</button>
-          <button class="btn-bj warn" id="btnSur" onclick="BJ.surrender()" disabled>放弃</button>
-          <button class="btn-bj" id="btnFive" onclick="BJ.fiveCard()" disabled>五张牌</button>
-          <button class="btn-bj gold" id="btnIns" onclick="BJ.insurance('half')" disabled>保险半注</button>
-          <button class="btn-bj" id="btnInsFull" onclick="BJ.insurance('full')" disabled>保险全注</button>
-          <button class="btn-bj" id="btnNoIns" onclick="BJ.insurance('none')" disabled>不保险</button>
-          <button class="btn-bj gold" id="btnEven" onclick="BJ.even()" disabled>收等额</button>
-          <button class="btn-bj" id="btnNoEven" onclick="BJ.noEven()" disabled>拒等额</button>
+          <button class="btn-bj pri" id="btnDeal" onclick="BJ.deal()">开局 · 发牌<kbd>Space</kbd></button>
+          <button class="btn-bj" id="btnHit" onclick="BJ.hit()" disabled>搏牌<kbd>H</kbd></button>
+          <button class="btn-bj" id="btnStand" onclick="BJ.stand()" disabled>不搏<kbd>S</kbd></button>
+          <button class="btn-bj" id="btnDbl" onclick="BJ.dbl()" disabled>加注<kbd>D</kbd></button>
+          <button class="btn-bj" id="btnSplit" onclick="BJ.split()" disabled>分门<kbd>P</kbd></button>
+          <button class="btn-bj warn" id="btnSur" onclick="BJ.surrender()" disabled>放弃<kbd>R</kbd></button>
+          <button class="btn-bj" id="btnFive" onclick="BJ.fiveCard()" disabled>五张牌<kbd>V</kbd></button>
+          <button class="btn-bj gold" id="btnIns" onclick="BJ.insurance('half')" disabled>保险半注<kbd>1</kbd></button>
+          <button class="btn-bj" id="btnInsFull" onclick="BJ.insurance('full')" disabled>保险全注<kbd>2</kbd></button>
+          <button class="btn-bj" id="btnNoIns" onclick="BJ.insurance('none')" disabled>不保险<kbd>N</kbd></button>
+          <button class="btn-bj gold" id="btnEven" onclick="BJ.even()" disabled>收等额<kbd>E</kbd></button>
+          <button class="btn-bj" id="btnNoEven" onclick="BJ.noEven()" disabled>拒等额<kbd>N</kbd></button>
           <span class="spacer"></span>
           <button class="btn-ico" id="btnFS" onclick="BJ.enterFS()" title="全屏（F）">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
           </button>
         </div>
 
-        <div class="msgline" id="msg" data-i18n="bj.msg">先在下方选注码（最低 300），再点「开局 · 发牌」。<b>第 3 门是你的</b>，其余五门是同桌的。</div>
+        <div class="msgline" id="msg" data-i18n="bj.msg">先在下方选注码（最低 300），按 Space 或点「开局 · 发牌」。<b>第 3 门是你的</b>，其余五门是同桌的。</div>
       </div>
 
       <!-- 底部数据区：瀑布流，卡片按内容高度紧排 -->
@@ -2401,17 +2409,58 @@ Scope: side bets excluded; splits and doubles settled OBBO.`
     $('curveWrap').addEventListener('mousemove', curveMove);
     $('curveWrap').addEventListener('mouseleave', curveLeave);
 
+    /* ---------- 键盘快捷键：每个操作按钮对应一个键位 ----------
+       Space 开局 · H 搏牌 · S 不搏 · D 加注 · P 分门 · R 放弃 · V 五张牌
+       1 保险半注 · 2 保险全注 · N 不保险/拒等额 · E 收等额
+       Z 撤回筹码 · X 清空筹码 · Enter 按输入金额加注 · F 全屏 · Esc 退出全屏 */
+    const KEYMAP = {
+      h: 'btnHit', s: 'btnStand', d: 'btnDbl', p: 'btnSplit', r: 'btnSur', v: 'btnFive',
+      '1': 'btnIns', '2': 'btnInsFull', e: 'btnEven'
+    };
+    function pressIfEnabled(id){
+      const b = document.getElementById(id);
+      if (b && !b.disabled){ b.click(); return true; }
+      return false;
+    }
     document.addEventListener('keydown', e => {
-      if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
-      if (e.key === 'f' || e.key === 'F') { if (!document.body.classList.contains('fsmode')) enterFS(); }
-      if (e.key === 'Escape' && document.body.classList.contains('fsmode')) exitFS();
-      if ((e.code === 'Space' || e.key === ' ') && phase === 'bet' && !busy){ e.preventDefault(); deal(); return; }
-      if (phase !== 'player' || !seats[activeSeat] || !seats[activeSeat].human) return;
-      if (e.key === 'h' || e.key === 'H') hit();
-      if (e.key === 's' || e.key === 'S') stand();
-      if (e.key === 'd' || e.key === 'D') dbl();
-      if (e.key === 'p' || e.key === 'P') split();
-      if (e.key === 'r' || e.key === 'R') surrender();
+      const tag = e.target && e.target.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (e.target && e.target.isContentEditable)) return;
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+
+      if (e.key === 'Escape'){
+        if (document.body.classList.contains('fsmode')){ e.preventDefault(); exitFS(); }
+        return;
+      }
+      if (e.key === 'f' || e.key === 'F'){
+        e.preventDefault();
+        if (document.body.classList.contains('fsmode')) exitFS(); else enterFS();
+        return;
+      }
+      if (e.code === 'Space' || e.key === ' '){
+        if (tag === 'BUTTON') return;                 // 焦点在按钮上时交给浏览器原生激活，避免重复触发
+        if (pressIfEnabled('btnDeal')) e.preventDefault();
+        return;
+      }
+      if (e.key === 'Enter'){
+        if (tag === 'BUTTON') return;
+        if (phase === 'bet' && !busy){ e.preventDefault(); pressIfEnabled('betAdd'); }
+        return;
+      }
+      const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+      if (k === 'z' || k === 'x'){
+        if (phase !== 'bet' || busy) return;
+        e.preventDefault();
+        pressIfEnabled(k === 'z' ? 'betUndo' : 'betClear');
+        return;
+      }
+      if (k === 'n'){
+        e.preventDefault();
+        if (!pressIfEnabled('btnNoIns')) pressIfEnabled('btnNoEven');
+        return;
+      }
+      const id = KEYMAP[k];
+      if (!id) return;
+      if (pressIfEnabled(id)) e.preventDefault();
     });
     document.addEventListener('fullscreenchange', () => {
       if (!document.fullscreenElement && document.body.classList.contains('fsmode')) exitFS();
