@@ -208,6 +208,15 @@
 .msgline{margin-top:10px;min-height:42px;background:#FBFAF4;border:1px solid #E6E0CE;border-left:3px solid #C9A227;border-radius:8px;padding:8px 12px;font-size:12.5px;color:#33403A;line-height:1.62}
 .msgline b{color:#0C3A28}
 .msgline .hl{color:#8A5A0A;font-weight:600}
+/* 消息条与快捷键条同排：短句不再孤零零占一条，右侧空白被利用 */
+.msgrow{margin-top:10px;display:flex;gap:10px;align-items:stretch}
+.msgrow .msgline{margin-top:0;flex:1 1 auto;min-height:42px;display:block}
+.msgkeys{flex:0 0 auto;display:flex;align-items:center;gap:4px;flex-wrap:wrap;justify-content:flex-end;
+  max-width:330px;font-size:9px;color:#9A927F;letter-spacing:.3px}
+.msgkeys i{font-style:normal;display:flex;align-items:center;gap:3px;white-space:nowrap}
+.msgkeys kbd{display:inline-block;min-width:14px;padding:0 3px;font:600 9px/15px "Inter",monospace;
+  text-align:center;color:#7E7866;background:#F2EEE0;border:1px solid #DCD5C2;border-radius:4px}
+@media(max-width:900px){.msgrow{flex-direction:column;gap:6px}.msgkeys{max-width:none;justify-content:flex-start}}
 
 /* 下注面板 */
 .betpanel{display:grid;grid-template-columns:1.05fr 1fr;gap:12px;margin-top:12px}
@@ -381,7 +390,12 @@ body.fsmode .betpanel,body.fsmode .curve-card,body.fsmode .data-stack{display:no
 .vip-hint{font-size:9.5px;color:#7C7461;line-height:1.6}
 .vip-table{width:100%;border-collapse:collapse;font-size:9.5px;table-layout:fixed}
 .vip-table th{text-align:left;font-weight:600;font-size:9px;color:#7C7461;padding:0 0 5px;border-bottom:1px solid #E6E0CE}
-.vip-table th:nth-child(1){width:38%}
+.vip-table th:nth-child(1){width:34%}
+.vip-table th:nth-child(2){width:26%}
+.vip-table th:nth-child(3){width:22%}
+.vip-table th:nth-child(4){width:18%}
+.vip-table th:nth-child(2),.vip-table th:nth-child(3),.vip-table th:nth-child(4),
+.vip-table td:nth-child(2),.vip-table td:nth-child(3),.vip-table td:nth-child(4){text-align:right}
 .vip-table td{padding:4px 0;border-bottom:1px dotted #ECE6D6;color:#3D4742;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .vip-table tr.met td{color:#127A46}
 .vip-table tr:last-child td{border-bottom:none}
@@ -417,6 +431,54 @@ body.fsmode .betpanel,body.fsmode .curve-card,body.fsmode .data-stack{display:no
 .vip-held small{display:block;font-size:8.5px;color:#B9B199;margin-top:2px}
 .vip-held .vh-tag{flex:0 0 auto;font-size:8.5px;letter-spacing:1px;padding:2px 7px;border-radius:999px;
   background:#C9A227;color:#1A1306;font-weight:700}
+
+/* ---------- 会员卡卡面：按卡系与等级换肤 ---------- */
+.mcard{position:relative;border-radius:11px;padding:11px 12px;aspect-ratio:1.62/1;max-width:340px;display:flex;
+  flex-direction:column;justify-content:space-between;overflow:hidden;color:#F4EDDB;
+  background:linear-gradient(140deg,#7C8A80,#4A5650 62%,#2C3731);
+  box-shadow:0 12px 26px -18px rgba(10,20,16,.75),inset 0 1px 0 rgba(255,255,255,.18);
+  transition:background .25s}
+.mcard:before{content:"";position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(120% 90% at 88% -12%,rgba(255,255,255,.3),transparent 58%),
+             repeating-linear-gradient(115deg,rgba(255,255,255,.055) 0 2px,transparent 2px 9px)}
+.mcard:after{content:"";position:absolute;right:-26px;bottom:-38px;width:124px;height:124px;
+  border-radius:50%;border:1px solid rgba(255,255,255,.16);pointer-events:none}
+.mcard>*{position:relative;z-index:1}
+.mc-row{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.mc-brand{font-size:8.5px;letter-spacing:1.3px;text-transform:uppercase;opacity:.82;line-height:1.5}
+.mc-type{flex:0 0 auto;font-size:7.5px;letter-spacing:.8px;padding:1px 6px;border-radius:999px;
+  border:1px solid rgba(255,255,255,.4);opacity:.92;white-space:nowrap}
+.mc-chip{width:25px;height:18px;border-radius:3px;flex:0 0 auto;position:relative;
+  background:linear-gradient(135deg,#F7E9AE,#C9A227 52%,#8C6A12);
+  border:1px solid rgba(255,255,255,.45)}
+.mc-chip:before{content:"";position:absolute;inset:4px 6px;
+  border-left:1px solid rgba(0,0,0,.28);border-right:1px solid rgba(0,0,0,.28)}
+.mc-tier{font-family:"Noto Serif SC",serif;font-size:15px;font-weight:600;letter-spacing:.6px;line-height:1.25;
+  max-width:190px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.mc-sub{font-size:7.5px;opacity:.75;letter-spacing:.6px;margin-top:2px}
+.mc-foot{display:flex;justify-content:space-between;align-items:flex-end;
+  font-family:"Inter",monospace;font-size:8px;opacity:.9;letter-spacing:.7px}
+.mc-pips{display:flex;gap:3px}
+.mc-pips i{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.32)}
+.mc-pips i.on{background:currentColor;box-shadow:0 0 4px currentColor}
+.mc-note{font-size:9.5px;color:#8A8272;line-height:1.6;margin-top:8px}
+/* 中场卡：普通 / 金 / 红宝石 / 钻石 / 白金 / 黑金 / 主席 / 御匾 */
+.mcard.m0{background:linear-gradient(140deg,#7C8A80,#4A5650 62%,#2C3731)}
+.mcard.m1{background:linear-gradient(140deg,#D2A44E,#8A6320 58%,#4A3208)}
+.mcard.m2{background:linear-gradient(140deg,#A93C4E,#6E1B2B 58%,#3A0A14)}
+.mcard.m3{background:linear-gradient(140deg,#61A0C2,#2C5E7C 58%,#0F2E42)}
+.mcard.m4{background:linear-gradient(140deg,#B3BECB,#6D7784 58%,#363E46)}
+.mcard.m5{background:linear-gradient(140deg,#3A3F42,#171B1D 58%,#050708)}
+.mcard.m6{background:linear-gradient(140deg,#1F5340,#0C2A1E 60%,#051210);color:#EBD98F}
+.mcard.m7{background:linear-gradient(140deg,#F6E4A0,#C9A227 46%,#85600F);color:#1B1206}
+/* 贵宾卡：基础 / 私人 / 主席 / 超级 */
+.mcard.v1{background:linear-gradient(140deg,#2E7153,#12402F 60%,#072015)}
+.mcard.v2{background:linear-gradient(140deg,#36547F,#162A45 60%,#081120)}
+.mcard.v3{background:linear-gradient(140deg,#2C2822,#12100C 58%,#050403);color:#EBD98F;
+  box-shadow:0 12px 26px -16px rgba(10,10,8,.85),inset 0 0 0 1px rgba(201,162,39,.55)}
+.mcard.v4{color:#241A06;background:linear-gradient(130deg,#F8EBB2 0%,#DDBE55 26%,#A8811B 52%,#EFD98C 74%,#8B6410 100%);
+  box-shadow:0 12px 26px -14px rgba(120,90,10,.55),inset 0 0 0 1px rgba(255,255,255,.6)}
+.mcard.v3 .mc-chip,.mcard.v4 .mc-chip{background:linear-gradient(135deg,#FFF6CE,#D9B84A 50%,#9A7415)}
 .bank.neg,#bankView.neg{color:#B3202A}
 body.fsmode .deck-panel .dp-read.dp-bank b.neg{color:#FCA5A5}
 .dp-pts{color:#C9A227}
@@ -442,6 +504,17 @@ body.fsmode .deck-panel .dp-read.dp-bank b.neg{color:#FCA5A5}
 .edge-table.wide th:last-child{text-align:left}
 @media(max-width:1100px){.data-stack{columns:1}}
 .round-table td{padding:4.5px 0;font-size:10px}
+/* 最近 10 局：五列按内容分配，禁止换行，避免「净额」被挤成竖排 */
+.round-table{table-layout:fixed}
+.round-table th,.round-table td{white-space:nowrap;letter-spacing:0}
+.seat-table.round-table th:nth-child(1){width:14%}
+.seat-table.round-table th:nth-child(2){width:27%}
+.seat-table.round-table th:nth-child(3){width:15%}
+.seat-table.round-table th:nth-child(4){width:19%}
+.seat-table.round-table th:nth-child(5){width:25%}
+.round-table th:nth-child(3),.round-table td:nth-child(3),
+.round-table th:nth-child(4),.round-table td:nth-child(4){text-align:center}
+.round-table td:nth-child(1){color:#8A8272}
 .round-table .empty-row{text-align:center;color:#9A927F;font-family:inherit;padding:16px 0!important}
 .data-card{background:#FBFAF4;border:1px solid #E6E0CE;border-radius:13px;padding:12px 14px}
 .data-card h4{margin:0 0 9px;font-size:12px;letter-spacing:1.1px;color:#0C3A28;font-weight:600;
@@ -671,7 +744,14 @@ body.fsmode .deck-panel .dp-read.dp-bank b.neg{color:#FCA5A5}
           </button>
         </div>
 
-        <div class="msgline" id="msg" data-i18n="bj.msg">先在下方选注码（最低 300），按 Space 或点「开局 · 发牌」。<b>第 3 门是你的</b>，其余五门是同桌的。</div>
+        <div class="msgrow">
+          <div class="msgline" id="msg" data-i18n="bj.msg">先在下方选注码（最低 300），按 Space 或点「开局 · 发牌」。<b>第 3 门是你的</b>，其余五门是同桌的。</div>
+          <div class="msgkeys" aria-hidden="true">
+            <i><kbd>Space</kbd></i><i><kbd>H</kbd></i><i><kbd>S</kbd></i><i><kbd>D</kbd></i>
+            <i><kbd>P</kbd></i><i><kbd>R</kbd></i><i><kbd>V</kbd></i><i><kbd>1</kbd></i>
+            <i><kbd>2</kbd></i><i><kbd>N</kbd></i><i><kbd>E</kbd></i><i><kbd>Z</kbd></i><i><kbd>X</kbd></i>
+          </div>
+        </div>
       </div>
 
       <!-- 底部数据区：瀑布流，卡片按内容高度紧排 -->
@@ -742,6 +822,11 @@ body.fsmode .deck-panel .dp-read.dp-bank b.neg{color:#FCA5A5}
           <h4>庄家优势实测 <span id="simRun" style="cursor:pointer;color:#8A5A0A;text-decoration:underline">跑 100,000 局</span></h4>
           <div class="simbox" id="simOut" data-i18n="bj.simDesc">点击右上角：用基本策略自动打 100,000 局，
 给出主游戏实测 EV 与抽样误差。</div>
+        </div>
+      <div class="data-card">
+          <h4>会员卡 <span id="mcHint">随卡级换卡面</span></h4>
+          <div class="mcard m0" id="mcCard"></div>
+          <div class="mc-note" id="mcNote"></div>
         </div>
       </section>
 
@@ -990,7 +1075,7 @@ const BJ = (() => {
      'myHands','myLive','ledger','curve','curveTip','curveLegend','cvPeak','cvDD','cvAvg','cvN','betBreak',
      'beads','beadCount','kvGrid','seatRows','recentRows','ptsBig','ptsTier','ptsBar','ptsNote','ptsVenue','ptsApply',
      'myZoneLabel','mySeatLabel','feltPayText','plMax','plMin','plEquip','venueHint','cfgVenue','cfgRoom','cfgSeats',
-     'tableTips','vipName','vipStatus','vipRows','vipNote','fsPts','ptsInline','vipInvite','vipHeld',
+     'tableTips','vipName','vipStatus','vipRows','vipNote','fsPts','ptsInline','vipInvite','vipHeld','mcCard','mcNote','mcHint',
      'cfgMySeat','cfgEmpty','cfgBank','cfgCap','cfgUnlock','cfgApply',
      'stageTxt','sg1','sg2','sg3','sg4','sg5'
     ].forEach(k => el[k] = $(k));
@@ -1145,6 +1230,7 @@ const BJ = (() => {
     renderData();
     renderTips();
     renderVip();
+    renderMemberCard();
     renderCurve();
     renderButtons();
     syncFs();
@@ -1293,6 +1379,65 @@ const BJ = (() => {
     }
   }
 
+  /* ---------- 会员卡卡面（中场卡 / 贵宾卡，按等级换肤） ---------- */
+  function renderMemberCard(){
+    if (!el.mcCard) return;
+    const v = curVenue();
+    const prog = PROGRAMS[v.prog];
+    const vip = prog.vip;
+    const m = mem();
+    const T = s => (!EN ? s : ((window.I18N && I18N.t) ? (I18N.t(s) || s) : s));
+    const t = CORE.tierOf(m.points, prog);
+
+    let cls, tierName, sub, typeLabel, pipsTotal, pipsOn, note;
+    if (m.card >= 1){
+      const held = (vip.tiers || []).find(x => (x.card || 1) === m.card) || vip.tiers[0];
+      cls = 'v' + Math.max(1, Math.min(4, m.card));
+      typeLabel = EN ? 'VIP card' : '贵宾卡';
+      tierName = held ? T(held.name) : '—';
+      sub = vip.name;
+      pipsTotal = (vip.tiers || []).length || 4;
+      pipsOn = m.card;
+      note = EN
+        ? `VIP card held — every room up to this level is open. Mid-floor card (${T(t.tier)}) is tracked separately.`
+        : `贵宾卡已持有，该档及以下厅房全部开放；中场卡（${t.tier}）另行累计。`;
+    } else {
+      cls = 'm' + Math.min(7, t.idx + 1);
+      typeLabel = EN ? 'Mid-floor card' : '中场卡';
+      tierName = T(t.tier);
+      sub = prog.brand;
+      pipsTotal = Math.min(7, (prog.tiers || []).length);
+      pipsOn = t.idx + 1;
+      note = t.next
+        ? (EN ? `${fmt(t.need)} pts to ${T(t.next)} · VIP rooms need a separate VIP card`
+              : `距${t.next}还差 ${t.need} 分 · 贵宾厅需另申请贵宾卡`)
+        : (EN ? 'Top mid-floor tier · VIP rooms need a separate VIP card'
+              : '中场卡已到顶 · 贵宾厅需另申请贵宾卡');
+    }
+
+    const pips = Array.from({ length: pipsTotal }, (_, i) =>
+      `<i class="${i < pipsOn ? 'on' : ''}"></i>`).join('');
+    el.mcCard.className = 'mcard ' + cls;
+    el.mcCard.innerHTML = `
+      <div class="mc-row">
+        <div class="mc-brand">${prog.brand}</div>
+        <span class="mc-type">${typeLabel}</span>
+      </div>
+      <div class="mc-row" style="align-items:flex-end">
+        <div>
+          <div class="mc-tier">${tierName}</div>
+          <div class="mc-sub">${sub}</div>
+        </div>
+        <div class="mc-chip"></div>
+      </div>
+      <div class="mc-foot">
+        <span class="mc-no">MOP · 21 · 0088 ${String(pipsOn).padStart(4, '0')}</span>
+        <span class="mc-pips">${pips}</span>
+      </div>`;
+    if (el.mcNote) el.mcNote.textContent = note;
+    if (el.mcHint) el.mcHint.textContent = EN ? 'Skin follows your tier' : '随卡级换卡面';
+  }
+
   /* ---------- 贵宾候选评估（四维打分，只给状态，不授予权限） ---------- */
   function renderVip(){
     if (!el.vipName) return;
@@ -1338,7 +1483,7 @@ const BJ = (() => {
     const row = (c) => {
       const mk = (ok) => `<i class="ok${ok ? '' : ' no'}">${ok ? '✓' : '✗'}</i>`;
       return `<tr class="${c.met ? 'met' : ''}">
-        <td>${c.name}</td>
+        <td title="${c.name}">${c.name}</td>
         <td>${fmtShort(c.turnover)} ${mk(c.okTurnover)}</td>
         <td>${fmtShort(c.maxBet)} ${mk(c.okMax)}</td>
         <td>${c.days} ${EN ? 'days' : '天'} ${mk(c.okDays)}</td>
