@@ -462,15 +462,22 @@ body.fsmode .betpanel,body.fsmode .curve-card,body.fsmode .data-stack{display:no
 .mc-pips i{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.32)}
 .mc-pips i.on{background:currentColor;box-shadow:0 0 4px currentColor}
 .mc-note{font-size:9.5px;color:#8A8272;line-height:1.6;margin-top:8px}
-/* 中场卡：普通 / 金 / 红宝石 / 钻石 / 白金 / 黑金 / 主席 / 御匾 */
+/* 中场卡皮肤：m1 金 · m2–m4 红宝三级 · m5–m7 钻石三级 · m8 白金 · m9 御匾钻石 · m10 御匾主席 · m11 翡翠 */
 .mcard.m0{background:linear-gradient(140deg,#7C8A80,#4A5650 62%,#2C3731)}
 .mcard.m1{background:linear-gradient(140deg,#D2A44E,#8A6320 58%,#4A3208)}
-.mcard.m2{background:linear-gradient(140deg,#A93C4E,#6E1B2B 58%,#3A0A14)}
-.mcard.m3{background:linear-gradient(140deg,#61A0C2,#2C5E7C 58%,#0F2E42)}
-.mcard.m4{background:linear-gradient(140deg,#B3BECB,#6D7784 58%,#363E46)}
-.mcard.m5{background:linear-gradient(140deg,#3A3F42,#171B1D 58%,#050708)}
-.mcard.m6{background:linear-gradient(140deg,#1F5340,#0C2A1E 60%,#051210);color:#EBD98F}
-.mcard.m7{background:linear-gradient(140deg,#F6E4A0,#C9A227 46%,#85600F);color:#1B1206}
+.mcard.m2{background:linear-gradient(140deg,#C55A6A,#8A2B3B 58%,#4A111B)}
+.mcard.m3{background:linear-gradient(140deg,#A93C4E,#6E1B2B 58%,#3A0A14)}
+.mcard.m4{background:linear-gradient(140deg,#7E2230,#4E0F1B 58%,#2A060D)}
+.mcard.m5{background:linear-gradient(140deg,#7FC0DD,#3B7FA3 58%,#123449)}
+.mcard.m6{background:linear-gradient(140deg,#2E5C8A,#16344F 60%,#08192A)}
+.mcard.m7{background:linear-gradient(140deg,#1E4470,#0F2745 60%,#050F1F);color:#D9E4F2}
+.mcard.m8{background:linear-gradient(140deg,#E2E6EB,#A3ACB6 55%,#5A626B);color:#1C2228}
+.mcard.m9{color:#EBD98F;background:linear-gradient(140deg,#26365F,#0E1A3A 58%,#05080F);
+  box-shadow:0 12px 26px -16px rgba(6,10,20,.85),inset 0 0 0 1px rgba(201,162,39,.5)}
+.mcard.m10{color:#EBD98F;background:linear-gradient(140deg,#2C2822,#12100C 58%,#050403);
+  box-shadow:0 12px 26px -16px rgba(10,10,8,.85),inset 0 0 0 1px rgba(201,162,39,.55)}
+.mcard.m11{background:linear-gradient(140deg,#2F7A5A,#14503A 58%,#082A1D)}
+.mcard.m9 .mc-chip,.mcard.m10 .mc-chip{background:linear-gradient(135deg,#FFF6CE,#D9B84A 50%,#9A7415)}
 /* 贵宾卡：基础 / 私人 / 主席 / 超级 */
 .mcard.v1{background:linear-gradient(140deg,#2E7153,#12402F 60%,#072015)}
 .mcard.v2{background:linear-gradient(140deg,#36547F,#162A45 60%,#081120)}
@@ -479,6 +486,18 @@ body.fsmode .betpanel,body.fsmode .curve-card,body.fsmode .data-stack{display:no
 .mcard.v4{color:#241A06;background:linear-gradient(130deg,#F8EBB2 0%,#DDBE55 26%,#A8811B 52%,#EFD98C 74%,#8B6410 100%);
   box-shadow:0 12px 26px -14px rgba(120,90,10,.55),inset 0 0 0 1px rgba(255,255,255,.6)}
 .mcard.v3 .mc-chip,.mcard.v4 .mc-chip{background:linear-gradient(135deg,#FFF6CE,#D9B84A 50%,#9A7415)}
+/* 官方卡面（金沙会 / 新濠皇会 / 澳娱至尊卡）：直接展示官方图，下方补等级条 */
+.mcard.art{display:block;padding:0;aspect-ratio:auto;max-width:none;background:none;box-shadow:none;
+  color:#1B221E;overflow:visible}
+.mcard.art .mc-art{display:block;width:100%;height:auto;border-radius:11px;
+  box-shadow:0 12px 26px -18px rgba(10,20,16,.72)}
+.mcard.art.portrait{display:flex;flex-direction:column;align-items:center}
+.mcard.art.portrait .mc-art{width:auto;height:240px}
+.mc-cap{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:7px;
+  font-size:9.5px;color:#6E6653}
+.mc-cap-t{letter-spacing:.2px}
+.mc-cap .mc-pips i{background:#DDD7C6}
+.mc-cap .mc-pips i.on{background:#C9A227;box-shadow:none}
 .bank.neg,#bankView.neg{color:#B3202A}
 body.fsmode .deck-panel .dp-read.dp-bank b.neg{color:#FCA5A5}
 .dp-pts{color:#C9A227}
@@ -1336,6 +1355,15 @@ const BJ = (() => {
     if (el.myZoneLabel) el.myZoneLabel.textContent = EN ? `Your hand · box ${HUMAN + 1}` : `你的手牌 · 第 ${HUMAN + 1} 门`;
   }
 
+  /* 档位阶梯文本：超过 6 档时折叠中间档，避免小卡片被撑长 */
+  function tierLadder(prog, sep){
+    const T = s => (!EN ? s : ((window.I18N && I18N.t) ? (I18N.t(s) || s) : s));
+    const list = ((prog && prog.tiers) || []).map(([n, p]) =>
+      `${T(n)} ${p == null ? (EN ? 'undisclosed' : '未公开') : p.toLocaleString()}`);
+    const out = list.length <= 6 ? list : list.slice(0, 4).concat(['…'], list.slice(-2));
+    return out.join(sep);
+  }
+
   /* ---------- 会员积分 ---------- */
   function renderPoints(){
     const v = curVenue();
@@ -1353,13 +1381,13 @@ const BJ = (() => {
         lines.push(`Lifetime qualifying turnover ${fmt(m.turnover)} MOP`);
         if (t.pct == null) lines.push(`${t.next ? 'Next tier ' + t.next : ''}`);
         else lines.push(`${fmt(t.need)} pts to ${t.next}`);
-        lines.push(prog.tiers.map(([n, p]) => `${n} ${p == null ? 'undisclosed' : p.toLocaleString()}`).join(' · '));
+        lines.push(tierLadder(prog, ' · '));
         lines.push(`VIP room: ${m.card >= 1 ? 'card held, entry allowed' : 'basic VIP card required'} · Private/Chairman: ${m.card >= 2 ? 'top card held, entry allowed' : 'top hidden card required'}`);
       } else {
       lines.push(`本卡系累计有效投注 ${fmt(m.turnover)} MOP · ${prog.conversion}`);
       if (t.pct == null) lines.push(`${t.next ? '下一档 ' + t.next + '：' : ''}${prog.tiersNote}`);
       else lines.push(`距${t.next}还差 ${t.need} 分（${prog.tiersNote}）`);
-      lines.push(prog.tiers.map(([n, p]) => `${n} ${p == null ? '未公开' : p.toLocaleString()}`).join(' · '));
+      lines.push(tierLadder(prog, ' · '));
       lines.push(`贵宾厅：${m.card >= 1 ? '已持卡，可入场' : '需基础贵宾卡'} · 私人厅/主席厅：${m.card >= 2 ? `已持${needName(m.card)}，可入场` : '需私人贵宾卡'}`);
       }
       el.ptsNote.textContent = lines.join('\n');
@@ -1377,6 +1405,20 @@ const BJ = (() => {
             : '中场卡按积分自动升级，无需申请；贵宾卡需在下方「贵宾候选评估」提交申请。'}</div>`;
       }
     }
+  }
+
+  /* ---------- 会员卡卡面：有官方图用官方图，其余自绘 ---------- */
+  const CARD_ART = {
+    sands: ['sands_gold', 'sands_ruby1', 'sands_ruby2', 'sands_ruby3',
+            'sands_dia1', 'sands_dia2', 'sands_dia3', 'sands_apex', 'sands_apex', 'sands_apex'],
+    melco: ['melco_gold', 'melco_platinum', 'melco_diamond',
+            'melco_ruby', 'melco_dragon', 'melco_emperor'],
+    sjm: ['sjm_emerald', 'sjm_gold', 'sjm_platinum', 'sjm_diamond']
+  };
+  function cardArtOf(progId, idx){
+    const list = CARD_ART[progId];
+    if (!list || idx < 0 || idx >= list.length) return null;
+    return 'assets/cards/' + list[idx] + '.webp';
   }
 
   /* ---------- 会员卡卡面（中场卡 / 贵宾卡，按等级换肤） ---------- */
@@ -1402,11 +1444,21 @@ const BJ = (() => {
         ? `VIP card held — every room up to this level is open. Mid-floor card (${T(t.tier)}) is tracked separately.`
         : `贵宾卡已持有，该档及以下厅房全部开放；中场卡（${t.tier}）另行累计。`;
     } else {
-      cls = 'm' + Math.min(7, t.idx + 1);
+      /* 卡面配色按各场官方档位语义映射：金 / 红宝 / 钻石 / 白金 / 御匾 / 翡翠 */
+      const SKIN = {
+        sands: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+        melco: [1, 8, 6, 3, 9, 10],
+        sjm: [11, 1, 8, 6],
+        galaxy: [1, 8, 6, 7, 9, 10],
+        wynn: [3, 2, 1, 8, 10, 9],
+        mgm: [6, 8, 1, 10, 5, 9]
+      };
+      const skin = (SKIN[v.prog] || [])[t.idx];
+      cls = 'm' + (skin || Math.min(11, t.idx + 1));
       typeLabel = EN ? 'Mid-floor card' : '中场卡';
       tierName = T(t.tier);
       sub = prog.brand;
-      pipsTotal = Math.min(7, (prog.tiers || []).length);
+      pipsTotal = Math.min(10, (prog.tiers || []).length);
       pipsOn = t.idx + 1;
       note = t.next
         ? (EN ? `${fmt(t.need)} pts to ${T(t.next)} · VIP rooms need a separate VIP card`
@@ -1417,8 +1469,18 @@ const BJ = (() => {
 
     const pips = Array.from({ length: pipsTotal }, (_, i) =>
       `<i class="${i < pipsOn ? 'on' : ''}"></i>`).join('');
-    el.mcCard.className = 'mcard ' + cls;
-    el.mcCard.innerHTML = `
+
+    const art = m.card >= 1 ? null : cardArtOf(v.prog, t.idx);
+    if (art){
+      el.mcCard.className = 'mcard art' + (v.prog === 'melco' ? ' portrait' : '');
+      el.mcCard.innerHTML =
+        `<img class="mc-art" src="${art}" alt="${tierName}" decoding="async">
+         <div class="mc-cap"><span class="mc-cap-t">${typeLabel} · ${tierName}</span>
+           <span class="mc-pips">${pips}</span></div>`;
+      if (el.mcHint) el.mcHint.textContent = EN ? 'Official card art' : '官方卡面';
+    } else {
+      el.mcCard.className = 'mcard ' + cls;
+      el.mcCard.innerHTML = `
       <div class="mc-row">
         <div class="mc-brand">${prog.brand}</div>
         <span class="mc-type">${typeLabel}</span>
@@ -1434,8 +1496,9 @@ const BJ = (() => {
         <span class="mc-no">MOP · 21 · 0088 ${String(pipsOn).padStart(4, '0')}</span>
         <span class="mc-pips">${pips}</span>
       </div>`;
+      if (el.mcHint) el.mcHint.textContent = EN ? 'Drawn face' : '自绘卡面';
+    }
     if (el.mcNote) el.mcNote.textContent = note;
-    if (el.mcHint) el.mcHint.textContent = EN ? 'Skin follows your tier' : '随卡级换卡面';
   }
 
   /* ---------- 贵宾候选评估（四维打分，只给状态，不授予权限） ---------- */
@@ -2664,7 +2727,7 @@ Scope: side bets excluded; splits and doubles settled OBBO.`
         : `${v.name} · ${v.room}：${v.decks} 副牌靴，白咭插在最后约 ${cutAt} 张处（穿透 ${Math.round(v.pen * 100)}%）。`);
     if (el.venueHint){
       const prog = PROGRAMS[v.prog];
-      const ladder = prog.tiers.map(([n, p]) => `${n} ${p == null ? (EN ? 'undisclosed' : '未公开') : p.toLocaleString()}`).join(' → ');
+      const ladder = tierLadder(prog, ' → ');
       const rules = EN
         ? `${v.decks} decks · ${v.csm ? 'CSM' : 'Shoe'} · ${v.s17 ? 'S17' : 'H17'} · BJ ${v.bj === 1.5 ? '3:2' : '6:5'} · ` +
           `${v.sur ? 'early surrender' : 'no surrender'} · ${v.das ? 'DAS' : 'no DAS'} · ` +
