@@ -487,9 +487,9 @@ body.fsmode .betpanel,body.fsmode .curve-card,body.fsmode .data-stack{display:no
   box-shadow:0 12px 26px -14px rgba(120,90,10,.55),inset 0 0 0 1px rgba(255,255,255,.6)}
 .mcard.v3 .mc-chip,.mcard.v4 .mc-chip{background:linear-gradient(135deg,#FFF6CE,#D9B84A 50%,#9A7415)}
 /* 官方卡面（金沙会 / 新濠皇会 / 澳娱至尊卡）：直接展示官方图，下方补等级条 */
-.mcard.art{display:block;padding:0;aspect-ratio:auto;max-width:none;background:none;box-shadow:none;
+.mcard.art{display:block;padding:0;aspect-ratio:auto;max-width:340px;background:none;box-shadow:none;
   color:#1B221E;overflow:visible}
-.mcard.art .mc-art{display:block;width:100%;height:auto;border-radius:11px;
+.mcard.art .mc-art{display:block;width:100%;height:auto;border-radius:11px;background:#EDE6D4;
   box-shadow:0 12px 26px -18px rgba(10,20,16,.72)}
 .mcard.art.portrait{display:flex;flex-direction:column;align-items:center}
 .mcard.art.portrait .mc-art{width:auto;height:240px}
@@ -1415,10 +1415,25 @@ const BJ = (() => {
             'melco_ruby', 'melco_dragon', 'melco_emperor'],
     sjm: ['sjm_emerald', 'sjm_gold', 'sjm_platinum', 'sjm_diamond']
   };
+  /* 官方图原始尺寸：写进 img 的 width/height，换档时高度不会塌成 0 */
+  const ART_DIM = {
+    sands: [480, 304],
+    sjm: [620, 395],
+    melco: [360, 560]
+  };
   function cardArtOf(progId, idx){
     const list = CARD_ART[progId];
     if (!list || idx < 0 || idx >= list.length) return null;
     return 'assets/cards/' + list[idx] + '.webp';
+  }
+  /* 进场时把本卡系的官方图全部预载，升档换图时不用等网络，也就不会出现空白窗口 */
+  const ART_PRELOADED = {};
+  const ART_FAILED = new Set();   /* 加载失败的官方图，后续直接走自绘卡面 */
+  function preloadArt(progId){
+    const list = CARD_ART[progId];
+    if (!list || ART_PRELOADED[progId]) return;
+    ART_PRELOADED[progId] = 1;
+    list.forEach(n => { const im = new Image(); im.src = 'assets/cards/' + n + '.webp'; });
   }
 
   /* ---------- 会员卡卡面（中场卡 / 贵宾卡，按等级换肤） ---------- */
@@ -1470,17 +1485,7 @@ const BJ = (() => {
     const pips = Array.from({ length: pipsTotal }, (_, i) =>
       `<i class="${i < pipsOn ? 'on' : ''}"></i>`).join('');
 
-    const art = m.card >= 1 ? null : cardArtOf(v.prog, t.idx);
-    if (art){
-      el.mcCard.className = 'mcard art' + (v.prog === 'melco' ? ' portrait' : '');
-      el.mcCard.innerHTML =
-        `<img class="mc-art" src="${art}" alt="${tierName}" decoding="async">
-         <div class="mc-cap"><span class="mc-cap-t">${typeLabel} · ${tierName}</span>
-           <span class="mc-pips">${pips}</span></div>`;
-      if (el.mcHint) el.mcHint.textContent = EN ? 'Official card art' : '官方卡面';
-    } else {
-      el.mcCard.className = 'mcard ' + cls;
-      el.mcCard.innerHTML = `
+    const drawnHTML = `
       <div class="mc-row">
         <div class="mc-brand">${prog.brand}</div>
         <span class="mc-type">${typeLabel}</span>
@@ -1496,7 +1501,42 @@ const BJ = (() => {
         <span class="mc-no">MOP · 21 · 0088 ${String(pipsOn).padStart(4, '0')}</span>
         <span class="mc-pips">${pips}</span>
       </div>`;
+    const drawFace = () => {
+      delete el.mcCard.dataset.art;
+      el.mcCard.className = 'mcard ' + cls;
+      el.mcCard.innerHTML = drawnHTML;
       if (el.mcHint) el.mcHint.textContent = EN ? 'Drawn face' : '自绘卡面';
+    };
+
+    const art = (m.card >= 1 ? null : cardArtOf(v.prog, t.idx));
+    const useArt = art && !ART_FAILED.has(art);
+    if (useArt){
+      /* 同一张官方图只建一次 DOM：升级换图才重建，避免每局重设 src 造成高度塌陷 */
+      if (el.mcCard.dataset.art === art){
+        const capT = el.mcCard.querySelector('.mc-cap-t');
+        const capP = el.mcCard.querySelector('.mc-pips');
+        if (capT) capT.textContent = `${typeLabel} · ${tierName}`;
+        if (capP) capP.innerHTML = pips;
+        if (el.mcHint) el.mcHint.textContent = EN ? 'Official card art' : '官方卡面';
+      } else {
+        const dim = ART_DIM[v.prog] || [480, 304];
+        el.mcCard.className = 'mcard art' + (v.prog === 'melco' ? ' portrait' : '');
+        el.mcCard.dataset.art = art;
+        el.mcCard.innerHTML =
+          `<img class="mc-art" src="${art}" width="${dim[0]}" height="${dim[1]}"
+                alt="${tierName}" decoding="async">
+           <div class="mc-cap"><span class="mc-cap-t">${typeLabel} · ${tierName}</span>
+             <span class="mc-pips">${pips}</span></div>`;
+        const im = el.mcCard.querySelector('img.mc-art');
+        /* 图挂了（404 / 解码失败）记进黑名单，重绘成自绘卡面，绝不留一块空白 */
+        if (im) im.addEventListener('error', () => {
+          ART_FAILED.add(art);
+          renderMemberCard();
+        }, { once: true });
+        if (el.mcHint) el.mcHint.textContent = EN ? 'Official card art' : '官方卡面';
+      }
+    } else {
+      drawFace();
     }
     if (el.mcNote) el.mcNote.textContent = note;
   }
@@ -2682,6 +2722,7 @@ Scope: side bets excluded; splits and doubles settled OBBO.`
 
   function setupTable(){
     const v = curVenue();
+    preloadArt(v.prog);
     cfg.seats = Math.max(2, Math.min(8, cfg.seats));
     cfg.mySeat = Math.max(0, Math.min(cfg.seats - 1, cfg.mySeat));
     HUMAN = cfg.mySeat;
