@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>积分商城 · 21 点会员权益 · jc-football-report</title>
-<meta name="description" content="澳门 21 点会员积分商城：用有效投注累计的积分兑换餐饮、住宿、表演、水疗、接送与零售礼遇，按四家会籍的官方权益目录定价。">
+<meta name="description" content="澳门 21 点会员积分商城：按金沙中国、银河娱乐、永利澳门、美高梅、新濠博亚、澳娱综合六家官网权益分册，用有效投注累计的积分兑换餐饮、住宿、演出、水疗、玩乐、购物与交通礼遇。">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Serif+SC:wght@400;600&display=swap" rel="stylesheet">
@@ -38,7 +38,7 @@
   <div class="mallhero">
     <div class="mallcrumb"><a href="blackjack.html">21 点</a><i>/</i><span>积分商城</span></div>
     <h1>把积分换成<em>看得见的东西</em>。</h1>
-    <p>积分按当前卡系的有效投注累积，兑换目录取自金沙会、新濠皇会、银河优越与澳娱至尊卡四份官方权益：餐饮、住宿、表演、水疗、接送与零售。牌桌上每打一局都会实时写入这里，换页不会丢。</p>
+    <p>积分按当前卡系的有效投注累积，目录分六册收录：金沙中国、银河娱乐、永利澳门、美高梅、新濠博亚、澳娱综合 —— 酒店、餐厅、演出、水疗、玩乐、购物与交通全部取自各集团官网公布的物业与礼遇。牌桌上每打一局都会实时写入这里，换页不会丢。</p>
     <div class="mallbar">
       <label for="progSel">会员体系</label>
       <select id="progSel"></select>
@@ -52,6 +52,7 @@
         <div class="mallkick">Redeem · 会员礼遇兑换</div>
         <h2>会员积分可兑换项目</h2>
         <p class="mallsub">同一件礼遇在不同场积分数字不同、所需流水一致 —— 因为每分对应的流水不同。</p>
+        <p class="mallgroup" id="mallGroup"></p>
       </div>
       <div class="mallbal">
         <small>可用积分</small>
@@ -63,6 +64,7 @@
 
     <div class="malltabs" id="mallTabs"></div>
     <div class="mallgrid" id="mallGrid"></div>
+    <div class="mallsrc" id="mallSrc"></div>
 
     <div class="mallfoot">
       <div class="mallnote" id="mallNote"></div>
@@ -95,7 +97,7 @@
 
   const $ = id => document.getElementById(id);
   const el = {};
-  ['progSel','mallPts','mallRate','mallProg','mallTabs','mallGrid','mallOrders','mallNote']
+  ['progSel','mallPts','mallRate','mallProg','mallTabs','mallGrid','mallOrders','mallNote','mallGroup','mallSrc']
     .forEach(k => { el[k] = $(k); });
 
   /* 默认沿用牌桌最后所在的场馆，保证两个页面看的是同一个卡系 */
@@ -107,7 +109,7 @@
     page.querySelector('.mallcrumb').innerHTML = '<a href="blackjack.html">Blackjack</a><i>/</i><span>Rewards shop</span>';
     page.querySelector('h1').innerHTML = 'Turn points into <em>something real</em>.';
     page.querySelector('.mallhero p').textContent =
-      'Points accrue on the effective turnover of your current programme. The catalogue mirrors the official benefit lists of Sands Rewards, Melco Club, Galaxy Privilege and SJM Supreme: dining, stays, shows, spa, transfers and retail. Every round you play on the table is written here instantly and survives page changes.';
+      'Points accrue on the effective turnover of your current programme. The catalogue is split into six books — Sands China, Galaxy, Wynn, MGM, Melco and SJM — with hotels, restaurants, shows, spa, play, shopping and transport taken from each group’s official pages. Every round you play on the table is written here instantly and survives page changes.';
     page.querySelector('.mallbar label').textContent = 'Programme';
     page.querySelector('.mallback').textContent = '← Back to table';
     page.querySelector('.mallhead h2').textContent = 'What your points can buy';
@@ -132,21 +134,28 @@
 
   function render() {
     const prog = PROGRAMS[progId];
+    const items = MALL.itemsOf(progId);
     const m = mem();
     const pts = m.points;
     const per = prog.mopPerPoint || 1000;
     const now = window.BJCore ? BJCore.tierOf(pts, prog) : { idx: 0, tier: '—', next: null, need: null };
+    const g = MALL.GROUPS[progId] || { zh: prog.name, en: prog.brand };
 
     el.mallPts.textContent = Math.round(pts).toLocaleString();
     el.mallRate.textContent = EN
       ? `≈ MOP ${Math.round(pts * per * MALL.RETURN_RATE).toLocaleString()} in benefits`
       : `≈ MOP ${Math.round(pts * per * MALL.RETURN_RATE).toLocaleString()} 礼遇价值`;
     el.mallProg.textContent = `${EN ? prog.brand : prog.name} · ${now.tier}`;
+    el.mallGroup.textContent = EN
+      ? `${g.en} · ${prog.brand} · ${items.length} benefits`
+      : `${g.zh} · ${prog.name} · ${items.length} 项礼遇`;
 
-    if (!el.mallTabs.__built) {
-      el.mallTabs.__built = 1;
-      el.mallTabs.innerHTML = [{ id: 'all', zh: '全部', en: 'All' }].concat(MALL.CATS)
-        .map(c => `<button data-cat="${c.id}">${EN ? c.en : c.zh}</button>`).join('');
+    const cats = [{ id: 'all', zh: '全部', en: 'All' }]
+      .concat(MALL.CATS.filter(c => items.some(it => it.cat === c.id)));
+    if (cat !== 'all' && !cats.some(c => c.id === cat)) cat = 'all';
+
+    if (!el.mallTabs.__wired) {
+      el.mallTabs.__wired = 1;
       el.mallTabs.addEventListener('click', ev => {
         const b = ev.target.closest('button[data-cat]');
         if (!b) return;
@@ -154,9 +163,12 @@
         render();
       });
     }
-    [].forEach.call(el.mallTabs.children, b => b.classList.toggle('on', b.dataset.cat === cat));
+    el.mallTabs.innerHTML = cats
+      .map(c => `<button data-cat="${c.id}"${c.id === cat ? ' class="on"' : ''}>${EN ? c.en : c.zh}</button>`)
+      .join('');
 
-    el.mallGrid.innerHTML = MALL.ITEMS.filter(it => cat === 'all' || it.cat === cat).map(it => {
+    const list = items.filter(it => cat === 'all' || it.cat === cat);
+    el.mallGrid.innerHTML = list.map(it => {
       const price = MALL.priceOf(it, prog);
       const needIdx = tierIndex(prog, it.need);
       const locked = it.need > 0 && now.idx < needIdx;
@@ -180,10 +192,16 @@
       el.mallGrid.addEventListener('click', ev => {
         const b = ev.target.closest('button[data-buy]');
         if (!b) return;
-        const it = MALL.ITEMS.filter(x => x.id === b.dataset.buy)[0];
+        const it = MALL.itemsOf(progId).filter(x => x.id === b.dataset.buy)[0];
         if (it) redeem(it);
       });
     }
+
+    const src = MALL.SOURCES[progId] || [];
+    el.mallSrc.innerHTML = `<span>${EN ? 'Official sources' : '资料来源'}</span>`
+      + src.map(s => `<a href="${s.url}" target="_blank" rel="noopener">${EN ? s.en : s.zh}</a>`).join('')
+      + `<em>${EN ? 'Names, venues and reference values are compiled from these pages.'
+                  : '物业、餐厅与参考价值均按以上官方页面整理。'}</em>`;
 
     const next = now.next
       ? (EN ? `Next tier ${now.next}${now.need != null ? `, ${Math.ceil(now.need).toLocaleString()} pts away` : ''}`

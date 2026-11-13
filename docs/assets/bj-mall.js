@@ -1,101 +1,552 @@
 /* ============================================================
-   bj-mall.js — 积分商城目录
+   bj-mall.js — 积分商城目录（按会员卡系分册）
    ------------------------------------------------------------
-   商品依据四家会籍的官方权益目录归纳（餐饮 / 酒店 / 表演 / 水疗 /
-   交通 / 零售 / 体验），value 为该礼遇的澳门元参考价值。
+   每一册只收录该集团官网公开的酒店、餐厅、演出、水疗、玩乐与
+   购物权益，名称与所在物业均取自官网页面：
+
+   金沙中国   sandsresortsmacau.com（威尼斯人／巴黎人／伦敦人／金沙／百利宫）
+   银河娱乐   galaxyresorts.com.cn（9 家酒店、120+ 餐厅、天浪淘园）
+   永利澳门   wynnresortsmacau.com.cn/zh-cn/wynn-palace 与 /wynn-macau
+   美高梅     mgm.mo/zh-hans（澳门美高梅／美狮美高梅）
+   新濠博亚   cityofdreamsmacau.com/sc、studiocity-macau.com/sc、altiramacau.com
+   澳娱综合   sjmresorts.com/tc（上葡京／新葡京／凯旋门）
 
    定价模型：会员回赠约为有效投注的 1.5%
      所需积分 = value ÷ (mopPerPoint × 0.015)
-   由于各卡系「多少流水 = 1 分」不同，积分数字差别很大，但兑换同一
+   各卡系「多少流水 = 1 分」不同，积分数字差别很大，但兑换同一
    礼遇所需流水一致，横向可比。
-   need 为所需卡级比例（0 = 不限，1 = 最高档），按各卡系实际档位换算。
+   need 为所需卡级比例（0 = 不限，1 = 最高档），按各卡系档位换算。
    ============================================================ */
 (function () {
   const CATS = [
-    { id: 'food',   zh: '餐饮',   en: 'Dining' },
-    { id: 'hotel',  zh: '住宿',   en: 'Stay' },
-    { id: 'show',   zh: '表演',   en: 'Shows' },
+    { id: 'dine',   zh: '餐饮',   en: 'Dining' },
+    { id: 'stay',   zh: '住宿',   en: 'Stay' },
+    { id: 'show',   zh: '演出',   en: 'Shows' },
     { id: 'spa',    zh: '水疗',   en: 'Spa' },
-    { id: 'travel', zh: '交通',   en: 'Travel' },
-    { id: 'retail', zh: '零售',   en: 'Retail' },
-    { id: 'exp',    zh: '体验',   en: 'Experiences' }
+    { id: 'play',   zh: '玩乐',   en: 'Play' },
+    { id: 'shop',   zh: '购物',   en: 'Shopping' },
+    { id: 'exp',    zh: '体验',   en: 'Experiences' },
+    { id: 'travel', zh: '交通',   en: 'Travel' }
   ];
 
-  const ITEMS = [
-    /* ---- 餐饮 ---- */
-    { id: 'coffee', cat: 'food', zh: '手冲咖啡 + 葡挞两件', en: 'Pour-over coffee + 2 egg tarts',
-      value: 90, need: 0, desc: '中场咖啡吧即取，每日一杯', descEn: 'From the floor café, one per day' },
-    { id: 'chacha', cat: 'food', zh: '茶餐厅双人套餐', en: 'Cha chaan teng set for two',
-      value: 260, need: 0, desc: '含饮品两杯，午市或晚市通用', descEn: 'Two drinks included, lunch or dinner' },
-    { id: 'buffet', cat: 'food', zh: '自助晚餐 · 双人', en: 'Buffet dinner for two',
-      value: 900, need: 0, desc: '度假村自助餐厅，需提前一日订位', descEn: 'Resort buffet; book one day ahead' },
-    { id: 'michelin', cat: 'food', zh: '米芝莲星级午市套餐 · 两位', en: 'Michelin-starred lunch for two',
-      value: 1200, need: 0.2, desc: '指定星级餐厅，含餐酒一杯', descEn: 'Selected starred restaurant, one glass of wine' },
-    { id: 'chef', cat: 'food', zh: '名厨主理晚宴 · 两位', en: "Chef's table dinner for two",
-      value: 2600, need: 0.6, desc: '主厨现场解说，八道菜', descEn: 'Eight courses with the chef at the table' },
-    { id: 'roomservice', cat: 'food', zh: '客房送餐双人早餐', en: 'In-room breakfast for two',
-      value: 320, need: 0, desc: '入住期间 06:00–11:00 供应', descEn: 'Served 06:00–11:00 during your stay' },
+  /* id, cat, zh, en, value(MOP), need, desc, descEn */
+  const b = rows => rows.map(r => ({
+    id: r[0], cat: r[1], zh: r[2], en: r[3],
+    value: r[4], need: r[5], desc: r[6], descEn: r[7]
+  }));
 
-    /* ---- 住宿 ---- */
-    { id: 'room', cat: 'hotel', zh: '标准客房 · 一晚含双早', en: 'Standard room · 1 night + breakfast',
-      value: 1800, need: 0, desc: '周日至周四入住，不含节假日', descEn: 'Sun–Thu stays, excludes public holidays' },
-    { id: 'suite', cat: 'hotel', zh: '套房 · 一晚含双早', en: 'Suite · 1 night + breakfast',
-      value: 4200, need: 0.4, desc: '含行政酒廊使用权', descEn: 'Executive lounge access included' },
-    { id: 'twonight', cat: 'hotel', zh: '度假套票 · 两晚含双早', en: 'Getaway package · 2 nights',
-      value: 5600, need: 0.6, desc: '含延迟退房至 16:00', descEn: 'Late checkout to 16:00' },
-    { id: 'villa', cat: 'hotel', zh: '天际别墅 · 一晚', en: 'Sky villa · 1 night',
-      value: 16000, need: 1, desc: '管家服务，专车接送', descEn: 'Butler service and private transfer' },
+  const GROUPS = {
+    sands: { zh: '金沙中国', en: 'Sands China' },
+    galaxy: { zh: '银河娱乐', en: 'Galaxy Entertainment' },
+    wynn: { zh: '永利澳门', en: 'Wynn Macau' },
+    mgm: { zh: '美高梅', en: 'MGM' },
+    melco: { zh: '新濠博亚', en: 'Melco Resorts' },
+    sjm: { zh: '澳娱综合', en: 'SJM Resorts' }
+  };
 
-    /* ---- 表演 ---- */
-    { id: 'cinema', cat: 'show', zh: '电影院双人票', en: 'Cinema tickets for two',
-      value: 220, need: 0, desc: '度假村影院，含爆米花套餐', descEn: 'Resort cinema, popcorn combo included' },
-    { id: 'stage', cat: 'show', zh: '驻场舞台演出 · 两张', en: 'Residency show · 2 tickets',
-      value: 900, need: 0, desc: 'A 区座位，需提前换票', descEn: 'Section A seats, exchange in advance' },
-    { id: 'aqua', cat: 'show', zh: '大型水上汇演 · 贵宾席两张', en: 'Water spectacle · 2 VIP seats',
-      value: 1500, need: 0.4, desc: '贵宾席含迎宾饮品', descEn: 'VIP seats with welcome drinks' },
-    { id: 'concert', cat: 'show', zh: '演唱会包厢 · 四位', en: 'Concert box · 4 seats',
-      value: 9000, need: 0.8, desc: '独立包厢，含餐点与饮品', descEn: 'Private box with food and drinks' },
+  const SOURCES = {
+    sands: [
+      { zh: '金沙中国度假村官网', en: 'Sands Resorts Macao', url: 'https://www.sandsresortsmacau.com/zh-hans' }
+    ],
+    galaxy: [
+      { zh: '银河度假 · 官网', en: 'Galaxy Macau', url: 'https://www.galaxyresorts.com.cn/' },
+      { zh: '银河度假 · 餐饮', en: 'Galaxy dining', url: 'https://www.galaxyresorts.com.cn/dining/' }
+    ],
+    wynn: [
+      { zh: '永利皇宫', en: 'Wynn Palace', url: 'https://www.wynnresortsmacau.com.cn/zh-cn/wynn-palace' },
+      { zh: '永利澳门', en: 'Wynn Macau', url: 'https://www.wynnresortsmacau.com.cn/zh-cn/wynn-macau' }
+    ],
+    mgm: [
+      { zh: '美高梅官网', en: 'MGM Macau', url: 'https://www.mgm.mo/zh-hans' }
+    ],
+    melco: [
+      { zh: '新濠天地', en: 'City of Dreams', url: 'https://www.cityofdreamsmacau.com/sc' },
+      { zh: '新濠影汇', en: 'Studio City', url: 'https://www.studiocity-macau.com/sc' },
+      { zh: '新濠锋', en: 'Altira Macau', url: 'https://www.altiramacau.com/en' }
+    ],
+    sjm: [
+      { zh: '澳娱综合', en: 'SJM Resorts', url: 'https://www.sjmresorts.com/tc' },
+      { zh: '澳门上葡京', en: 'Grand Lisboa Palace', url: 'https://www.grandlisboapalace.com/tc' },
+      { zh: '新葡京', en: 'Grand Lisboa', url: 'https://www.grandlisboa.com/tc' }
+    ]
+  };
 
-    /* ---- 水疗 ---- */
-    { id: 'massage', cat: 'spa', zh: '香薰按摩 · 60 分钟', en: 'Aromatherapy massage · 60 min',
-      value: 780, need: 0, desc: '单人或双人同行均可使用', descEn: 'Valid for one, or two sharing' },
-    { id: 'spa2', cat: 'spa', zh: '双人水疗套餐 · 90 分钟', en: 'Couples spa · 90 min',
-      value: 2300, need: 0.2, desc: '含蒸汽房与轻食', descEn: 'Steam room and light refreshments' },
-    { id: 'hair', cat: 'spa', zh: '沙龙美发造型', en: 'Salon hair styling',
-      value: 480, need: 0, desc: '洗剪吹，需预约', descEn: 'Wash, cut and blow-dry; by appointment' },
+  const CATALOG = {
+    /* ---------------- 金沙中国 · 金沙会 ---------------- */
+    sands: b([
+      ['sands-royal', 'dine', '皇雀印度餐厅 · 双人晚市', 'The Golden Peacock · dinner for two', 1600, 0.6,
+        '威尼斯人，米芝莲一星印度菜，主厨品鉴菜单', 'Venetian, one-Michelin-star Indian tasting menu'],
+      ['sands-portofino', 'dine', '碧涛意国渔乡 · 双人晚餐', 'Portofino · dinner for two', 1200, 0.4,
+        '威尼斯人，意式海鲜与手工意面', 'Venetian, Italian seafood and handmade pasta'],
+      ['sands-lebuffet', 'dine', '巴黎人自助餐 · 双人', 'Le Buffet · buffet for two', 900, 0,
+        '巴黎人，环球自助晚餐，需提前订位', 'Parisian, international buffet; reserve ahead'],
+      ['sands-churchill', 'dine', '丘吉尔餐厅 · 双人下午茶', "Churchill's Table · afternoon tea for two", 680, 0.2,
+        '伦敦人，英式三层下午茶', 'Londoner, three-tier English afternoon tea'],
+      ['sands-crystaljade', 'dine', '翡翠拉面小笼包 · 双人套餐', 'Crystal Jade · set for two', 380, 0,
+        '威尼斯人，沪式点心与拉面', 'Venetian, Shanghai dim sum and noodles'],
+      ['sands-lordstow', 'dine', '安德鲁葡挞 + 咖啡', "Lord Stow's egg tarts + coffee", 120, 0,
+        '威尼斯人，葡挞两件配手冲咖啡', 'Venetian, two tarts with pour-over coffee'],
+      ['sands-foodcourt', 'dine', '大运河购物中心美食广场券', 'Grand Canal Shoppes food court credit', 200, 0,
+        'MOP 200 餐饮券，二十余家档口通用', 'MOP 200 credit across 20+ stalls'],
+      ['sands-goldencourt', 'dine', '金沙阁 · 双人粤菜', 'Golden Court · Cantonese for two', 880, 0.3,
+        '澳门金沙，经典粤菜与点心', 'Sands Macao, classic Cantonese and dim sum'],
 
-    /* ---- 交通 ---- */
-    { id: 'ferry', cat: 'travel', zh: '港澳喷射飞航 · 普通位', en: 'Macau–HK ferry · standard',
-      value: 180, need: 0, desc: '单程，平日适用', descEn: 'One way, weekdays' },
-    { id: 'lounge', cat: 'travel', zh: '机场贵宾休息室 · 两位', en: 'Airport lounge · 2 guests',
-      value: 500, need: 0, desc: '含餐饮与淋浴', descEn: 'Food, drinks and shower' },
-    { id: 'car', cat: 'travel', zh: '跨境轿车接送 · 单程', en: 'Cross-border car · one way',
-      value: 900, need: 0.4, desc: '港澳两地牌，需提前一日预约', descEn: 'Dual-plate car; book one day ahead' },
+      ['sands-venetian-room', 'stay', '威尼斯人 豪华客房 · 一晚', 'Venetian deluxe room · 1 night', 2200, 0,
+        '周日至周四，含双人早餐', 'Sun–Thu, breakfast for two'],
+      ['sands-parisian-room', 'stay', '巴黎人 豪华客房 · 一晚', 'Parisian deluxe room · 1 night', 2000, 0,
+        '周日至周四，含双人早餐', 'Sun–Thu, breakfast for two'],
+      ['sands-londoner-room', 'stay', '伦敦人 豪华客房 · 一晚', 'Londoner deluxe room · 1 night', 2600, 0.2,
+        '含双人早餐与延迟退房', 'Breakfast for two and late checkout'],
+      ['sands-venetian-suite', 'stay', '威尼斯人 套房 · 一晚', 'Venetian suite · 1 night', 4800, 0.5,
+        '含行政酒廊与双人早餐', 'Club lounge and breakfast for two'],
+      ['sands-londoner-suite', 'stay', '伦敦人 套房 · 一晚', 'Londoner suite · 1 night', 6800, 0.65,
+        '含管家服务与专车接送', 'Butler service and private transfer'],
+      ['sands-four-seasons-suite', 'stay', '百利宫 四季 套房 · 一晚', 'Four Seasons suite at Plaza · 1 night', 8800, 0.8,
+        '百利宫，含四季水疗消费额', 'Plaza Macao, with Four Seasons spa credit'],
 
-    /* ---- 零售 ---- */
-    { id: 'tumbler', cat: 'retail', zh: '度假村联名保温杯', en: 'Resort-branded tumbler',
-      value: 260, need: 0, desc: '礼宾部领取，颜色随机', descEn: 'Collect at concierge; colour varies' },
-    { id: 'pastry', cat: 'retail', zh: '中式礼饼礼盒', en: 'Chinese pastry gift box',
-      value: 320, need: 0, desc: '季节限定，售完即止', descEn: 'Seasonal, while stocks last' },
-    { id: 'tote', cat: 'retail', zh: '联名旅行袋', en: 'Collaboration travel tote',
-      value: 620, need: 0.2, desc: '限量款，每人限兑一件', descEn: 'Limited edition, one per member' },
+      ['sands-gondola', 'show', '贡多拉船票 · 两位', 'Gondola ride · two', 300, 0,
+        '威尼斯人，大运河或户外湖', 'Venetian, Grand Canal or outdoor lake'],
+      ['sands-eiffel', 'show', '巴黎铁塔观景台 · 两位', 'Eiffel Tower deck · two', 240, 0,
+        '巴黎人，37 楼观景台', 'Parisian, 37th-floor observation deck'],
+      ['sands-cotai-arena', 'show', '金光综艺馆 演出 · 两张', 'Cotai Arena · 2 tickets', 1200, 0.4,
+        '威尼斯人，演唱会与体育赛事', 'Venetian, concerts and sports events'],
+      ['sands-venetian-theatre', 'show', '威尼斯人剧场 演出 · 两张', 'Venetian Theatre · 2 tickets', 900, 0.3,
+        '威尼斯人，驻场与巡演剧目', 'Venetian, resident and touring shows'],
+      ['sands-londoner-arena', 'show', '伦敦人综艺馆 演出 · 两张', 'Londoner Arena · 2 tickets', 1000, 0.35,
+        '伦敦人，演唱会与盛事', 'Londoner, concerts and events'],
 
-    /* ---- 体验 ---- */
-    { id: 'cooking', cat: 'exp', zh: '厨艺教室 · 双人', en: 'Cooking class for two',
-      value: 1400, need: 0.2, desc: '主厨带教，成品可带走', descEn: 'Taught by a chef; take your dish home' },
-    { id: 'backstage', cat: 'exp', zh: '剧院后台参观 · 两位', en: 'Backstage tour for two',
-      value: 2000, need: 0.6, desc: '演出前导览，可合影', descEn: 'Pre-show tour with photo opportunity' },
-    { id: 'draw', cat: 'exp', zh: '会员专属抽奖券 ×1', en: 'Members draw ticket ×1',
-      value: 100, need: 0, desc: '可重复兑换，每月开奖一次', descEn: 'Repeatable; monthly draw' }
-  ];
+      ['sands-spa', 'spa', '度假村水疗 · 60 分钟', 'Resort spa · 60 min', 880, 0,
+        '威尼斯人／巴黎人／伦敦人任选，香薰按摩', 'Venetian, Parisian or Londoner; aromatherapy'],
+      ['sands-spa-couple', 'spa', '双人水疗套餐 · 90 分钟', 'Couples spa · 90 min', 2300, 0.3,
+        '含蒸汽房与轻食', 'Steam room and light refreshments'],
 
-  /* 回赠率：礼遇价值 ÷ 有效投注 */
+      ['sands-cotai-waterjet', 'travel', '金光飞航 港澳船票', 'Cotai Water Jet ferry', 190, 0,
+        '单程普通位，平日适用', 'One-way standard, weekdays'],
+      ['sands-limo', 'travel', '港澳跨境轿车 · 单程', 'Cross-border car · one way', 900, 0.4,
+        '两地牌，需提前一日预约', 'Dual-plate car; book one day ahead'],
+
+      ['sands-shoppes', 'shop', '大运河购物中心 MOP 300 礼券', 'Grand Canal Shoppes MOP 300 credit', 300, 0,
+        '威尼斯人，三百余家商户通用', 'Venetian, valid at 300+ shops'],
+      ['sands-parisian-shoppes', 'shop', '巴黎人购物中心 MOP 500 礼券', 'Parisian Shoppes MOP 500 credit', 500, 0.2,
+        '巴黎人，时尚与美妆品牌', 'Parisian, fashion and beauty brands'],
+      ['sands-londoner-shoppes', 'shop', '伦敦人购物中心 MOP 800 礼券', 'Londoner Shoppes MOP 800 credit', 800, 0.35,
+        '伦敦人，英伦品牌与免税店', 'Londoner, British brands and duty free'],
+
+      ['sands-member-tour', 'exp', '会员专属导赏 + 纪念品', 'Members tour + gift', 350, 0,
+        '威尼斯人建筑与艺术导赏，赠纪念品', 'Venetian architecture tour with a gift'],
+      ['sands-chef-class', 'exp', '星级厨艺课堂 · 两位', 'Chef class for two', 1400, 0.5,
+        '主厨带教，成品可带走', 'Taught by a chef; take your dish home']
+    ]),
+
+    /* ---------------- 银河娱乐 · 银河优越 ---------------- */
+    galaxy: b([
+      ['gal-bombana', 'dine', '8½ Otto e Mezzo BOMBANA · 双人', '8½ Otto e Mezzo BOMBANA · two', 3200, 0.8,
+        '米芝莲一星意大利餐厅，含餐酒搭配', 'One-star Italian; wine pairing included'],
+      ['gal-laiheen', 'dine', '丽轩 · 双人粤菜', 'Lai Heen · Cantonese for two', 2600, 0.7,
+        '米芝莲一星粤菜，砵酒焗虾球煲', 'One-star Cantonese, prawns in port wine'],
+      ['gal-miyakawa', 'dine', '鮨吉祥 宫川 · 双人板前', 'Sushi Kissho Miyakawa · two', 3600, 0.85,
+        '米芝莲一星，宫川政明日本以外首店', 'One-star; Miyakawa’s first branch outside Japan'],
+      ['gal-shou', 'dine', '承 · 铁板料理 · 双人', 'Teppanyaki Shou · two', 2200, 0.6,
+        '美食与娱乐交融的铁板料理', 'Teppanyaki with a theatrical edge'],
+      ['gal-origin', 'dine', '源 · 公馆 · 双人', 'House of Origin · two', 1200, 0.35,
+        '精致家常菜，一厨一味', 'Refined home-style cooking'],
+      ['gal-chabei', 'dine', 'CHA BEI · 双人下午茶', 'CHA BEI · afternoon tea for two', 480, 0.1,
+        '时尚咖啡馆，甜点与茶饮', 'Design café, pastries and tea'],
+      ['gal-pakloh', 'dine', '百乐潮州 · 双人', 'Pak Loh Chiu Chow · two', 1000, 0.3,
+        '潮州菜，卤水拼盘与杏汁炖猪肺', 'Chiu Chow classics and almond pork-lung soup'],
+      ['gal-beishan', 'dine', '北膳楼 · 双人', 'Bei Shan Lou · two', 800, 0.2,
+        '鲁东北菜，手工面点', 'Northern Chinese, handmade staples'],
+      ['gal-yamazato', 'dine', '山里 · 双人会席', 'Yamazato · kaiseki for two', 1800, 0.55,
+        '日本会席料理，黑珍珠一钻', 'Kaiseki; one Black Pearl diamond'],
+      ['gal-longbar', 'dine', '长廊酒吧 · 双人鸡尾酒', 'Long Bar · cocktails for two', 600, 0.2,
+        '莱佛士全球首家秘密酒吧', 'Raffles’ first secret bar worldwide'],
+      ['gal-hipseng', 'dine', '协成海鲜火锅 · 双人', 'Hip Seng seafood hot pot · two', 1500, 0.4,
+        '海鲜火锅与经典粤菜', 'Seafood hot pot and Cantonese dishes'],
+      ['gal-botanica', 'dine', '绿茵亭 · 双人', 'Botanica · two', 900, 0.25,
+        '嘉佩乐 1 楼，创意环球料理', 'Capella level 1, creative international'],
+      ['gal-cafeparis', 'dine', '蒙特卡洛巴黎咖啡馆 · 双人', 'Café de Paris · two', 500, 0.1,
+        '经典法式与亚洲美食', 'Classic French and Asian dishes'],
+
+      ['gal-hotel-room', 'stay', '银河酒店 豪华客房 · 一晚', 'Galaxy Hotel deluxe room · 1 night', 2400, 0,
+        '含双人早餐与天浪淘园通行', 'Breakfast for two and Grand Resort Deck access'],
+      ['gal-jw-room', 'stay', 'JW万豪 豪华客房 · 一晚', 'JW Marriott deluxe room · 1 night', 2800, 0.2,
+        '含双人早餐与池畔酒吧饮品', 'Breakfast for two and pool bar drinks'],
+      ['gal-okura-room', 'stay', '大仓 豪华客房 · 一晚', 'Hotel Okura deluxe room · 1 night', 2500, 0.15,
+        '日式服务，含双人早餐', 'Japanese service, breakfast for two'],
+      ['gal-andaz-room', 'stay', '安达仕 客房 · 一晚', 'Andaz room · 1 night', 2200, 0,
+        '连接银河国际会议中心与综艺馆', 'Linked to the convention centre and arena'],
+      ['gal-broadway-room', 'stay', '百老汇酒店 客房 · 一晚', 'Broadway Hotel room · 1 night', 1200, 0,
+        '直达百老汇美食街与舞台', 'Direct access to Broadway Food Street'],
+      ['gal-banyan-suite', 'stay', '悦榕庄 套房 · 一晚', 'Banyan Tree suite · 1 night', 5200, 0.5,
+        '全套房，房内悦心池', 'All-suite hotel with private plunge pool'],
+      ['gal-ritz-suite', 'stay', '丽思卡尔顿 套房 · 一晚', 'Ritz-Carlton suite · 1 night', 6800, 0.65,
+        '全套房，含行政酒廊', 'All-suite, club lounge included'],
+      ['gal-raffles-suite', 'stay', '莱佛士 套房 · 一晚', 'Raffles suite · 1 night', 6200, 0.6,
+        '全球最大全套房式莱佛士', 'The world’s largest all-suite Raffles'],
+      ['gal-capella-suite', 'stay', '嘉佩乐 套房 · 一晚', 'Capella suite · 1 night', 8800, 0.8,
+        '95 间别墅及套房，私人管家', '95 villas and suites with butler service'],
+
+      ['gal-wave', 'play', '天浪淘园 全日通 · 两位', 'Grand Resort Deck day pass · two', 936, 0,
+        '全球最大空中冲浪池与空中激流', 'World’s largest rooftop surf pool and lazy river'],
+      ['gal-cinema', 'play', '银河影院 4K 双人票', 'Galaxy Cinema 4K · two', 260, 0,
+        '含爆米花与饮品套餐', 'Popcorn and drinks combo included'],
+      ['gal-arena', 'play', '银河综艺馆 演出 · 两张', 'Galaxy Arena · 2 tickets', 1200, 0.35,
+        '演唱会与大型盛事', 'Concerts and arena events'],
+      ['gal-promenade', 'play', '银河时尚汇 购物礼遇', 'Galaxy Promenade shopping gift', 500, 0.15,
+        '时尚汇指定品牌礼遇', 'Gift with selected Promenade brands'],
+
+      ['gal-banyan-spa', 'spa', '悦榕SPA · 60 分钟', 'Banyan Tree Spa · 60 min', 1100, 0,
+        '泰式古法或香薰按摩', 'Traditional Thai or aromatherapy'],
+      ['gal-ritz-spa', 'spa', '丽思卡尔顿水疗 · 90 分钟', 'Ritz-Carlton Spa · 90 min', 2200, 0.4,
+        '含蒸汽房与休息室', 'Steam room and relaxation lounge'],
+      ['gal-auriga', 'spa', '嘉佩乐 Auriga 水疗 · 90 分钟', 'Auriga Spa at Capella · 90 min', 2500, 0.55,
+        '有机护理，双人同行可升级套房', 'Organic treatments; suite upgrade for two'],
+
+      ['gal-ferry', 'travel', '港澳船票 · 两位', 'Macau–HK ferry · two', 380, 0,
+        '单程普通位，平日适用', 'One-way standard, weekdays'],
+      ['gal-car', 'travel', '跨境轿车 · 单程', 'Cross-border car · one way', 900, 0.4,
+        '两地牌，需提前预约', 'Dual-plate car; book ahead'],
+
+      ['gal-art-tour', 'exp', '高孝午艺术展 导赏 + 工作坊', 'Gao Xiaowu art tour + workshop', 400, 0.2,
+        '银河时尚汇五个主题篇章', 'Five chapters across Galaxy Promenade'],
+      ['gal-dream', 'exp', '梦想彩绘工作坊 · 双人', 'Dream painting workshop · two', 600, 0.3,
+        '艺术展限定，成品可带走', 'Exhibition-only; take your piece home']
+    ]),
+
+    /* ---------------- 永利澳门 · 永利会 ---------------- */
+    wynn: b([
+      ['wyn-cheftam', 'dine', '谭卉 · 双人', "Chef Tam's Seasons · two", 2800, 0.7,
+        '永利皇宫，二十四节气粤菜', 'Wynn Palace, Cantonese by solar terms'],
+      ['wyn-lakeview', 'dine', '永翠宫 · 双人江南菜', 'Lakeview Palace · two', 1800, 0.45,
+        '永利皇宫，新派江南菜', 'Wynn Palace, modern Jiangnan cuisine'],
+      ['wyn-steakhouse', 'dine', '永利扒房 · 双人', 'SW Steakhouse · two', 2200, 0.55,
+        '永利皇宫，黑珍珠一钻扒房', 'Wynn Palace, one Black Pearl diamond'],
+      ['wyn-mizumi', 'dine', '“泓”日本料理 · 双人', 'Mizumi · two', 1600, 0.4,
+        '永利皇宫，备长炭与昆布高汤', 'Wynn Palace, binchotan and kombu dashi'],
+      ['wyn-sushi', 'dine', '鮨泓 · 双人板前', 'Sushi Mizumi · two', 2600, 0.7,
+        '永利皇宫，14 座寿司台', 'Wynn Palace, 14-seat hinoki counter'],
+      ['wyn-fontana', 'dine', '咖啡苑 · 双人自助', 'Fontana · buffet for two', 900, 0.1,
+        '永利皇宫，环球自助与甜点', 'Wynn Palace, international buffet'],
+      ['wyn-palacecafe', 'dine', '皇宫椒好运 · 双人', 'Palace Café · two', 600, 0.1,
+        '永利皇宫，川湘渝辛香菜', 'Wynn Palace, Sichuan–Hunan–Chongqing flavours'],
+      ['wyn-red8p', 'dine', '红8粥面 · 双人', 'Red 8 · two', 400, 0,
+        '永利皇宫，全天候粤式粥面', 'Wynn Palace, all-day Cantonese noodles'],
+      ['wyn-99p', 'dine', '99面 · 双人', '99 Noodles · two', 300, 0,
+        '永利皇宫，西北手工拉面', 'Wynn Palace, hand-pulled noodles'],
+      ['wyn-sweets', 'dine', '甜艺廊 · 双人下午茶', 'Sweets · afternoon tea for two', 380, 0.1,
+        '永利皇宫，法式甜点与雪糕', 'Wynn Palace, pastries and ice cream'],
+      ['wyn-pronto', 'dine', '小意 · 大利 · 双人', 'Pronto · two', 500, 0.1,
+        '永利皇宫，那不勒斯披萨', 'Wynn Palace, Neapolitan pizza'],
+      ['wyn-poolcafe', 'dine', '池畔咖啡厅 · 双人', 'Pool Café · two', 600, 0.15,
+        '永利皇宫，池畔露台轻食', 'Wynn Palace, poolside terrace'],
+      ['wyn-gourmet', 'dine', '馥乐庭 MOP 300 餐饮券', 'Gourmet Pavilion MOP 300 credit', 300, 0,
+        '永利皇宫，亚洲人气美食地标', 'Wynn Palace, Asian food hall'],
+      ['wyn-winglei', 'dine', '永利轩 · 双人粤菜', 'Wing Lei · Cantonese for two', 1800, 0.5,
+        '永利澳门，米芝莲星级粤菜', 'Wynn Macau, Michelin-starred Cantonese'],
+      ['wyn-drunkenfish', 'dine', '九鲲 · 双人海鲜', 'Drunken Fish · two', 2400, 0.65,
+        '永利澳门，表演湖景海鲜', 'Wynn Macau, seafood over the lake'],
+      ['wyn-quente', 'dine', '川香万利 · 双人', "Quente A' Sichuan · two", 700, 0.15,
+        '永利澳门，茂汶花椒与郫县豆瓣', 'Wynn Macau, Sichuan pepper and doubanjiang'],
+      ['wyn-tekka', 'dine', '“彤” · 双人串烧', 'Tekka · two', 800, 0.2,
+        '永利澳门，备长炭串烧与拉面', 'Wynn Macau, binchotan skewers and ramen'],
+      ['wyn-lakeside', 'dine', '湖畔意廊 · 双人', 'Lakeside Trattoria · two', 600, 0.1,
+        '永利澳门，南湾湖景意大利菜', 'Wynn Macau, Italian by Nam Van Lake'],
+      ['wyn-hotpot', 'dine', '朝天门火锅 · 双人', 'Chaotianmen Hotpot · two', 900, 0.2,
+        '永利澳门，非遗牛油锅底', 'Wynn Macau, Chongqing beef-tallow base'],
+      ['wyn-cristal', 'dine', '“炫”酒廊 · 双人', 'Bar Cristal · two', 500, 0.1,
+        '永利澳门，古董水晶吊灯下', 'Wynn Macau, under antique crystal chandeliers'],
+      ['wyn-cinnebar', 'dine', '“霞”酒廊 · 双人', 'Cinnebar · two', 400, 0,
+        '永利澳门，朝啡夕酒', 'Wynn Macau, coffee by day, cocktails by night'],
+
+      ['wyn-palace-room', 'stay', '永利皇宫 皇宫客房 · 一晚', 'Wynn Palace Palace Room · 1 night', 3200, 0,
+        '如意橙／琉璃黄／孔雀蓝三色可选', 'Orange, yellow or peacock-blue palette'],
+      ['wyn-palace-suite', 'stay', '永利皇宫 套房 · 一晚', 'Wynn Palace suite · 1 night', 6800, 0.5,
+        '表演湖景，含双人早餐', 'Performance Lake view, breakfast for two'],
+      ['wyn-macau-suite', 'stay', '永利澳门 一房式套房 · 一晚', 'Wynn Macau one-bedroom suite', 8800, 0.65,
+        '185 平方米，私人理疗室', '185 sqm with private treatment room'],
+      ['wyn-wanli-suite', 'stay', '万利 套房 · 一晚', 'Encore suite · 1 night', 7600, 0.6,
+        '含行政酒廊与专车接送', 'Club lounge and private transfer'],
+
+      ['wyn-skycab', 'show', '观光缆车 · 优先通道两位', 'SkyCab priority · two', 120, 0,
+        '永利皇宫，免费开放，兑换含优先通道', 'Wynn Palace; free entry, priority boarding'],
+      ['wyn-lake', 'show', '表演湖 贵宾观景位 · 两位', 'Performance Lake VIP viewing · two', 200, 0,
+        '永利澳门／永利皇宫，音乐喷泉汇演', 'Wynn Macau / Palace, fountain show'],
+      ['wyn-tree', 'show', '吉祥树 导赏 · 两位', 'Fortune Tree tour · two', 200, 0,
+        '永利澳门，金光吉祥树汇演', 'Wynn Macau, golden Fortune Tree show'],
+      ['wyn-jelly', 'show', '海月水母水族箱 导赏', 'Moon jellyfish aquarium tour', 150, 0,
+        '永利澳门，专业导赏员讲解', 'Wynn Macau, guided walkthrough'],
+      ['wyn-art', 'show', '永利艺术藏品 私人导赏', 'Private art collection tour', 600, 0.2,
+        '永利皇宫，现当代艺术与古董藏品', 'Wynn Palace, modern art and antiques'],
+
+      ['wyn-palace-spa', 'spa', '永利皇宫水疗中心 · 90 分钟', 'Wynn Palace Spa · 90 min', 1800, 0.3,
+        '福布斯五星，含蒸汽与活力池', 'Forbes five-star, steam and vitality pools'],
+      ['wyn-macau-spa', 'spa', '永利澳门水疗中心 · 60 分钟', 'Wynn Macau Spa · 60 min', 1200, 0.15,
+        '香薰按摩或中式推拿', 'Aromatherapy or Chinese tui na'],
+
+      ['wyn-boutique', 'shop', '永利名店 MOP 1,000 礼券', 'Wynn boutiques MOP 1,000 credit', 1000, 0.3,
+        '永利皇宫／永利澳门名店通用', 'Valid at Wynn Palace and Wynn Macau boutiques'],
+
+      ['wyn-supercar', 'exp', '永利臻典梦幻超跑展 导赏', 'Wynn supercar exhibition tour', 300, 0,
+        '年度超跑展，专人讲解', 'Annual supercar show with a guide'],
+      ['wyn-bar50', 'exp', '亚洲 50 最佳酒吧 双人品鉴', 'Asia’s 50 Best Bars tasting for two', 900, 0.35,
+        '永利澳门，调酒师限定酒单', 'Wynn Macau, guest-bartender menu']
+    ]),
+
+    /* ---------------- 美高梅 · 金狮会 ---------------- */
+    mgm: b([
+      ['mgm-aji', 'dine', '雅吉 · 双人', 'Aji · two', 2400, 0.65,
+        '美狮美高梅，米芝莲一星当代亚洲料理', 'MGM Cotai, one-star contemporary Asian'],
+      ['mgm-aba', 'dine', '宝雅座 · 双人法餐', 'Aux Beaux Arts · two', 2200, 0.6,
+        '澳门美高梅，米芝莲星级主厨 Olivier Elzer', 'MGM Macau, Michelin chef Olivier Elzer'],
+      ['mgm-shudao', 'dine', '蜀道 · 双人川菜', 'Five Foot Road · two', 2000, 0.55,
+        '美狮美高梅，米芝莲一星川菜', 'MGM Cotai, one-star Sichuan'],
+      ['mgm-imperial', 'dine', '金殿堂 · 双人粤菜', 'Imperial Court · Cantonese for two', 2200, 0.6,
+        '澳门美高梅，福布斯五星粤菜', 'MGM Macau, Forbes five-star Cantonese'],
+      ['mgm-chun', 'dine', '淳 · 双人粤菜', 'Chun · two', 1200, 0.3,
+        '美狮美高梅，玻璃穹顶下手作点心', 'MGM Cotai, dim sum under the glass dome'],
+      ['mgm-coast', 'dine', '涛岸 · 双人', 'Coast · two', 800, 0.2,
+        '美狮美高梅，澳葡与环球料理', 'MGM Cotai, Macanese and international'],
+      ['mgm-anytime', 'dine', '视博茶点 · 双人下午茶', 'Anytime · afternoon tea for two', 480, 0.1,
+        '美狮美高梅，视博广场中央', 'MGM Cotai, centre of the Spectacle'],
+      ['mgm-patua', 'dine', '百话廊 · 双人鸡尾酒', 'Bar Patuá · cocktails for two', 600, 0.15,
+        '美狮美高梅，澳门记忆主题调酒', 'MGM Cotai, Macau-memory cocktails'],
+      ['mgm-chatterbox', 'dine', '话匣子 · 双人南洋菜', 'Chatterbox Café · two', 500, 0.1,
+        '澳门美高梅，新加坡文华鸡饭', 'MGM Macau, Hainanese chicken rice'],
+      ['mgm-grill58', 'dine', '盛焰 · 双人扒房', 'Grill 58 · two', 1800, 0.45,
+        '美狮美高梅，明火炭烤', 'MGM Cotai, open-flame grill'],
+      ['mgm-sushidan', 'dine', '盛事 · 寿志团 · 双人', 'Rossio Sushidan · two', 1200, 0.3,
+        '澳门美高梅，江户前寿司', 'MGM Macau, Edomae sushi'],
+      ['mgm-enchante', 'dine', '锦绣 · 双人火锅', 'Enchanté · hot pot for two', 900, 0.25,
+        '澳门美高梅，南北火锅姿造', 'MGM Macau, regional hot pot'],
+
+      ['mgm-macau-grand', 'stay', '澳门美高梅 豪华客房 · 一晚', 'MGM Macau Grand Room · 1 night', 2200, 0,
+        '约 590 间客房，含双人早餐', 'About 590 rooms; breakfast for two'],
+      ['mgm-macau-ocean', 'stay', '澳门美高梅 豪华海景客房 · 一晚', 'MGM Macau ocean-view room', 2600, 0.15,
+        '南中国海景，含双人早餐', 'South China Sea view, breakfast for two'],
+      ['mgm-macau-suite', 'stay', '澳门美高梅 金钻套房 · 一晚', 'MGM Macau Grand Deluxe Suite', 5200, 0.5,
+        '独立客厅，含行政礼遇', 'Separate living room with club benefits'],
+      ['mgm-cotai-m', 'stay', '美狮美高梅 美狮客房 · 一晚', 'MGM Cotai M Tower room · 1 night', 2400, 0,
+        '天瑞套房以下房型，含双人早餐', 'Breakfast for two included'],
+      ['mgm-cotai-art', 'stay', '美艺客房 · 一晚', 'Emerald Tower room · 1 night', 2800, 0.2,
+        '红木色调，中式美学', 'Rosewood tones, Chinese aesthetics'],
+      ['mgm-skyloft', 'stay', '天乐阁 · 一晚', 'Skylofts · 1 night', 8800, 0.8,
+        '顶层复式，私人礼宾与云·禅空间', 'Top-floor duplex with private concierge'],
+      ['mgm-villa', 'stay', '御狮别墅 · 一晚', 'Emerald Villa · 1 night', 16000, 0.9,
+        '当代美学别墅，管家服务', 'Contemporary villa with butler service'],
+      ['mgm-yonghua', 'stay', '雍华府 · 一晚', 'Yong Hua Fu villa · 1 night', 22000, 1,
+        '美高梅首间国际酒店别墅，独立门庭', 'MGM’s first international hotel villa'],
+
+      ['mgm-2049', 'show', '《澳门2049》· 两张', 'Macau 2049 · 2 tickets', 1400, 0.3,
+        '张艺谋导演驻场演出，美高梅剧院', 'Zhang Yimou residency at MGM Theater'],
+      ['mgm-theater', 'show', '美高梅剧院 演出 · 两张', 'MGM Theater · 2 tickets', 900, 0.2,
+        '亚洲首个动感高科技剧院', 'Asia’s first dynamic high-tech theatre'],
+      ['mgm-spectacle', 'show', '幻境花园之旅 贵宾席', 'Garden of Wonders VIP seats', 150, 0,
+        '视博广场免费汇演，兑换含饮品', 'Free Spectacle show; drinks included'],
+      ['mgm-grande', 'show', '天幕广场 艺术导赏', 'Grande Praça art tour', 200, 0,
+        '澳门美高梅，欧陆风格天幕', 'MGM Macau, European-style atrium'],
+      ['mgm-museum', 'show', '保利美高梅博物馆 · 双人', 'Poly MGM Museum · two', 300, 0.1,
+        '中西文明与非遗展陈', 'East–West civilisations and intangible heritage'],
+      ['mgm-lion', 'show', '《狮来运转》机械装置 导赏', 'Lion kinetic installation tour', 150, 0,
+        '3,988 块金砖组成的动态矩阵', 'A kinetic matrix of 3,988 gold bricks'],
+      ['mgm-sea', 'show', '空中海洋秀 贵宾席', 'Sea Odyssey VIP seats', 300, 0.1,
+        '视博广场室内 LED 天幕汇演', 'LED dome spectacle at the Spectacle'],
+
+      ['mgm-tria-macau', 'spa', '禅潺水疗（澳门）· 90 分钟', 'Tria Spa MGM Macau · 90 min', 2000, 0.35,
+        '福布斯五星，R3 精准康养', 'Forbes five-star, R3 wellness'],
+      ['mgm-tria-cotai', 'spa', '禅潺水疗（美狮）· 90 分钟', 'Tria Spa MGM Cotai · 90 min', 2000, 0.35,
+        '葡萄牙花园灵感，含活力池', 'Portuguese-garden design with vitality pool'],
+
+      ['mgm-art-gift', 'exp', '藏品探赏 + 限定礼品', 'Collection trail + limited gift', 250, 0,
+        '住客专属打卡任务，前台领取', 'Guest trail; collect at front desk'],
+      ['mgm-private-tour', 'exp', '私人艺术导赏 · 30 分钟', 'Private art tour · 30 min', 600, 0.2,
+        '主席典藏，可预约英语导赏', 'Chairman’s collection; English available'],
+      ['mgm-city', 'exp', '艺游城市光影 · 半日', 'Cinematic city tour · half day', 2800, 0.8,
+        '豪华轿车与导游，三条主题路线', 'Chauffeured car and guide, three routes'],
+      ['mgm-sugar', 'exp', '殿“糖”雕塑艺术特展 导赏', 'Fondant art exhibition tour', 200, 0,
+        '美狮美高梅，限定艺术特展', 'MGM Cotai limited exhibition'],
+
+      ['mgm-retail', 'shop', '美高梅零售商店 MOP 500 礼券', 'MGM retail MOP 500 credit', 500, 0.2,
+        '两家酒店零售商店通用', 'Valid at both hotels’ retail shops'],
+      ['mgm-onecentral', 'shop', '澳门壹号广场 MOP 800 礼券', 'One Central MOP 800 credit', 800, 0.35,
+        '与澳门美高梅相连的名店商场', 'Luxury mall connected to MGM Macau']
+    ]),
+
+    /* ---------------- 新濠博亚 · 新濠皇会 ---------------- */
+    melco: b([
+      ['mel-jade', 'dine', '誉珑轩 · 双人', 'Jade Dragon · two', 4800, 0.9,
+        '新濠天地，米芝莲三星粤菜', 'City of Dreams, three-star Cantonese'],
+      ['mel-yi', 'dine', '天颐 · 双人', 'Yi · two', 2600, 0.7,
+        '摩珀斯 21 楼，二十四节气中餐', 'Morpheus level 21, solar-term Chinese'],
+      ['mel-ducasse', 'dine', '杜卡斯餐厅 · 双人', 'Alain Ducasse · two', 5200, 0.95,
+        '摩珀斯，米芝莲二星法餐', 'Morpheus, two-star French'],
+      ['mel-tasting', 'dine', '御膳扒房 · 双人', 'The Tasting Room · two', 2200, 0.55,
+        '颐居，28 天熟成和牛', 'Nüwa, 28-day aged wagyu'],
+      ['mel-lattitude', 'dine', '风雅厨 · 双人', "L'Attitude · two", 1600, 0.4,
+        '摩珀斯，地中海海鲜', 'Morpheus, Mediterranean seafood'],
+      ['mel-jinying', 'dine', '金映阁 · 双人粤菜', 'Jin Ying · Cantonese for two', 1000, 0.25,
+        '新濠天地，点心与火锅', 'City of Dreams, dim sum and hot pot'],
+      ['mel-mezza9', 'dine', 'mezza9 · 双人自助', 'mezza9 · buffet for two', 1100, 0.25,
+        '君悦，与厨共飨自助晚餐', 'Grand Hyatt, interactive buffet'],
+      ['mel-tapas', 'dine', 'T for Tapas · 双人', 'T for Tapas · two', 600, 0.1,
+        '新濠天地，西班牙小食', 'City of Dreams, Spanish tapas'],
+      ['mel-northern', 'dine', '北方面栈 · 双人', 'Northern Noodle House · two', 300, 0,
+        '新濠天地，手工面食与饺子', 'City of Dreams, noodles and dumplings'],
+      ['mel-lofficiel', 'dine', 'L’OFFICIEL COFFEE · 双人', "L'OFFICIEL COFFEE · two", 260, 0,
+        '新濠天地，法式咖啡与甜点', 'City of Dreams, French coffee and pastries'],
+      ['mel-pearl', 'dine', '玥龙轩 · 双人', 'Pearl Dragon · two', 2000, 0.5,
+        '新濠影汇，米芝莲一星粤菜', 'Studio City, one-star Cantonese'],
+      ['mel-ying', 'dine', 'Ying · 双人粤菜', 'Ying · Cantonese for two', 2200, 0.55,
+        '新濠锋 11 楼，米芝莲一星', 'Altira level 11, one Michelin star'],
+      ['mel-monsoon', 'dine', 'Monsoon · 双人海鲜火锅', 'Monsoon · seafood hot pot for two', 1200, 0.3,
+        '新濠锋，养生海鲜锅', 'Altira, nourishing seafood hot pot'],
+
+      ['mel-morpheus', 'stay', '摩珀斯 客房 · 一晚', 'Morpheus room · 1 night', 4800, 0.5,
+        '扎哈·哈迪德设计，含双人早餐', 'Zaha Hadid design, breakfast for two'],
+      ['mel-nuwa', 'stay', '颐居 客房 · 一晚', 'Nüwa room · 1 night', 2600, 0.15,
+        '东方美学，含双人早餐', 'Eastern aesthetics, breakfast for two'],
+      ['mel-hyatt', 'stay', '君悦 客房 · 一晚', 'Grand Hyatt room · 1 night', 2400, 0,
+        '新濠天地内，含双人早餐', 'Within City of Dreams, breakfast included'],
+      ['mel-epic', 'stay', '映星汇 套房 · 一晚', 'Epic Tower suite · 1 night', 4200, 0.4,
+        '福布斯五星，房内智能管家', 'Forbes five-star with in-room smart butler'],
+      ['mel-star', 'stay', '巨星汇 套房 · 一晚', 'Star Tower suite · 1 night', 3200, 0.3,
+        '600 间套房，含涟水疗礼遇', '600 suites with Zensa Spa benefit'],
+      ['mel-celebrity', 'stay', '明星汇 客房 · 一晚', 'Celebrity Tower room · 1 night', 2000, 0,
+        '电影元素客房，含双人早餐', 'Cinema-themed room, breakfast for two'],
+      ['mel-w', 'stay', '澳门新濠影汇 W 酒店 · 一晚', 'W Macau · 1 night', 3000, 0.25,
+        '557 间客房，WET 泳池', '557 rooms and the WET pool'],
+      ['mel-rem', 'stay', 'REM幻宇 套房 · 一晚', 'REM suite · 1 night', 9800, 0.85,
+        '新濠天地全新奢华酒店', 'City of Dreams’ newest luxury hotel'],
+      ['mel-altira-room', 'stay', '新濠锋 水岸客房 · 一晚', 'Altira Waterfront room · 1 night', 2800, 0.2,
+        '54 平方米，澳门天际线景观', '54 sqm with Macau skyline views'],
+      ['mel-altira-corner', 'stay', '新濠锋 角式套房 · 一晚', 'Altira Corner Suite · 1 night', 5200, 0.5,
+        '88 平方米，转角沙发与餐台', '88 sqm with corner sofa and dining table'],
+      ['mel-altira-villa', 'stay', '新濠锋 别墅 · 一晚', 'Altira Villa · 1 night', 18000, 0.95,
+        '4 栋独立别墅，私密泳池', 'Four private villas with pools'],
+
+      ['mel-dancing', 'show', '水舞间 · 两张', 'House of Dancing Water · 2 tickets', 1600, 0.35,
+        '新濠天地，水上汇演', 'City of Dreams, water spectacle'],
+      ['mel-goldenreel', 'play', '影汇之星 · 两位', 'Golden Reel · two', 200, 0,
+        '全球最高 8 字形摩天轮', 'The world’s highest figure-8 Ferris wheel'],
+      ['mel-waterpark', 'play', '水上乐园 · 两位', 'Water Park · two', 1000, 0.15,
+        '新濠影汇，恒温 30 度室内园区', 'Studio City, 30°C indoor park'],
+      ['mel-superfun', 'play', '满纷乐园 · 两位', 'Super Fun Zone · two', 600, 0.1,
+        '四层室内游乐场，五个主题区', 'Four floors, five themed zones'],
+      ['mel-stardust', 'play', '影汇飞行影院 · 两位', 'Stardust Air Tours · two', 400, 0,
+        '4D 飞行影院，约 15 分钟', '4D flying theatre, about 15 minutes'],
+      ['mel-cinema', 'play', '影汇戏院 杜比 · 两位', 'Studio City Cinema Dolby · two', 260, 0,
+        '杜比全景声与杜比视界', 'Dolby Atmos and Dolby Vision'],
+      ['mel-skate', 'play', '影汇滑板公园 · 两小时', 'Skate Park · two hours', 300, 0,
+        '澳门首个 8 字形双碗池', 'Macau’s first figure-8 double bowl'],
+      ['mel-legend', 'play', '传奇英雄科技城 · 两位', 'Legend Heroes Park · two', 500, 0.1,
+        'VR／AR 与 4D 巨幕，60+ 游戏', 'VR, AR and 4D screen, 60+ games'],
+      ['mel-nick', 'play', '尼克酷玩小镇 · 两位', 'Nickelodeon Town · two', 400, 0,
+        '海绵宝宝与汪汪队主题室内乐园', 'SpongeBob and PAW Patrol indoor park'],
+      ['mel-simgolf', 'play', '汇先室内高尔夫 · 两小时', 'SIM Golf · two hours', 800, 0.15,
+        '4K 仿真器，24 小时自助', '4K simulators, 24-hour self-service'],
+      ['mel-mop', 'play', '蒲点 · 双人卡座', 'Club MOP · booth for two', 1000, 0.25,
+        '户外灯光秀与 DJ 演出', 'Outdoor light show and DJ sets'],
+      ['mel-sky', 'play', '空中跃荟 · 双人晚餐', 'Dinner in the Sky for two', 3800, 0.8,
+        '50 米高空，360 度路氹景观', '50 metres up, 360° Cotai views'],
+
+      ['mel-zensa', 'spa', '涟水疗 · 90 分钟', 'Zensa Spa · 90 min', 1800, 0.3,
+        '新濠影汇，福布斯五星', 'Studio City, Forbes five-star'],
+      ['mel-epic-spa', 'spa', '映星汇水疗 · 90 分钟', 'Epic Tower Spa · 90 min', 1600, 0.25,
+        '喜马拉雅盐墙红外线桑拿', 'Himalayan salt-wall infrared sauna'],
+      ['mel-altira-spa', 'spa', 'Altira Spa · 90 分钟', 'Altira Spa · 90 min', 1900, 0.35,
+        '福布斯五星，海景理疗房', 'Forbes five-star, sea-view suites'],
+      ['mel-away', 'spa', 'AWAY 水疗（W）· 60 分钟', 'AWAY Spa at W · 60 min', 1100, 0.15,
+        'W 酒店，速效护理与理疗房', 'W Macau, express and full treatments'],
+
+      ['mel-curated', 'exp', '尊向限定 明星体验', 'Curated celebrity experience', 2800, 0.7,
+        '娱乐大使全程陪伴，四项门票', 'Personal host plus four attraction tickets'],
+      ['mel-creepy', 'exp', '心寒影汇 · 两位', 'Studio Creepy · two', 700, 0.15,
+        '电影级沉浸式惊悚体验', 'Cinema-grade immersive horror'],
+      ['mel-disney', 'exp', '迪士尼汇聚嘉年华 贵宾通行', 'Disney carnival VIP pass', 300, 0.1,
+        '免费入场，兑换含礼遇与优先体验', 'Free entry; benefits and priority access'],
+      ['mel-beyond', 'exp', '濠友荟 会员礼遇包', 'Melco Beyond welcome pack', 200, 0,
+        '新会员限定礼品与优惠券', 'New-member gifts and coupons']
+    ]),
+
+    /* ---------------- 澳娱综合 · 至尊卡 ---------------- */
+    sjm: b([
+      ['sjm-robuchon', 'dine', '天巢法国餐厅 · 双人', 'Robuchon au Dôme · two', 4800, 0.95,
+        '新葡京 43 楼，米芝莲三星法餐', 'Grand Lisboa level 43, three-star French'],
+      ['sjm-palace-garden', 'dine', '御花园 · 双人', 'Palace Garden · two', 2400, 0.6,
+        '上葡京，米芝莲一星粤菜', 'Grand Lisboa Palace, one-star Cantonese'],
+      ['sjm-donalfonso', 'dine', '当奥丰素1890 · 双人', 'Don Alfonso 1890 · two', 2200, 0.55,
+        'Palazzo Versace，米芝莲一星意菜', 'Palazzo Versace, one-star Italian'],
+      ['sjm-zuicho', 'dine', '瑞兆 · 双人割烹', 'Zuicho · kappo for two', 1800, 0.45,
+        'THE KARL LAGERFELD，日式割烹', 'THE KARL LAGERFELD, Japanese kappo'],
+      ['sjm-mesa', 'dine', '味赏 · 双人葡国菜', 'Mesa · Portuguese for two', 1200, 0.3,
+        'THE KARL LAGERFELD，新派葡国菜', 'THE KARL LAGERFELD, modern Portuguese'],
+      ['sjm-buffet', 'dine', '自助山 · 双人自助', 'The Grand Buffet · two', 1000, 0.25,
+        '上葡京，环球自助', 'Grand Lisboa Palace, international buffet'],
+      ['sjm-hua-ting', 'dine', '华亭 · 双人沪菜', 'Hua Ting · two', 900, 0.2,
+        '上葡京，怀旧沪菜', 'Grand Lisboa Palace, nostalgic Shanghainese'],
+      ['sjm-teahouse', 'dine', '茶楼 · 双人饮茶', 'Tea House · dim sum for two', 500, 0.1,
+        '上葡京，一盅两件', 'Grand Lisboa Palace, Cantonese tea service'],
+      ['sjm-the8', 'dine', '8餐厅 · 双人粤菜', 'The Eight · Cantonese for two', 3600, 0.8,
+        '新葡京，米芝莲三星粤菜', 'Grand Lisboa, three-star Cantonese'],
+      ['sjm-diamond', 'dine', '帝影楼 · 双人', 'Diamond Hill · two', 1800, 0.45,
+        '新葡京，精致粤菜与点心', 'Grand Lisboa, refined Cantonese'],
+
+      ['sjm-glp-room', 'stay', '澳门上葡京 豪华客房 · 一晚', 'Grand Lisboa Palace room · 1 night', 2400, 0,
+        '含双人早餐与度假村泳池', 'Breakfast for two and resort pool'],
+      ['sjm-kl-room', 'stay', 'THE KARL LAGERFELD 客房 · 一晚', 'THE KARL LAGERFELD room · 1 night', 3200, 0.25,
+        '老佛爷亲自操刀设计', 'Designed by Karl Lagerfeld'],
+      ['sjm-versace-room', 'stay', 'Palazzo Versace 客房 · 一晚', 'Palazzo Versace room · 1 night', 3000, 0.2,
+        '范思哲宫殿风格，含双人早餐', 'Versace palazzo style, breakfast for two'],
+      ['sjm-glp-suite', 'stay', '上葡京 套房 · 一晚', 'Grand Lisboa Palace suite · 1 night', 5600, 0.55,
+        '独立客厅，含行政礼遇', 'Separate living room with club benefits'],
+      ['sjm-kl-suite', 'stay', 'KARL LAGERFELD 套房 · 一晚', 'KARL LAGERFELD suite · 1 night', 6800, 0.65,
+        '老佛爷主题套房，管家服务', 'Designer suite with butler service'],
+      ['sjm-versace-suite', 'stay', 'Versace 套房 · 一晚', 'Versace suite · 1 night', 7200, 0.7,
+        '范思哲订制家具与备品', 'Versace furnishings and amenities'],
+      ['sjm-glisboa-room', 'stay', '新葡京 豪华客房 · 一晚', 'Grand Lisboa room · 1 night', 2200, 0,
+        '澳门半岛核心，含双人早餐', 'Macau peninsula, breakfast for two'],
+      ['sjm-glisboa-suite', 'stay', '新葡京 套房 · 一晚', 'Grand Lisboa suite · 1 night', 4800, 0.5,
+        '含行政酒廊与延迟退房', 'Club lounge and late checkout'],
+      ['sjm-larc-room', 'stay', '凯旋门 客房 · 一晚', 'L’Arc room · 1 night', 1600, 0,
+        '含双人早餐', 'Breakfast for two'],
+
+      ['sjm-glp-spa', 'spa', '上葡京水疗中心 · 90 分钟', 'Grand Lisboa Palace Spa · 90 min', 1600, 0.25,
+        '含蒸汽与活力池', 'Steam room and vitality pool'],
+      ['sjm-glisboa-spa', 'spa', '新葡京水疗中心 · 60 分钟', 'Grand Lisboa Spa · 60 min', 1100, 0.15,
+        '香薰按摩或中式推拿', 'Aromatherapy or Chinese tui na'],
+
+      ['sjm-chef-collab', 'exp', '星厨联乘 寻味之旅 · 两位', 'Star chef collaboration · two', 2800, 0.7,
+        '米芝莲星厨四手联乘晚宴', 'Michelin chefs’ four-hands dinner'],
+      ['sjm-truffle', 'exp', '白松露慈善拍卖晚宴 · 两位', 'White truffle charity dinner · two', 6000, 1,
+        '全球阿尔巴白松露拍卖盛会', 'World Alba white truffle auction'],
+      ['sjm-whisky', 'exp', 'Whisky Live 品鉴 · 两位', 'Whisky Live tasting · two', 800, 0.2,
+        '上葡京，国际威士忌盛事', 'Grand Lisboa Palace, whisky showcase'],
+      ['sjm-gp', 'exp', '格兰披治精彩假期 套票', 'Grand Prix getaway package', 1500, 0.35,
+        '东望洋赛道观赛体验', 'Guia Circuit race experience'],
+      ['sjm-explore', 'exp', 'SJM Explore 社区探索 导赏', 'SJM Explore community tour', 300, 0.1,
+        '社区小店与本地风味路线', 'Local shops and neighbourhood flavours'],
+      ['sjm-banquet', 'exp', '宴会巡礼 场地导赏', 'Grand events venue tour', 500, 0.2,
+        '庆典场地与宴会服务体验', 'Celebration venues and banquet service'],
+
+      ['sjm-glp-shoppes', 'shop', '上葡京购物中心 MOP 1,000 礼券', 'Grand Lisboa Palace shops MOP 1,000', 1000, 0.3,
+        '上葡京，名店与免税店', 'Grand Lisboa Palace boutiques and duty free'],
+      ['sjm-lisboa-shoppes', 'shop', '新葡京名店 MOP 800 礼券', 'Grand Lisboa boutiques MOP 800', 800, 0.25,
+        '新葡京，珠宝与腕表', 'Grand Lisboa, jewellery and watches'],
+
+      ['sjm-ferry', 'travel', '港澳船票 · 两位', 'Macau–HK ferry · two', 380, 0,
+        '单程普通位，平日适用', 'One-way standard, weekdays'],
+      ['sjm-car', 'travel', '跨境轿车 · 单程', 'Cross-border car · one way', 900, 0.4,
+        '两地牌，需提前预约', 'Dual-plate car; book ahead']
+    ])
+  };
+
   const RETURN_RATE = 0.015;
+
+  function itemsOf(progId) { return CATALOG[progId] || []; }
 
   function priceOf(item, prog) {
     const per = (prog && prog.mopPerPoint) || 1000;
     return Math.max(1, Math.round(item.value / (per * RETURN_RATE)));
   }
 
-  window.BJ_MALL = { CATS, ITEMS, RETURN_RATE, priceOf };
+  window.BJ_MALL = { CATS, GROUPS, SOURCES, CATALOG, RETURN_RATE, itemsOf, priceOf };
 })();

@@ -10,6 +10,7 @@
 .mallhead h2{font-family:"Noto Serif SC",serif;font-size:clamp(22px,2.6vw,30px);font-weight:500;
   color:#18201C;margin:9px 0 7px;letter-spacing:-.01em}
 .mallsub{font-size:12.5px;color:#5C655F;line-height:1.75;margin:0;max-width:660px}
+.mallgroup{font-size:11px;letter-spacing:.5px;color:#9A7C1A;margin:9px 0 0}
 .mallbal{text-align:right;flex:0 0 auto;min-width:150px}
 .mallbal small{display:block;font-size:9.5px;letter-spacing:1.6px;color:#8A8272}
 .mallbal b{font-family:"Inter",monospace;font-size:29px;color:#0C3A28;line-height:1.1;font-weight:600}
@@ -54,6 +55,13 @@
 .mo-row small{color:#9A7C1A;font-family:"Inter",monospace;font-size:9.5px}
 .mo-row i{font-style:normal;font-size:9.5px;color:#A79F8C;margin-left:6px}
 .mo-empty{font-size:11px;color:#A79F8C;margin:0}
+
+.mallsrc{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-top:15px;padding:9px 12px;
+  border:1px dashed #E2DACA;border-radius:10px;background:#FDFBF4;font-size:10.5px;color:#8A8272}
+.mallsrc span{letter-spacing:1.3px;color:#9A7C1A}
+.mallsrc a{color:#0C3A28;text-decoration:none;border-bottom:1px solid #D9C98F;padding-bottom:1px}
+.mallsrc a:hover{color:#9A7C1A;border-color:#C9A227}
+.mallsrc em{font-style:normal;color:#A79F8C}
 
 /* ---------- 牌桌页里的入口卡 ---------- */
 .mallentry{display:flex;align-items:center;justify-content:space-between;gap:12px;
