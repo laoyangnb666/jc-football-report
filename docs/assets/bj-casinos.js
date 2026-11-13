@@ -127,30 +127,35 @@
   }
 
   function rooms(casino, group, list, notes) {
-    return list.map(k => mkRoom(casino, group, k, { note: (notes && notes[k]) || '' }));
+    const vipTiers = (programs[group] && programs[group].vip && programs[group].vip.tiers) || null;
+    const maxCard = vipTiers ? vipTiers.length : 4;
+    return list.map(k => {
+      const r = mkRoom(casino, group, k, { note: (notes && notes[k]) || '' });
+      /* 官方卡系没有更高的贵宾档时，最高档卡直接开到该场最高厅，避免出现永远进不去的房 */
+      if (r.need > maxCard) r.need = maxCard;
+      return r;
+    });
   }
 
   /* ---------------- 会员体系（档位取自各场官方会籍页） ---------------- */
   const programs = {
     sands: {
       name: '金沙会', brand: 'Sands Rewards', mopPerPoint: 5000,
-      conversion: '官方档位：金卡 → 红宝卡 Ⅰ/Ⅱ/Ⅲ → 钻石卡 Ⅰ/Ⅱ/Ⅲ → 御匾白金/钻石/主席卡；积分约 5,000 MOP = 1 分',
+      conversion: '官方 10 档：金卡 / 红宝卡Ⅰ-Ⅲ / 钻石卡Ⅰ-Ⅲ / 御匾白金·钻石·主席卡；后三档为贵宾卡。积分门槛官方未公布，红宝/钻石为模拟估算（约 5,000 MOP = 1 分）',
       tiers: [
         ['金卡', 0],
         ['红宝卡Ⅰ', 888], ['红宝卡Ⅱ', 2888], ['红宝卡Ⅲ', 6888],
-        ['钻石卡Ⅰ', 8888], ['钻石卡Ⅱ', 18888], ['钻石卡Ⅲ', 38888],
-        ['御匾白金卡', 88888], ['御匾钻石卡', 188888], ['御匾主席卡', 388888]
+        ['钻石卡Ⅰ', 8888], ['钻石卡Ⅱ', 18888], ['钻石卡Ⅲ', 38888]
       ],
-      tiersNote: '档位名称取自金沙会官方权益页；除公开档位序列外，升级积分为线性模拟值',
-      tiersKnown: true,
+      tiersNote: '档位名称取自金沙会官方权益页；御匾三档归入贵宾卡体系，不重复计入会员卡',
+      tiersKnown: false,
       vip: {
-        name: 'Paiza',
-        note: '中场积分与 Paiza 贵宾厅是两套体系',
+        name: '御匾会（Paiza）',
+        note: '御匾白金 / 钻石 / 主席卡就是金沙会官方 10 档的贵宾档，凭卡进入 Paiza 厅；审批准入门槛为模拟值（官方未公布）',
         tiers: [
-          { name: 'Paiza Platinum（基础贵宾）', card: 1, turnover: 12000000, maxBet: 20000, days: 12 },
-          { name: 'Paiza Private（私人厅）', card: 2, turnover: 30000000, maxBet: 50000, days: 18 },
-          { name: 'Paiza Chairman（主席厅）', card: 3, turnover: 70000000, maxBet: 120000, days: 26 },
-          { name: 'Paiza Sovereign（御匾 · 超级贵宾）', card: 4, turnover: 160000000, maxBet: 300000, days: 34, top: true }
+          { name: '御匾白金卡', card: 1, turnover: 12000000, maxBet: 20000, days: 12 },
+          { name: '御匾钻石卡', card: 2, turnover: 30000000, maxBet: 50000, days: 18 },
+          { name: '御匾主席卡', card: 3, turnover: 70000000, maxBet: 120000, days: 26, top: true }
         ]
       }
     },
@@ -173,18 +178,21 @@
     },
     melco: {
       name: '新濠皇会', brand: 'Melco Club', mopPerPoint: 400,
-      conversion: '官方：白金 +80 分、钻石 +2,800 分、红玺 +18,000 分；21 点约 400 MOP = 1 分',
-      tiers: [['黄金卡', 0], ['白金卡', 80], ['钻石卡', 2880], ['红玺卡', 20880], ['龙玺卡', 80000], ['天皇卡', 200000]],
-      tiersNote: '黄金卡免费登记；白金/钻石/红玺为官方门槛；龙玺、天皇为邀请制，此处按线性积分模拟',
+      conversion: '官方：白金 +80 分、钻石 +2,800 分、红玺 +18,000 分；龙玺/天皇仅限邀请。21 点约 400 MOP = 1 分',
+      tiers: [
+        ['黄金卡', 0],
+        ['白金卡', 80],
+        ['钻石卡', 2800]
+      ],
+      tiersNote: '黄金卡免费登记；白金/钻石为官方积分门槛；红玺、龙玺、天皇归入贵宾卡体系',
       tiersKnown: true,
       vip: {
-        name: '皇玺会',
-        note: '21 点贵宾归属皇玺会，与新濠皇会中场积分相互独立',
+        name: '皇玺会（红玺 / 龙玺 / 天皇）',
+        note: '红玺 18,000 分起（约 720 万投注换算），龙玺与天皇仅限邀请；皇玺专区、私人博彩区凭卡进入',
         tiers: [
-          { name: '皇玺会（基础贵宾）', card: 1, turnover: 10000000, maxBet: 15000, days: 10 },
-          { name: '皇玺会私享（私人厅）', card: 2, turnover: 28000000, maxBet: 48000, days: 18 },
-          { name: '皇玺会主席（主席厅）', card: 3, turnover: 65000000, maxBet: 115000, days: 26 },
-          { name: '皇玺会臻尊（超级贵宾）', card: 4, turnover: 155000000, maxBet: 290000, days: 34, top: true }
+          { name: '红玺卡', card: 1, turnover: 7200000, maxBet: 15000, days: 10 },
+          { name: '龙玺卡（邀请）', card: 2, turnover: 40000000, maxBet: 60000, days: 20 },
+          { name: '天皇卡（邀请）', card: 3, turnover: 80000000, maxBet: 150000, days: 30, top: true }
         ]
       }
     },
@@ -223,18 +231,16 @@
       }
     },
     sjm: {
-      name: '澳娱综合至尊卡', brand: 'SJM Supreme Card', mopPerPoint: 1000,
-      conversion: '官方按过去 12 个月累计净消费计级：翡翠免费 / 黄金 5 万 / 白金 15 万 / 钻石 30 万 MOP；此处 1 分 = 1,000 MOP',
-      tiers: [['翡翠', 0], ['黄金', 50], ['白金', 150], ['钻石', 300]],
-      tiersNote: '门槛为官方累计净消费额（MOP 50,000 / 150,000 / 300,000）折算',
+      name: '澳娱综合至尊卡', brand: 'SJM Supreme Card', mopPerPoint: 1,
+      conversion: '官方按过去 12 个月指定商户净消费计级：翡翠免费 / 黄金 5 万 / 白金 15 万 / 钻石 30 万 MOP；模拟以有效投注 1:1 近似',
+      tiers: [['翡翠', 0], ['黄金', 50000], ['白金', 150000], ['钻石', 300000]],
+      tiersNote: '门槛为官方累计净消费额（MOP）；模拟用有效投注近似消费额',
       tiersKnown: true,
       vip: {
-        name: '至尊贵宾',
+        name: '至尊钻石贵宾',
+        note: '至尊卡最高档钻石卡即贵宾凭证，凭卡进入贵宾厅与包厅；准入按投注模拟（官方仅公布消费级）',
         tiers: [
-          { name: '至尊贵宾（基础）', card: 1, turnover: 8000000, maxBet: 10000, days: 8 },
-          { name: '至尊私人（私人厅）', card: 2, turnover: 22000000, maxBet: 40000, days: 16 },
-          { name: '至尊主席（主席厅）', card: 3, turnover: 55000000, maxBet: 100000, days: 24 },
-          { name: '至尊御尊（超级贵宾）', card: 4, turnover: 140000000, maxBet: 260000, days: 32, top: true }
+          { name: '至尊钻石卡', card: 1, turnover: 8000000, maxBet: 30000, days: 18, top: true }
         ]
       }
     }

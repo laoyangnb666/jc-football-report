@@ -1253,6 +1253,15 @@ const BJ = (() => {
   const CARD_NAMES = ['', '基础贵宾卡', '私人贵宾卡', '主席卡', '超级贵宾卡'];
   const CARD_NAMES_EN = ['', 'basic VIP card', 'private VIP card', 'Chairman card', 'Super VIP card'];
   const needName = n => n ? (EN ? CARD_NAMES_EN[n] : CARD_NAMES[n]) : '';
+  /* 房间提示优先用当前卡系的官方贵宾档名（如御匾主席卡 / 天皇卡 / 至尊钻石卡） */
+  function needLabel(n){
+    const t = ((PROGRAMS[curCasino().prog].vip || {}).tiers || []).find(x => (x.card || 1) === n);
+    return t ? t.name : needName(n);
+  }
+  /* 当前场馆最高厅的门槛：官方档位少时 rooms() 已把 need 钳到最高档 */
+  function maxRoomNeed(){
+    return Math.max(0, ...curCasino().rooms.map(roomNeed));
+  }
   function roomOpen(casinoIdx, roomIdx){
     if (cfg.unlock) return true;          // 体验模式：全部厅房开放，仅用于查看不同台规
     const c = CASINOS[casinoIdx];
@@ -1292,7 +1301,12 @@ const BJ = (() => {
     };
     return MEM[progId];
   }
-  const mem = () => memOf(curCasino().prog);
+  const mem = () => {
+    const m = memOf(curCasino().prog);
+    const maxCard = ((PROGRAMS[curCasino().prog].vip || {}).tiers || []).length || 4;
+    if (m.card > maxCard) m.card = maxCard;   // 官方档位减少时，旧档位向下归位
+    return m;
+  };
   function persistWallet(){
     if (!window.BJWallet) return;
     WALLET.venue = cfg.venue;
@@ -1682,7 +1696,7 @@ const BJ = (() => {
       if (t.pct == null) lines.push(`${t.next ? '下一档 ' + t.next + '：' : ''}${prog.tiersNote}`);
       else lines.push(`距${t.next}还差 ${t.need} 分（${prog.tiersNote}）`);
       lines.push(tierLadder(prog, ' · '));
-      lines.push(`贵宾厅：${m.card >= 1 ? '已持卡，可入场' : '需基础贵宾卡'} · 私人厅/主席厅：${m.card >= 2 ? `已持${needName(m.card)}，可入场` : '需私人贵宾卡'}`);
+      lines.push(`入场权限：${m.card >= maxRoomNeed() ? '本场全部厅房已开放' : '最高厅需' + needLabel(maxRoomNeed()) + '，尚未取得'} · 贵宾厅${m.card >= 1 ? '可进' : '锁定'}`);
       }
       el.ptsNote.textContent = lines.join('\n');
     }
@@ -1695,8 +1709,8 @@ const BJ = (() => {
           <div class="apply-top"><b>${EN ? 'Next: ' : '下一档：'}${cp.next}</b><span>${Math.round(cp.pct * 100)}%</span></div>
           <div class="apply-bars"><div><span>${EN ? 'Points' : '积分'}</span><i style="width:${(cp.pct * 100).toFixed(0)}%"></i><b>${Math.round(m.points).toLocaleString()} / ${(cp.needPts || 0).toLocaleString()}</b></div></div>
           <div class="room-rule">${EN
-            ? 'Mid-floor tiers upgrade automatically once points are reached.'
-            : '中场卡按积分自动升级，无需申请；贵宾卡需在下方「贵宾候选评估」提交申请。'}</div>`;
+            ? 'Membership tiers upgrade automatically once points are reached.'
+            : '会员卡按积分自动升级，无需申请；官方贵宾档（御匾 / 红玺 / 至尊钻石等）需在下方「贵宾候选评估」提交申请。'}</div>`;
       }
     }
   }
@@ -1714,7 +1728,7 @@ const BJ = (() => {
   };
   /* 官方图原始尺寸：写进 img 的 width/height，换档时高度不会塌成 0 */
   const ART_DIM = {
-    sands: [480, 304],
+    sands: [496, 314],
     sjm: [620, 395],
     melco: [360, 560],
     galaxy: [720, 480],
@@ -1729,7 +1743,15 @@ const BJ = (() => {
     if (!list || idx < 0 || idx >= list.length) return null;
     return 'assets/cards/' + list[idx] + '.webp';
   }
-  function vipArtOf(card){
+  /* 贵宾卡：优先用各公司官方卡面；没有官方图的用 AI 卡面 */
+  const VIP_ART = {
+    sands: ['sands_apex', 'sands_apex', 'sands_apex'],       // 御匾白金/钻石/主席共用官方御匾卡面
+    melco: ['melco_ruby', 'melco_dragon', 'melco_emperor'], // 红玺 / 龙玺 / 天皇
+    sjm: ['sjm_diamond']                                     // 至尊钻石
+  };
+  function vipArtOf(progId, card){
+    const list = VIP_ART[progId];
+    if (list && card >= 1 && card <= list.length) return 'assets/cards/' + list[card - 1] + '.webp';
     return card >= 1 && card <= 4 ? 'assets/cards/vip' + card + '.webp' : null;
   }
   /* 进场时把本卡系的官方图全部预载，升档换图时不用等网络，也就不会出现空白窗口 */
@@ -1742,6 +1764,11 @@ const BJ = (() => {
         ART_PRELOADED[progId] = 1;
         list.forEach(n => { const im = new Image(); im.src = 'assets/cards/' + n + '.webp'; });
       }
+    }
+    const vlist = VIP_ART[progId];
+    if (vlist && !ART_PRELOADED['vip-' + progId]){
+      ART_PRELOADED['vip-' + progId] = 1;
+      vlist.forEach(n => { const im = new Image(); im.src = 'assets/cards/' + n + '.webp'; });
     }
     if (!ART_PRELOADED.__vip){
       ART_PRELOADED.__vip = 1;
@@ -1769,8 +1796,8 @@ const BJ = (() => {
       pipsTotal = (vip.tiers || []).length || 4;
       pipsOn = m.card;
       note = EN
-        ? `VIP card held — every room up to this level is open. Mid-floor card (${T(t.tier)}) is tracked separately.`
-        : `贵宾卡已持有，该档及以下厅房全部开放；中场卡（${t.tier}）另行累计。`;
+        ? `VIP card held — every room up to this level is open. Membership card (${T(t.tier)}) is tracked separately.`
+        : `贵宾卡已持有，该档及以下厅房全部开放；会员卡（${t.tier}）另行累计。`;
     } else {
       /* 卡面配色按各场官方档位语义映射：金 / 红宝 / 钻石 / 白金 / 御匾 / 翡翠 */
       const SKIN = {
@@ -1783,7 +1810,7 @@ const BJ = (() => {
       };
       const skin = (SKIN[v.prog] || [])[t.idx];
       cls = 'm' + (skin || Math.min(11, t.idx + 1));
-      typeLabel = EN ? 'Mid-floor card' : '中场卡';
+      typeLabel = EN ? 'Membership card' : '会员卡';
       tierName = T(t.tier);
       sub = prog.brand;
       pipsTotal = Math.min(10, (prog.tiers || []).length);
@@ -1791,8 +1818,8 @@ const BJ = (() => {
       note = t.next
         ? (EN ? `${fmt(t.need)} pts to ${T(t.next)} · VIP rooms need a separate VIP card`
               : `距${t.next}还差 ${t.need} 分 · 贵宾厅需另申请贵宾卡`)
-        : (EN ? 'Top mid-floor tier · VIP rooms need a separate VIP card'
-              : '中场卡已到顶 · 贵宾厅需另申请贵宾卡');
+        : (EN ? 'Top membership tier · official VIP tiers need a separate application'
+              : '会员卡已到顶 · 官方贵宾档需另行申请');
     }
 
     const pips = Array.from({ length: pipsTotal }, (_, i) =>
@@ -1822,8 +1849,8 @@ const BJ = (() => {
       if (el.mcHint) el.mcHint.textContent = EN ? 'Drawn face' : '自绘卡面';
     };
 
-    const art = (m.card >= 1 ? vipArtOf(m.card) : cardArtOf(v.prog, t.idx));
-    const artKind = (m.card >= 1 || ART_GEN.has(v.prog)) ? 'gen' : 'official';
+    const art = (m.card >= 1 ? vipArtOf(v.prog, m.card) : cardArtOf(v.prog, t.idx));
+    const artKind = (m.card >= 1 ? !!VIP_ART[v.prog] : !ART_GEN.has(v.prog)) ? 'official' : 'gen';
     const hintFor = () => artKind === 'gen'
       ? (EN ? 'AI card art' : 'AI 卡面')
       : (EN ? 'Official card art' : '官方卡面');
@@ -1837,8 +1864,8 @@ const BJ = (() => {
         if (capP) capP.innerHTML = pips;
         if (el.mcHint) el.mcHint.textContent = hintFor();
       } else {
-        const dim = ART_DIM[m.card >= 1 ? 'vip' : v.prog] || [720, 454];
-        el.mcCard.className = 'mcard art' + (v.prog === 'melco' && m.card < 1 ? ' portrait' : '');
+        const dim = ART_DIM[m.card >= 1 ? (VIP_ART[v.prog] ? v.prog : 'vip') : v.prog] || [720, 454];
+        el.mcCard.className = 'mcard art' + (v.prog === 'melco' ? ' portrait' : '');
         el.mcCard.dataset.art = art;
         el.mcCard.innerHTML =
           `<img class="mc-art" src="${art}" width="${dim[0]}" height="${dim[1]}"
@@ -1872,18 +1899,22 @@ const BJ = (() => {
     }, vip);
 
     el.vipName.textContent = vip.name;
-    const badge = m.card ? (EN ? `Held · ${needName(m.card)}` : `已持卡 · ${needName(m.card)}`)
-      : (EN ? ['Not qualified yet', 'Qualified · basic pool', 'Qualified · top pool']
-            : ['暂不达标', '已达门槛 · 基础候选', '已达门槛 · 顶层候选'])[res.metLevel];
+    const heldTier = (vip.tiers || []).find(t => (t.card || 1) === m.card) || vip.tiers[0];
+    const heldName = heldTier ? heldTier.name : needName(m.card);
+    const badgeTexts = EN
+      ? ['Not qualified yet', 'Qualified · tier 1', 'Qualified · tier 2', 'Qualified · top tier', 'Qualified · super tier']
+      : ['暂不达标', '已达门槛 · 基础候选', '已达门槛 · 进阶候选', '已达门槛 · 顶层候选', '已达门槛 · 超级候选'];
+    const badge = m.card ? (EN ? `Held · ${heldName}` : `已持卡 · ${heldName}`)
+      : badgeTexts[Math.min(res.metLevel, 4)];
     el.vipStatus.innerHTML = `<span class="vip-badge lv${res.metLevel}">${badge}</span>
       <span class="vip-hint">${
         EN
-          ? (m.card ? `VIP card held (${needName(m.card)}) — rooms at that level stay open`
+          ? (m.card ? `VIP card held (${heldName}) — rooms at that level stay open`
               : res.metLevel === 0 ? 'Below all VIP thresholds — keep building turnover, max bet and visit days'
-              : `All three thresholds met${res.metLevel === 2 ? ' (top tier)' : ''}; submit the application below to have the card issued${res.burst ? '; turnover is concentrated in a short window, so review may take longer' : ''}`)
-          : (m.card ? `已持${needName(m.card)}，对应厅房长期开放`
+              : `All three thresholds met${res.metLevel >= 2 ? ' (top tier)' : ''}; submit the application below to have the card issued${res.burst ? '; turnover is concentrated in a short window, so review may take longer' : ''}`)
+          : (m.card ? `已持${heldName}，对应厅房长期开放`
               : res.metLevel === 0 ? '三维门槛未达，继续积累有效投注 / 单次最大投注 / 到访天数'
-              : `三项门槛已达${res.metLevel === 2 ? '（顶层）' : ''}，在下方提交申请即可获批发卡${res.burst ? '；流水集中在短期，人工复核会更慢' : ''}`)
+              : `三项门槛已达${res.metLevel >= 2 ? '（高层）' : ''}，在下方提交申请即可获批发卡${res.burst ? '；流水集中在短期，人工复核会更慢' : ''}`)
       }</span>`;
 
     /* 已获批的卡：一旦到手就保留，不随换台或后续投注不足而收回 */
@@ -1930,11 +1961,11 @@ const BJ = (() => {
       : `稳定性正常（连续 7 局窗口占 ${(res.share * 100).toFixed(0)}%）`);
     const tierNow = CORE.tierOf(m.points, prog);
     parts.push(EN
-      ? `Mid-floor card: ${prog.name} ${tierNow.tier} (separate system from VIP cards)`
-      : `中场卡：${prog.name} ${tierNow.tier}（与贵宾卡是两套体系）`);
+      ? `Membership card: ${prog.name} ${tierNow.tier} (mass tiers; official VIP tiers are separate)`
+      : `会员卡：${prog.name} ${tierNow.tier}（大众档位；官方高档次御匾/红玺/至尊钻石等另列贵宾卡）`);
     parts.push(EN
-      ? `Access: VIP room ${m.card >= 1 ? 'open' : 'locked'} · private/chairman room ${m.card >= 2 ? 'open' : 'locked'}. Cards are issued only after you apply with qualifying play`
-      : `入场权限：贵宾厅${m.card >= 1 ? '可进' : '锁定'} · 私人厅/主席厅${m.card >= 2 ? '可进' : '锁定'}；${vip.note ? vip.note + '；' : ''}贵宾卡需三维达标后主动申请获批，不随选厅直接发放`);
+      ? `Access: VIP room ${m.card >= 1 ? 'open' : 'locked'} · highest room here (${needLabel(maxRoomNeed())}) ${m.card >= maxRoomNeed() ? 'open' : 'locked'}. Cards are issued only after you apply with qualifying play`
+      : `入场权限：贵宾厅${m.card >= 1 ? '可进' : '锁定'} · 本场最高厅（${needLabel(maxRoomNeed())}）${m.card >= maxRoomNeed() ? '可进' : '锁定'}；${vip.note ? vip.note + '；' : ''}贵宾卡需三维达标后主动申请获批，不随选厅直接发放`);
     parts.push(EN ? 'Card status is simulated; real eligibility is decided on the casino floor' : '卡为模拟状态，真实资格仍由赌场现场核定');
     el.vipNote.textContent = parts.join(' · ');
 
@@ -3173,7 +3204,7 @@ Scope: side bets excluded; splits and doubles settled OBBO.`
       const locked = !open[i];
       const mark = need
         ? (cfg.unlock ? (EN ? ' (demo unlocked)' : '（体验解锁）')
-          : (EN ? (locked ? ` (requires ${needName(need)})` : ' (card held)') : (locked ? `（需${needName(need)}）` : '（持卡可进）')))
+          : (EN ? (locked ? ` (requires ${needLabel(need)})` : ' (card held)') : (locked ? `（需${needLabel(need)}）` : '（持卡可进）')))
         : '';
       return `<option value="${i}"${locked ? ' disabled' : ''}>${r.name} · ${fmt(r.min)}–${fmt(r.max)}${mark}</option>`;
     }).join('');
@@ -3191,8 +3222,8 @@ Scope: side bets excluded; splits and doubles settled OBBO.`
       el.cfgRoom.value = String(cfg.room);
       updateRoomSelect();
       flash(EN
-        ? `<b>${c.name} · ${r.name}</b> requires the <b>${needName(roomNeed(r))}</b>; you do not hold it. Build turnover on this programme's main floor to earn the card first.`
-        : `<b>${c.name} · ${r.name}</b> 需持<b>${needName(roomNeed(r))}</b>才能入场；你目前没有这张卡。先在该卡系的中场积累并取得贵宾卡。`);
+        ? `<b>${c.name} · ${r.name}</b> requires the <b>${needLabel(roomNeed(r))}</b>; you do not hold it. Build turnover on this programme's main floor to earn the card first.`
+        : `<b>${c.name} · ${r.name}</b> 需持<b>${needLabel(roomNeed(r))}</b>才能入场；你目前没有这张卡。先在该卡系的中场积累并取得贵宾卡。`);
       return;
     }
     cfg.venue = venueIdx;
