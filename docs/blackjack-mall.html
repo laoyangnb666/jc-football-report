@@ -11,7 +11,7 @@
 <link rel="icon" href="assets/favicon.ico" sizes="any">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <link rel="stylesheet" href="assets/site.css">
-<link rel="stylesheet" href="assets/bj-mall.css?v=20261113b">
+<link rel="stylesheet" href="assets/bj-mall.css?v=20261114c">
 </head>
 <body>
 <script>document.documentElement.className += ' js';</script>
@@ -51,7 +51,7 @@
       <div>
         <div class="mallkick">Redeem · 会员礼遇兑换</div>
         <h2>会员积分可兑换项目</h2>
-        <p class="mallsub">同一件礼遇在不同场积分数字不同、所需流水一致 —— 因为每分对应的流水不同。</p>
+        <p class="mallsub">同一件礼遇在不同场积分数字不同、背后流水一致 —— 因为每分对应的流水不同。会员档位越高折扣越大，今日精选再打八五折，可搜索、排序、收藏心愿单。</p>
         <p class="mallgroup" id="mallGroup"></p>
       </div>
       <div class="mallbal">
@@ -62,6 +62,23 @@
       </div>
     </div>
 
+    <div class="mallstats" id="mallStats"></div>
+
+    <div class="mallfeat" id="mallFeat"></div>
+
+    <div class="malltools">
+      <input id="mallSearch" type="search" placeholder="搜索礼遇 / 餐厅 / 酒店 / 演出…" aria-label="搜索礼遇">
+      <select id="mallSort" aria-label="排序">
+        <option value="rec">推荐排序</option>
+        <option value="price-asc">积分：低 → 高</option>
+        <option value="price-desc">积分：高 → 低</option>
+        <option value="value-desc">礼遇价值：高 → 低</option>
+      </select>
+      <button class="mt-toggle" id="mallAff" type="button">只看可兑换</button>
+      <button class="mt-toggle" id="mallFav" type="button">只看心愿单 <b>0</b></button>
+      <span class="mt-count" id="mallCount"></span>
+    </div>
+
     <div class="malltabs" id="mallTabs"></div>
     <div class="mallgrid" id="mallGrid"></div>
     <div class="mallsrc" id="mallSrc"></div>
@@ -69,11 +86,25 @@
     <div class="mallfoot">
       <div class="mallnote" id="mallNote"></div>
       <div class="mallorders">
-        <h4>兑换记录 <span>最近 8 笔</span></h4>
+        <h4>兑换记录 <span>最近 8 笔</span><em id="mallOrderSum"></em></h4>
         <div id="mallOrders"><p class="mo-empty">还没有兑换记录，先回牌桌打几局攒积分。</p></div>
       </div>
     </div>
   </section>
+
+  <div class="mallmodal" id="mallModal" hidden>
+    <div class="mm-box" role="dialog" aria-modal="true" aria-labelledby="mmTitle">
+      <div class="mm-cat" id="mmCat"></div>
+      <h3 id="mmTitle"></h3>
+      <p class="mm-desc" id="mmDesc"></p>
+      <div class="mm-rows" id="mmRows"></div>
+      <div class="mm-foot">
+        <button class="mm-fav" id="mmFav" type="button">加入心愿单</button>
+        <button id="mmClose" type="button">关闭</button>
+        <button class="primary" id="mmBuy" type="button">兑换</button>
+      </div>
+    </div>
+  </div>
 </main>
 
 <footer style="border-top:1px solid #E2DACA;padding:24px 0 44px;text-align:center;color:#6B6355;font-size:11px;line-height:1.85">
@@ -84,8 +115,8 @@
 <script src="assets/i18n.js"></script>
 <script src="assets/i18n-bj.js"></script>
 <script src="assets/bj-casinos.js"></script>
-<script src="assets/bj-wallet.js?v=20261113b"></script>
-<script src="assets/bj-mall.js?v=20261113b"></script>
+<script src="assets/bj-wallet.js?v=20261114c"></script>
+<script src="assets/bj-mall.js?v=20261114c"></script>
 <script src="assets/bj-core.js"></script>
 <script>
 (function () {
@@ -94,52 +125,169 @@
   const PROGRAMS = window.BJ_CASINOS.programs;
   const MALL = window.BJ_MALL;
   const W = window.BJWallet.load();
+  const FAV_KEY = 'bj.mall.fav.v1';
 
   const $ = id => document.getElementById(id);
   const el = {};
-  ['progSel','mallPts','mallRate','mallProg','mallTabs','mallGrid','mallOrders','mallNote','mallGroup','mallSrc']
+  ['progSel','mallPts','mallRate','mallProg','mallTabs','mallGrid','mallOrders','mallNote','mallGroup','mallSrc',
+   'mallStats','mallFeat','mallSearch','mallSort','mallAff','mallFav','mallCount','mallOrderSum','mallModal',
+   'mmCat','mmTitle','mmDesc','mmRows','mmFav','mmClose','mmBuy']
     .forEach(k => { el[k] = $(k); });
 
   /* 默认沿用牌桌最后所在的场馆，保证两个页面看的是同一个卡系 */
   let progId = (CASINOS[W.venue] || CASINOS[0]).prog;
-  let cat = 'all';
+  let cat = 'all', q = '', sort = 'rec', onlyAff = false, onlyFav = false;
+  let modalItem = null, deals = [];
+
+  let favs = new Set();
+  try { favs = new Set(JSON.parse(localStorage.getItem(FAV_KEY) || '[]')); } catch (e) { favs = new Set(); }
+  const saveFavs = () => { try { localStorage.setItem(FAV_KEY, JSON.stringify([...favs])); } catch (e) {} };
+  const isFav = it => favs.has(it.id);
+  const toggleFav = it => { if (isFav(it)) favs.delete(it.id); else favs.add(it.id); saveFavs(); };
 
   if (EN){
     const page = $('mallPage');
     page.querySelector('.mallcrumb').innerHTML = '<a href="blackjack.html">Blackjack</a><i>/</i><span>Rewards shop</span>';
     page.querySelector('h1').innerHTML = 'Turn points into <em>something real</em>.';
     page.querySelector('.mallhero p').textContent =
-      'Points accrue on the effective turnover of your current programme. The catalogue is split into six books — Sands China, Galaxy, Wynn, MGM, Melco and SJM — with hotels, restaurants, shows, spa, play, shopping and transport taken from each group’s official pages. Every round you play on the table is written here instantly and survives page changes.';
+      'Points accrue on the effective turnover of your current programme. Six catalogues — Sands China, Galaxy, Wynn, MGM, Melco and SJM — cover hotels, restaurants, shows, spa, play, shopping and transport taken from each group’s official pages. Every round you play is written here instantly and survives page changes.';
     page.querySelector('.mallbar label').textContent = 'Programme';
     page.querySelector('.mallback').textContent = '← Back to table';
     page.querySelector('.mallhead h2').textContent = 'What your points can buy';
     page.querySelector('.mallsub').textContent =
-      'The same benefit shows a different point price at each club but always takes the same amount of play — because the turnover behind one point differs.';
-    page.querySelector('.mallorders h4').innerHTML = 'Redemptions <span>last 8</span>';
+      'Each club prices the same benefit in its own points — the play behind it is identical. Member tier and the daily picks lower the price further.';
+    page.querySelector('.mallorders h4').innerHTML = 'Redemptions <span>last 8</span><em id="mallOrderSum"></em>';
+    el.mallOrderSum = $('mallOrderSum');
+    el.mallSearch.placeholder = 'Search benefits, restaurants, hotels…';
+    el.mallSort.options[0].text = 'Recommended';
+    el.mallSort.options[1].text = 'Points: low → high';
+    el.mallSort.options[2].text = 'Points: high → low';
+    el.mallSort.options[3].text = 'Benefit value: high → low';
+    el.mallAff.textContent = 'Affordable only';
+    el.mallFav.innerHTML = 'Wishlist only <b>0</b>';
+    el.mmFav.textContent = 'Add to wishlist';
+    el.mmClose.textContent = 'Close';
+    el.mmBuy.textContent = 'Redeem';
   }
 
   function mem() { return window.BJWallet.memOf(W, progId); }
+  const tierOf = pts => (window.BJCore ? BJCore.tierOf(pts, PROGRAMS[progId]) : { idx: 0, tier: '—', next: null, need: null });
+
+  /* 会员等级折扣：档位比例最高 12%，持贵宾卡再叠加 5% */
+  function discountPct(prog, m){
+    const n = (prog.tiers || []).length;
+    const idx = tierOf(m.points).idx;
+    const ratio = n > 1 ? idx / (n - 1) : 0;
+    let pct = Math.round(ratio * 12);
+    if ((m.card || 0) >= 1) pct += 5;
+    return Math.min(20, pct);
+  }
+  function basePrice(it, prog){ return MALL.priceOf(it, prog); }
+  function finalPrice(it, prog, m){
+    const p = basePrice(it, prog) * (1 - discountPct(prog, m) / 100);
+    return Math.max(1, Math.round(deals.some(d => d.id === it.id) ? p * 0.85 : p));
+  }
+
+  /* 每日精选：按「卡系 + 日期」固定抽 3 项不限卡级的礼遇，八五折 */
+  function dailyDeals(items, pid){
+    const d = new Date();
+    const key = d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+    let s = 2166136261;
+    const ks = pid + ':' + key;
+    for (let i = 0; i < ks.length; i++){ s ^= ks.charCodeAt(i); s = Math.imul(s, 16777619) >>> 0; }
+    const rnd = () => { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; };
+    const pool = items.filter(i => (i.need || 0) <= 0.5);
+    const picks = [];
+    while (picks.length < 3 && pool.length){
+      picks.push(pool.splice(Math.floor(rnd() * pool.length), 1)[0]);
+    }
+    return picks;
+  }
+
+  function tierIndex(prog, need){
+    const n = (prog.tiers || []).length;
+    return n ? Math.min(n - 1, Math.round(need * (n - 1))) : 0;
+  }
+  const catLabel = id => {
+    const c = MALL.CATS.filter(x => x.id === id)[0] || {};
+    return EN ? (c.en || id) : (c.zh || id);
+  };
 
   /* 会员体系下拉 */
   el.progSel.innerHTML = Object.keys(PROGRAMS).map(id => {
     const p = PROGRAMS[id];
     return `<option value="${id}"${id === progId ? ' selected' : ''}>${EN ? p.brand : p.name}</option>`;
   }).join('');
-  el.progSel.addEventListener('change', () => { progId = el.progSel.value; render(); });
+  el.progSel.addEventListener('change', () => { progId = el.progSel.value; cat = 'all'; render(); });
 
-  function tierIndex(prog, need) {
-    const n = (prog.tiers || []).length;
-    return n ? Math.min(n - 1, Math.round(need * (n - 1))) : 0;
+  /* 工具条事件 */
+  let qTimer = 0;
+  el.mallSearch.addEventListener('input', () => {
+    clearTimeout(qTimer);
+    qTimer = setTimeout(() => { q = el.mallSearch.value.trim(); render(); }, 140);
+  });
+  el.mallSort.addEventListener('change', () => { sort = el.mallSort.value; render(); });
+  el.mallAff.addEventListener('click', () => { onlyAff = !onlyAff; render(); });
+  el.mallFav.addEventListener('click', () => { onlyFav = !onlyFav; render(); });
+
+  /* 弹窗 */
+  function openModal(it){
+    modalItem = it;
+    const prog = PROGRAMS[progId], m = mem();
+    const isDeal = deals.some(d => d.id === it.id);
+    const base = basePrice(it, prog), fin = finalPrice(it, prog, m);
+    const needIdx = tierIndex(prog, it.need);
+    const needName = ((prog.tiers || [])[needIdx] || [])[0] || '';
+    const disc = discountPct(prog, m);
+    el.mmCat.textContent = catLabel(it.cat).toUpperCase();
+    el.mmTitle.textContent = EN ? it.en : it.zh;
+    el.mmDesc.textContent = EN ? it.descEn : it.desc;
+    const rows = [
+      [EN ? 'Benefit value' : '礼遇价值', `MOP ${it.value.toLocaleString()}`],
+      [EN ? 'List price' : '原价积分', `${base.toLocaleString()} ${EN ? 'pts' : '分'}`]
+    ];
+    if (disc > 0) rows.push([EN ? 'Member discount' : '会员折扣', `−${disc}%`]);
+    if (isDeal) rows.push([EN ? 'Daily pick' : '今日精选', '−15%']);
+    rows.push([EN ? 'You pay' : '实付积分', `${fin.toLocaleString()} ${EN ? 'pts' : '分'}`]);
+    if (it.need > 0) rows.push([EN ? 'Requires' : '所需卡级', needName]);
+    rows.push([EN ? 'Turnover behind it' : '对应流水', `≈ MOP ${Math.round((fin * (prog.mopPerPoint || 1000)) / 1).toLocaleString()}`]);
+    el.mmRows.innerHTML = rows.map(r => `<span>${r[0]}</span><b>${r[1]}</b>`).join('');
+
+    const locked = it.need > 0 && tierOf(m.points).idx < needIdx;
+    const poor = m.points < fin;
+    el.mmBuy.disabled = locked || poor;
+    el.mmBuy.textContent = locked ? (EN ? `Needs ${needName}` : `需 ${needName}`)
+      : poor ? (EN ? `${Math.ceil(fin - m.points).toLocaleString()} more` : `还差 ${Math.ceil(fin - m.points).toLocaleString()} 分`)
+      : (EN ? 'Redeem' : '兑换');
+    el.mmFav.textContent = isFav(it) ? (EN ? 'Remove from wishlist' : '移出心愿单') : (EN ? 'Add to wishlist' : '加入心愿单');
+    el.mallModal.hidden = false;
   }
+  function closeModal(){ el.mallModal.hidden = true; modalItem = null; }
+  el.mmClose.addEventListener('click', closeModal);
+  el.mallModal.addEventListener('click', ev => { if (ev.target === el.mallModal) closeModal(); });
+  document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && !el.mallModal.hidden) closeModal(); });
+  el.mmFav.addEventListener('click', () => {
+    if (!modalItem) return;
+    toggleFav(modalItem);
+    el.mmFav.textContent = isFav(modalItem) ? (EN ? 'Remove from wishlist' : '移出心愿单') : (EN ? 'Add to wishlist' : '加入心愿单');
+    render();
+    openModal(modalItem);
+  });
+  el.mmBuy.addEventListener('click', () => { if (modalItem) redeem(modalItem); });
 
-  function render() {
+  function render(){
     const prog = PROGRAMS[progId];
     const items = MALL.itemsOf(progId);
     const m = mem();
     const pts = m.points;
     const per = prog.mopPerPoint || 1000;
-    const now = window.BJCore ? BJCore.tierOf(pts, prog) : { idx: 0, tier: '—', next: null, need: null };
+    const now = tierOf(pts);
     const g = MALL.GROUPS[progId] || { zh: prog.name, en: prog.brand };
+    deals = dailyDeals(items.slice(), progId);
+
+    const priceOf = it => finalPrice(it, prog, m);
+    const unlocked = it => (it.need || 0) <= 0 ? true : now.idx >= tierIndex(prog, it.need);
+    const affordable = it => unlocked(it) && pts >= priceOf(it);
 
     el.mallPts.textContent = Math.round(pts).toLocaleString();
     el.mallRate.textContent = EN
@@ -147,90 +295,210 @@
       : `≈ MOP ${Math.round(pts * per * MALL.RETURN_RATE).toLocaleString()} 礼遇价值`;
     el.mallProg.textContent = `${EN ? prog.brand : prog.name} · ${now.tier}`;
     el.mallGroup.textContent = EN
-      ? `${g.en} · ${prog.brand} · ${items.length} benefits`
-      : `${g.zh} · ${prog.name} · ${items.length} 项礼遇`;
+      ? `${g.en} · ${prog.brand} · ${items.length} benefits · member discount ${discountPct(prog, m)}%`
+      : `${g.zh} · ${prog.name} · ${items.length} 项礼遇 · 会员折扣 ${discountPct(prog, m)}%`;
 
+    /* 统计条 */
+    const totalSpent = W.orders.reduce((s, o) => s + (o.price || 0), 0);
+    const spentMop = W.orders.reduce((s, o) => s + (o.value || 0), 0);
+    el.mallStats.innerHTML = `
+      <div class="ms-card"><small>可用积分</small><b>${Math.round(pts).toLocaleString()}</b><span>${EN ? prog.brand : prog.name} · ${now.tier}</span></div>
+      <div class="ms-card"><small>当前可兑换</small><b>${items.filter(affordable).length}</b><span>${EN ? `of ${items.length} benefits` : `共 ${items.length} 项礼遇`}</span></div>
+      <div class="ms-card"><small>已解锁礼遇</small><b>${items.filter(unlocked).length}</b><span>${EN ? 'card level reached' : '按当前卡级开放'}</span></div>
+      <div class="ms-card"><small>累计兑换</small><b>${W.orders.length}</b><span>${EN ? `${totalSpent.toLocaleString()} pts · MOP ${spentMop.toLocaleString()}` : `${totalSpent.toLocaleString()} 分 · MOP ${spentMop.toLocaleString()}`}</span></div>`;
+
+    /* 每日精选 */
+    el.mallFeat.innerHTML = deals.length ? `<div class="mf-head">
+        <b>${EN ? "Today's picks" : '今日精选'}</b>
+        <span>${EN ? '15% off · refreshed daily' : '八五折 · 每日更换'}</span>
+        <em>${new Date().toLocaleDateString(EN ? 'en-GB' : 'zh-CN')}</em>
+      </div>
+      <div class="mf-row">${deals.map(it => {
+        const base = basePrice(it, prog), fin = priceOf(it);
+        const ok = affordable(it);
+        return `<div class="mf-card" data-open="${it.id}">
+          <span class="mf-tag">−15%</span>
+          <h5>${EN ? it.en : it.zh}</h5>
+          <p>${EN ? it.descEn : it.desc}</p>
+          <div class="mf-foot"><span class="mf-price">${fin.toLocaleString()}<s>${EN ? 'was ' : '原 '}${base.toLocaleString()}</s></span>
+          <button data-buy="${it.id}"${ok ? '' : ' disabled'}>${ok ? (EN ? 'Redeem' : '兑换') : (EN ? 'Not yet' : '暂不可兑')}</button></div>
+        </div>`;
+      }).join('')}</div>` : '';
+
+    /* 分类标签 */
     const cats = [{ id: 'all', zh: '全部', en: 'All' }]
       .concat(MALL.CATS.filter(c => items.some(it => it.cat === c.id)));
     if (cat !== 'all' && !cats.some(c => c.id === cat)) cat = 'all';
 
-    if (!el.mallTabs.__wired) {
+    if (!el.mallTabs.__wired){
       el.mallTabs.__wired = 1;
       el.mallTabs.addEventListener('click', ev => {
-        const b = ev.target.closest('button[data-cat]');
-        if (!b) return;
-        cat = b.dataset.cat;
+        const btn = ev.target.closest('button[data-cat]');
+        if (!btn) return;
+        cat = btn.dataset.cat;
         render();
       });
     }
-    el.mallTabs.innerHTML = cats
-      .map(c => `<button data-cat="${c.id}"${c.id === cat ? ' class="on"' : ''}>${EN ? c.en : c.zh}</button>`)
-      .join('');
-
-    const list = items.filter(it => cat === 'all' || it.cat === cat);
-    el.mallGrid.innerHTML = list.map(it => {
-      const price = MALL.priceOf(it, prog);
-      const needIdx = tierIndex(prog, it.need);
-      const locked = it.need > 0 && now.idx < needIdx;
-      const poor = pts < price;
-      const c = MALL.CATS.filter(x => x.id === it.cat)[0] || {};
-      const lockName = ((prog.tiers || [])[needIdx] || [])[0] || '';
-      let btn;
-      if (locked) btn = `<button disabled>${EN ? `Needs ${lockName}` : `需 ${lockName}`}</button>`;
-      else if (poor) btn = `<button disabled>${EN ? `${Math.ceil(price - pts).toLocaleString()} more` : `还差 ${Math.ceil(price - pts).toLocaleString()} 分`}</button>`;
-      else btn = `<button data-buy="${it.id}">${EN ? 'Redeem' : '兑换'}</button>`;
-      return `<div class="mi${locked ? ' dim' : ''}">
-        <div class="mi-top"><h5>${EN ? it.en : it.zh}</h5><span class="mi-cat">${EN ? c.en : c.zh}</span></div>
-        <div class="mi-val">${EN ? 'Worth MOP' : '价值 MOP'} ${it.value.toLocaleString()}</div>
-        <p class="mi-desc">${EN ? it.descEn : it.desc}</p>
-        <div class="mi-buy"><span class="mi-price">${price.toLocaleString()}<em>${EN ? 'pts' : '分'}</em></span>${btn}</div>
-      </div>`;
+    el.mallTabs.innerHTML = cats.map(c => {
+      const n = c.id === 'all' ? items.length : items.filter(it => it.cat === c.id).length;
+      return `<button data-cat="${c.id}"${c.id === cat ? ' class="on"' : ''}>${EN ? c.en : c.zh}<b style="opacity:.55;font-weight:400;margin-left:5px">${n}</b></button>`;
     }).join('');
 
-    if (!el.mallGrid.__wired) {
+    /* 过滤 + 排序 */
+    const kw = q.toLowerCase();
+    let list = items.filter(it => {
+      if (cat !== 'all' && it.cat !== cat) return false;
+      if (onlyFav && !isFav(it)) return false;
+      if (onlyAff && !affordable(it)) return false;
+      if (kw){
+        const hay = `${it.zh} ${it.en} ${it.desc} ${it.descEn} ${catLabel(it.cat)}`.toLowerCase();
+        if (!hay.includes(kw)) return false;
+      }
+      return true;
+    });
+    if (sort === 'price-asc') list = list.slice().sort((a, b) => priceOf(a) - priceOf(b));
+    else if (sort === 'price-desc') list = list.slice().sort((a, b) => priceOf(b) - priceOf(a));
+    else if (sort === 'value-desc') list = list.slice().sort((a, b) => b.value - a.value);
+
+    el.mallCount.textContent = EN
+      ? `${list.length} shown · ${items.filter(affordable).length} affordable now`
+      : `显示 ${list.length} 项 · 当前可兑 ${items.filter(affordable).length} 项`;
+    el.mallAff.classList.toggle('on', onlyAff);
+    el.mallFav.classList.toggle('on', onlyFav);
+    const favB = el.mallFav.querySelector('b');
+    if (favB) favB.textContent = favs.size;
+
+    el.mallGrid.innerHTML = list.length ? list.map(it => {
+      const base = basePrice(it, prog), price = priceOf(it);
+      const needIdx = tierIndex(prog, it.need);
+      const locked = !unlocked(it);
+      const poor = pts < price;
+      const needName = ((prog.tiers || [])[needIdx] || [])[0] || '';
+      const isDeal = deals.some(d => d.id === it.id);
+      const disc = discountPct(prog, m);
+      const badges = [
+        isDeal ? `<i class="bd-deal">今日精选 −15%</i>` : '',
+        disc > 0 ? `<i class="bd-vip">会员 −${disc}%</i>` : '',
+        it.need > 0 ? `<i class="bd-need">需 ${needName}</i>` : ''
+      ].filter(Boolean).join('');
+      let btn;
+      if (locked) btn = `<button disabled>${EN ? `Needs ${needName}` : `需 ${needName}`}</button>`;
+      else if (poor) btn = `<button disabled>${EN ? `${Math.ceil(price - pts).toLocaleString()} more` : `还差 ${Math.ceil(price - pts).toLocaleString()} 分`}</button>`;
+      else btn = `<button data-buy="${it.id}">${EN ? 'Redeem' : '兑换'}</button>`;
+      return `<div class="mi${locked ? ' dim' : ''}" data-open="${it.id}">
+        <button class="mi-fav${isFav(it) ? ' on' : ''}" data-fav="${it.id}" title="${EN ? 'Wishlist' : '心愿单'}" aria-label="wishlist">${isFav(it) ? '★' : '☆'}</button>
+        <div class="mi-top"><h5>${EN ? it.en : it.zh}</h5><span class="mi-cat">${catLabel(it.cat)}</span></div>
+        ${badges ? `<div class="mi-badges">${badges}</div>` : ''}
+        <div class="mi-val">${EN ? 'Worth MOP' : '价值 MOP'} ${it.value.toLocaleString()}</div>
+        <p class="mi-desc">${EN ? it.descEn : it.desc}</p>
+        <div class="mi-buy"><span class="mi-price">${price.toLocaleString()}<em>${EN ? 'pts' : '分'}</em>${price < base ? `<s>${EN ? 'was ' : '原 '}${base.toLocaleString()}</s>` : ''}</span>${btn}</div>
+      </div>`;
+    }).join('') : `<p class="mo-empty" style="grid-column:1/-1;padding:22px 4px">${EN ? 'No benefits match these filters.' : '没有符合当前筛选条件的礼遇。'}</p>`;
+
+    /* 事件委托：卡片 / 收藏 / 兑换 / 精选 */
+    if (!el.mallGrid.__wired){
       el.mallGrid.__wired = 1;
       el.mallGrid.addEventListener('click', ev => {
-        const b = ev.target.closest('button[data-buy]');
-        if (!b) return;
-        const it = MALL.itemsOf(progId).filter(x => x.id === b.dataset.buy)[0];
-        if (it) redeem(it);
+        const favBtn = ev.target.closest('button[data-fav]');
+        if (favBtn){
+          ev.stopPropagation();
+          const it = items.find(x => x.id === favBtn.dataset.fav);
+          if (it){ toggleFav(it); render(); }
+          return;
+        }
+        const buy = ev.target.closest('button[data-buy]');
+        if (buy){
+          ev.stopPropagation();
+          const it = items.find(x => x.id === buy.dataset.buy);
+          if (it) redeem(it);
+          return;
+        }
+        const card = ev.target.closest('[data-open]');
+        if (card){
+          const it = items.find(x => x.id === card.dataset.open);
+          if (it) openModal(it);
+        }
+      });
+    }
+    if (!el.mallFeat.__wired){
+      el.mallFeat.__wired = 1;
+      el.mallFeat.addEventListener('click', ev => {
+        const buy = ev.target.closest('button[data-buy]');
+        if (buy){
+          ev.stopPropagation();
+          const it = deals.find(x => x.id === buy.dataset.buy);
+          if (it) redeem(it);
+          return;
+        }
+        const card = ev.target.closest('[data-open]');
+        if (card){
+          const it = deals.find(x => x.id === card.dataset.open);
+          if (it) openModal(it);
+        }
       });
     }
 
+    /* 资料来源 */
     const src = MALL.SOURCES[progId] || [];
     el.mallSrc.innerHTML = `<span>${EN ? 'Official sources' : '资料来源'}</span>`
       + src.map(s => `<a href="${s.url}" target="_blank" rel="noopener">${EN ? s.en : s.zh}</a>`).join('')
       + `<em>${EN ? 'Names, venues and reference values are compiled from these pages.'
                   : '物业、餐厅与参考价值均按以上官方页面整理。'}</em>`;
 
+    /* 定价与规则 */
     const next = now.next
       ? (EN ? `Next tier ${now.next}${now.need != null ? `, ${Math.ceil(now.need).toLocaleString()} pts away` : ''}`
             : `下一档 ${now.next}${now.need != null ? `，还差 ${Math.ceil(now.need).toLocaleString()} 分` : ''}`)
       : (EN ? 'top tier reached' : '已达最高档');
     el.mallNote.innerHTML = EN
-      ? `<b>Pricing</b> · benefits cost about 1.5% of your effective turnover. On ${prog.brand} one point equals MOP ${per.toLocaleString()} of play, so the same item shows different point prices across clubs but always takes the same amount of play. ${next}. Redemption is simulated and grants no real entitlement.`
-      : `<b>定价口径</b> · 礼遇按有效投注约 1.5% 回赠计价。${prog.name} 每 ${per.toLocaleString()} MOP 流水计 1 分，所以同一件礼遇在不同场积分数字不同、所需流水一致。${next}。兑换为模拟流程，不产生任何真实权益。`;
+      ? `<b>Pricing</b> · benefits cost about 1.5% of effective turnover. On ${prog.brand} one point equals MOP ${per.toLocaleString()} of play. Your tier gives <b>${discountPct(prog, m)}% off</b>${(m.card || 0) >= 1 ? ' (VIP card adds 5%)' : ''}, and today’s picks take another 15% off. ${next}. Redemption is simulated and grants no real entitlement.`
+      : `<b>定价口径</b> · 礼遇按有效投注约 1.5% 回赠计价，${prog.name} 每 ${per.toLocaleString()} MOP 流水计 1 分。<b>会员折扣 ${discountPct(prog, m)}%</b>${(m.card || 0) >= 1 ? '（含贵宾卡额外 5%）' : ''}，今日精选再打八五折。${next}。兑换为模拟流程，不产生任何真实权益。`;
 
+    /* 兑换记录 */
+    el.mallOrderSum.textContent = W.orders.length
+      ? (EN ? `total ${totalSpent.toLocaleString()} pts` : `合计 ${totalSpent.toLocaleString()} 分`)
+      : '';
     el.mallOrders.innerHTML = W.orders.length
-      ? W.orders.map(o =>
-          `<div class="mo-row"><span>${o.name}<i>${o.venue}</i></span><small>−${o.price.toLocaleString()}${o.round ? ' · ' + (EN ? 'R' + o.round : '第 ' + o.round + ' 局') : ''}</small></div>`).join('')
+      ? W.orders.map(o => {
+          const t = o.ts ? new Date(o.ts) : null;
+          const stamp = t ? `${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')} ${String(t.getHours()).padStart(2, '0')}:${String(t.getMinutes()).padStart(2, '0')}` : '';
+          return `<div class="mo-row"${o.id ? ` data-order="${o.id}"` : ''}>
+            <span>${o.name}<i>${o.venue}</i>${stamp ? `<small class="mo-time">${stamp}</small>` : ''}</span>
+            <small>−${o.price.toLocaleString()}${o.round ? ' · ' + (EN ? 'R' + o.round : '第 ' + o.round + ' 局') : ''}</small></div>`;
+        }).join('')
       : `<p class="mo-empty">${EN ? 'No redemptions yet — go back and play a few rounds.' : '还没有兑换记录，先回牌桌打几局攒积分。'}</p>`;
   }
 
-  function redeem(item) {
+  /* 点兑换记录可再打开该礼遇 */
+  el.mallOrders.addEventListener('click', ev => {
+    const row = ev.target.closest('[data-order]');
+    if (!row) return;
+    const it = MALL.itemsOf(progId).find(x => x.id === row.dataset.order);
+    if (it) openModal(it);
+  });
+
+  function redeem(item){
     const prog = PROGRAMS[progId];
     const m = mem();
-    const price = MALL.priceOf(item, prog);
-    const now = window.BJCore ? BJCore.tierOf(m.points, prog) : { idx: 0 };
-    if (m.points < price || now.idx < tierIndex(prog, item.need)) return;
+    const price = finalPrice(item, prog, m);
+    const now = tierOf(m.points);
+    if (m.points < price) return;
+    if ((item.need || 0) > 0 && now.idx < tierIndex(prog, item.need)) return;
     m.points -= price;
     W.orders.unshift({
-      name: EN ? item.en : item.zh, price, round: 0,
+      id: item.id,
+      name: EN ? item.en : item.zh,
+      price,
+      value: item.value,
+      cat: item.cat,
+      round: 0,
+      ts: Date.now(),
       venue: EN ? prog.brand : prog.name
     });
     if (W.orders.length > 8) W.orders.pop();
     window.BJWallet.trim(m);
     window.BJWallet.save(W);
+    closeModal();
     render();
   }
 

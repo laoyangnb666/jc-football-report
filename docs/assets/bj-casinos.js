@@ -161,18 +161,17 @@
     },
     galaxy: {
       name: '银河优越', brand: 'GEG Privilege Club', mopPerPoint: 6000,
-      conversion: '官方：皇卡累积满 10 分晋升爵卡；赫/尊/御尊/至尊门槛未公开，按线性模拟（约 6,000 MOP = 1 分）',
-      tiers: [['皇', 0], ['爵', 10], ['赫', 600], ['尊', 2400], ['御尊', 9600], ['至尊', 38400]],
-      tiersNote: '官方仅公布皇→爵为 10 分；赫/尊/御尊/至尊为线性模拟值',
+      conversion: '官方：皇卡累积满 10 分晋升爵卡；赫卡门槛未公开，按线性模拟（约 6,000 MOP = 1 分）',
+      tiers: [['皇', 0], ['爵', 10], ['赫', 600]],
+      tiersNote: '皇 / 爵 / 赫 为优越会大众档；尊 / 金尊 / 至尊 归入金尊会贵宾卡序列',
       tiersKnown: true,
       vip: {
-        name: '金尊',
-        note: '贵宾厅独立于中场优越会',
+        name: '金尊会',
+        note: '银河贵宾体系只有 尊 / 金尊 / 至尊 三档，不设私人厅、主席厅贵宾档',
         tiers: [
-          { name: '金尊（基础贵宾）', card: 1, turnover: 10000000, maxBet: 15000, days: 10 },
-          { name: '金尊私人（私人厅）', card: 2, turnover: 26000000, maxBet: 45000, days: 18 },
-          { name: '金尊主席（主席厅）', card: 3, turnover: 62000000, maxBet: 110000, days: 26 },
-          { name: '金尊至尊（超级贵宾）', card: 4, turnover: 150000000, maxBet: 280000, days: 34, top: true }
+          { name: '尊', card: 1, turnover: 10000000, maxBet: 15000, days: 10 },
+          { name: '金尊', card: 2, turnover: 26000000, maxBet: 45000, days: 18 },
+          { name: '至尊', card: 3, turnover: 62000000, maxBet: 110000, days: 26, top: true }
         ]
       }
     },
@@ -216,8 +215,8 @@
     wynn: {
       name: '红卡', brand: 'Red Card', mopPerPoint: 6500,
       conversion: '圈内估算 5,000–8,000 MOP = 1 分，取中值 6,500',
-      tiers: [['红卡', 0], ['银卡', 3000], ['金卡', 12000], ['白金', 36000], ['黑卡', 108000], ['主席', 300000]],
-      tiersNote: '档位名称为模拟序列，升级积分按线性递增',
+      tiers: [['红卡', 0], ['银卡', 3000], ['金卡', 12000], ['白金', 36000]],
+      tiersNote: '红 / 银 / 金 / 白金 为大众档；黑卡 / 主席卡 归入永利贵宾卡序列',
       tiersKnown: true,
       vip: {
         name: '永利会贵宾',

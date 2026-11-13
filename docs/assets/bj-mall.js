@@ -135,7 +135,23 @@
       ['sands-member-tour', 'exp', '会员专属导赏 + 纪念品', 'Members tour + gift', 350, 0,
         '威尼斯人建筑与艺术导赏，赠纪念品', 'Venetian architecture tour with a gift'],
       ['sands-chef-class', 'exp', '星级厨艺课堂 · 两位', 'Chef class for two', 1400, 0.5,
-        '主厨带教，成品可带走', 'Taught by a chef; take your dish home']
+        '主厨带教，成品可带走', 'Taught by a chef; take your dish home'],
+      ['sands-wine', 'exp', '葡萄酒品鉴 · 两位', 'Wine tasting for two', 600, 0.2,
+        '威尼斯人，侍酒师带品六款旧世界', 'Venetian, six Old-World pours with a sommelier'],
+
+      ['sands-qube', 'play', 'Q立方王国 儿童乐园 · 两位', 'Qube kids zone · two', 220, 0,
+        '威尼斯人，三层室内游乐场', 'Venetian, three-level indoor play zone'],
+      ['sands-teamlab', 'play', 'teamLab 超自然空间 · 两位', 'teamLab SuperNature · two', 480, 0.15,
+        '金光会展，沉浸式数字艺术馆', 'Cotai Expo, immersive digital art museum'],
+      ['sands-bowling', 'play', '金沙保龄球中心 · 两局', 'Sands bowling · two games', 180, 0,
+        '澳门金沙，24 小时开放', 'Sands Macao, open 24 hours'],
+      ['sands-cotai-limitless', 'play', '金光大道 光影互动展 · 两位', 'Cotai light exhibition · two', 300, 0.1,
+        '威尼斯人，限定光影装置', 'Venetian, limited light installations'],
+
+      ['sands-airport', 'travel', '机场接送 · 单程', 'Airport transfer · one way', 380, 0,
+        '豪华轿车，24 小时可约', 'Luxury sedan, bookable 24 hours'],
+      ['sands-helicopter', 'travel', '直升机空中游览 · 15 分钟', 'Helicopter tour · 15 min', 3600, 0.6,
+        '澳门半岛上空，含酒店接送', 'Over the peninsula, hotel transfer included']
     ]),
 
     /* ---------------- 银河娱乐 · 银河优越 ---------------- */
@@ -210,7 +226,28 @@
       ['gal-art-tour', 'exp', '高孝午艺术展 导赏 + 工作坊', 'Gao Xiaowu art tour + workshop', 400, 0.2,
         '银河时尚汇五个主题篇章', 'Five chapters across Galaxy Promenade'],
       ['gal-dream', 'exp', '梦想彩绘工作坊 · 双人', 'Dream painting workshop · two', 600, 0.3,
-        '艺术展限定，成品可带走', 'Exhibition-only; take your piece home']
+        '艺术展限定，成品可带走', 'Exhibition-only; take your piece home'],
+      ['gal-apron', 'dine', '蚝吧扒房 · 双人', 'The Apron · two', 1200, 0.35,
+        '银河时尚汇，生蚝与炭烤牛扒', 'Galaxy Promenade, oysters and grilled steak'],
+      ['gal-champagne', 'exp', '香槟品鉴 · 两位', 'Champagne tasting for two', 800, 0.25,
+        '侍酒师带品五款香槟', 'Five champagnes with a sommelier'],
+
+      ['gal-broadway-show', 'show', '百老汇舞台 演出 · 两张', 'Broadway Theatre · 2 tickets', 600, 0.2,
+        '百老汇，驻场与巡演剧目', 'Broadway, resident and touring shows'],
+      ['gal-arena-box', 'show', '银河综艺馆 贵宾包厢 · 两位', 'Galaxy Arena box · two', 3800, 0.85,
+        '演唱会与大型盛事，含餐饮', 'Concerts and events, catering included'],
+      ['gal-lotus', 'show', '百老汇 街头表演 前排席 · 两位', 'Broadway street show front row · two', 200, 0,
+        '美食街户外演出，兑换含饮品', 'Outdoor food-street show with drinks'],
+
+      ['gal-qube', 'play', '童乐天地 · 两位', 'Kids play zone · two', 240, 0,
+        '银河度假村，室内亲子游乐', 'Galaxy resort, indoor family play'],
+      ['gal-bowling', 'play', '银河保龄球 · 两局', 'Galaxy bowling · two games', 200, 0,
+        '含球鞋租借', 'Shoe rental included'],
+
+      ['gal-airport', 'travel', '机场接送 · 单程', 'Airport transfer · one way', 380, 0,
+        '豪华轿车，24 小时可约', 'Luxury sedan, bookable 24 hours'],
+      ['gal-helicopter', 'travel', '直升机空中游览 · 15 分钟', 'Helicopter tour · 15 min', 3600, 0.6,
+        '路氹上空，含酒店接送', 'Above Cotai, hotel transfer included']
     ]),
 
     /* ---------------- 永利澳门 · 永利会 ---------------- */
@@ -289,7 +326,30 @@
       ['wyn-supercar', 'exp', '永利臻典梦幻超跑展 导赏', 'Wynn supercar exhibition tour', 300, 0,
         '年度超跑展，专人讲解', 'Annual supercar show with a guide'],
       ['wyn-bar50', 'exp', '亚洲 50 最佳酒吧 双人品鉴', 'Asia’s 50 Best Bars tasting for two', 900, 0.35,
-        '永利澳门，调酒师限定酒单', 'Wynn Macau, guest-bartender menu']
+        '永利澳门，调酒师限定酒单', 'Wynn Macau, guest-bartender menu'],
+      ['wyn-wine', 'exp', '永利皇宫 葡萄酒品鉴 · 两位', 'Wynn Palace wine tasting · two', 800, 0.25,
+        '侍酒师带品旧世界与香槟', 'Old-World pours and champagne with a sommelier'],
+
+      ['wyn-pool', 'play', '永利皇宫 泳池与健身 一日通', 'Wynn Palace pool + gym day pass', 480, 0.15,
+        '表演湖畔泳池、活力池与健身中心', 'Pool, vitality pools and fitness centre by the lake'],
+      ['wyn-cotai-expo', 'play', '金光会展 限定特展 · 两位', 'Cotai Expo special exhibition · two', 300, 0.1,
+        '会展中心，巡回艺术与设计展', 'Touring art and design exhibitions'],
+      ['wyn-skywalk', 'play', '永利皇宫 空中花园漫步 · 两位', 'Sky garden walk · two', 260, 0,
+        '缆车与空中花园环线', 'SkyCab and sky garden loop'],
+
+      ['wyn-airport', 'travel', '机场接送 · 单程', 'Airport transfer · one way', 380, 0,
+        '豪华轿车，24 小时可约', 'Luxury sedan, bookable 24 hours'],
+      ['wyn-ferry', 'travel', '港澳船票 · 两位', 'Macau–HK ferry · two', 380, 0,
+        '单程普通位，平日适用', 'One-way standard, weekdays'],
+      ['wyn-car', 'travel', '跨境轿车 · 单程', 'Cross-border car · one way', 900, 0.4,
+        '两地牌，需提前预约', 'Dual-plate car; book ahead'],
+      ['wyn-helicopter', 'travel', '直升机空中游览 · 15 分钟', 'Helicopter tour · 15 min', 3600, 0.6,
+        '南湾湖与路氹上空，含接送', 'Above Nam Van and Cotai, transfer included'],
+
+      ['wyn-palace-boutique', 'shop', '永利皇宫名店 MOP 1,500 礼券', 'Wynn Palace boutiques MOP 1,500', 1500, 0.45,
+        '永利皇宫，名表与珠宝', 'Wynn Palace, watches and jewellery'],
+      ['wyn-gallery', 'shop', '永利艺廊 MOP 600 礼券', 'Wynn art gallery MOP 600 credit', 600, 0.2,
+        '艺术衍生品与出版物', 'Art editions and publications']
     ]),
 
     /* ---------------- 美高梅 · 金狮会 ---------------- */
@@ -368,7 +428,23 @@
       ['mgm-retail', 'shop', '美高梅零售商店 MOP 500 礼券', 'MGM retail MOP 500 credit', 500, 0.2,
         '两家酒店零售商店通用', 'Valid at both hotels’ retail shops'],
       ['mgm-onecentral', 'shop', '澳门壹号广场 MOP 800 礼券', 'One Central MOP 800 credit', 800, 0.35,
-        '与澳门美高梅相连的名店商场', 'Luxury mall connected to MGM Macau']
+        '与澳门美高梅相连的名店商场', 'Luxury mall connected to MGM Macau'],
+      ['mgm-cotai-retail', 'shop', '美狮美高梅 零售 MOP 300 礼券', 'MGM Cotai retail MOP 300 credit', 300, 0.1,
+        '零售商店与艺术纪念品', 'Retail store and art souvenirs'],
+
+      ['mgm-pool', 'play', '美狮美高梅 泳池一日通 · 两位', 'MGM Cotai pool day pass · two', 400, 0.1,
+        '室外泳池与日光甲板', 'Outdoor pool and sun deck'],
+      ['mgm-light', 'play', '视博广场 光影互动体验', 'Spectacle light play experience', 150, 0,
+        'LED 天幕下的互动装置', 'Interactive installations under the LED dome'],
+      ['mgm-kids', 'play', '童梦天地 · 两位', 'Kids dream zone · two', 280, 0,
+        '美狮美高梅，室内亲子游乐', 'MGM Cotai, indoor family play'],
+
+      ['mgm-airport', 'travel', '机场接送 · 单程', 'Airport transfer · one way', 380, 0,
+        '豪华轿车，24 小时可约', 'Luxury sedan, bookable 24 hours'],
+      ['mgm-ferry', 'travel', '港澳船票 · 两位', 'Macau–HK ferry · two', 380, 0,
+        '单程普通位，平日适用', 'One-way standard, weekdays'],
+      ['mgm-car', 'travel', '跨境轿车 · 单程', 'Cross-border car · one way', 900, 0.4,
+        '两地牌，需提前预约', 'Dual-plate car; book ahead']
     ]),
 
     /* ---------------- 新濠博亚 · 新濠皇会 ---------------- */
@@ -464,7 +540,23 @@
       ['mel-disney', 'exp', '迪士尼汇聚嘉年华 贵宾通行', 'Disney carnival VIP pass', 300, 0.1,
         '免费入场，兑换含礼遇与优先体验', 'Free entry; benefits and priority access'],
       ['mel-beyond', 'exp', '濠友荟 会员礼遇包', 'Melco Beyond welcome pack', 200, 0,
-        '新会员限定礼品与优惠券', 'New-member gifts and coupons']
+        '新会员限定礼品与优惠券', 'New-member gifts and coupons'],
+      ['mel-art', 'exp', '摩珀斯 艺术建筑导赏 · 两位', 'Morpheus architecture tour · two', 500, 0.15,
+        '扎哈·哈迪德设计的自由形态建筑', 'Zaha Hadid’s free-form architecture'],
+
+      ['mel-shoppes', 'shop', '新濠天地 购物礼券 MOP 800', 'City of Dreams MOP 800 credit', 800, 0.35,
+        '新濠天地，名店与免税店', 'City of Dreams, boutiques and duty free'],
+      ['mel-studio-shop', 'shop', '新濠影汇 购物礼券 MOP 500', 'Studio City MOP 500 credit', 500, 0.2,
+        '新濠影汇，电影主题商店', 'Studio City, cinema-themed shops'],
+      ['mel-altira-shop', 'shop', '新濠锋 名店 MOP 600 礼券', 'Altira boutiques MOP 600 credit', 600, 0.2,
+        '新濠锋，珠宝与腕表', 'Altira, jewellery and watches'],
+
+      ['mel-airport', 'travel', '机场接送 · 单程', 'Airport transfer · one way', 380, 0,
+        '豪华轿车，24 小时可约', 'Luxury sedan, bookable 24 hours'],
+      ['mel-ferry', 'travel', '港澳船票 · 两位', 'Macau–HK ferry · two', 380, 0,
+        '单程普通位，平日适用', 'One-way standard, weekdays'],
+      ['mel-car', 'travel', '跨境轿车 · 单程', 'Cross-border car · one way', 900, 0.4,
+        '两地牌，需提前预约', 'Dual-plate car; book ahead']
     ]),
 
     /* ---------------- 澳娱综合 · 至尊卡 ---------------- */
@@ -535,7 +627,25 @@
       ['sjm-ferry', 'travel', '港澳船票 · 两位', 'Macau–HK ferry · two', 380, 0,
         '单程普通位，平日适用', 'One-way standard, weekdays'],
       ['sjm-car', 'travel', '跨境轿车 · 单程', 'Cross-border car · one way', 900, 0.4,
-        '两地牌，需提前预约', 'Dual-plate car; book ahead']
+        '两地牌，需提前预约', 'Dual-plate car; book ahead'],
+      ['sjm-airport', 'travel', '机场接送 · 单程', 'Airport transfer · one way', 380, 0,
+        '豪华轿车，24 小时可约', 'Luxury sedan, bookable 24 hours'],
+
+      ['sjm-glp-show', 'show', '上葡京 剧场演出 · 两张', 'Grand Lisboa Palace theatre · 2 tickets', 900, 0.3,
+        '驻场演出与巡演剧目', 'Resident and touring productions'],
+      ['sjm-lisboa-show', 'show', '新葡京 舞台演出 · 两张', 'Grand Lisboa stage show · 2 tickets', 600, 0.2,
+        '澳门半岛，歌舞与魔术汇演', 'Song, dance and magic revues'],
+      ['sjm-fountain', 'show', '上葡京 光影喷泉 贵宾席 · 两位', 'GLP fountain show VIP seats · two', 200, 0,
+        '户外光影喷泉汇演，含饮品', 'Outdoor fountain show with drinks'],
+
+      ['sjm-pool', 'play', '上葡京 泳池与健身 一日通', 'GLP pool + gym day pass', 450, 0.1,
+        '度假村泳池、日光甲板与健身中心', 'Resort pool, sun deck and fitness centre'],
+      ['sjm-kids', 'play', '上葡京 儿童乐园 · 两位', 'GLP kids zone · two', 280, 0,
+        '室内亲子游乐与手作课', 'Indoor play and craft classes'],
+      ['sjm-grandprix', 'play', '大赛车博物馆 · 两张', 'Grand Prix Museum · 2 tickets', 160, 0,
+        '东望洋赛道历史与模拟器体验', 'Guia Circuit history and simulators'],
+      ['sjm-kl-shoppes', 'shop', 'THE KARL LAGERFELD 限定礼券 MOP 600', 'KARL LAGERFELD MOP 600 credit', 600, 0.2,
+        '设计师限定单品与纪念品', 'Designer pieces and souvenirs']
     ])
   };
 
