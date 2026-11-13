@@ -11,7 +11,7 @@
 <link rel="icon" href="assets/favicon.ico" sizes="any">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <link rel="stylesheet" href="assets/site.css">
-<link rel="stylesheet" href="assets/bj-mall.css?v=20261114c">
+<link rel="stylesheet" href="assets/bj-mall.css?v=20261114d">
 </head>
 <body>
 <script>document.documentElement.className += ' js';</script>
@@ -115,8 +115,8 @@
 <script src="assets/i18n.js"></script>
 <script src="assets/i18n-bj.js"></script>
 <script src="assets/bj-casinos.js"></script>
-<script src="assets/bj-wallet.js?v=20261114c"></script>
-<script src="assets/bj-mall.js?v=20261114c"></script>
+<script src="assets/bj-wallet.js?v=20261114d"></script>
+<script src="assets/bj-mall.js?v=20261114d"></script>
 <script src="assets/bj-core.js"></script>
 <script>
 (function () {
@@ -175,6 +175,8 @@
     const prog = PROGRAMS[progId];
     /* 与牌桌一致的钱包自愈：脏数据归零，积分不超过流水可换上限 */
     const num = x => (typeof x === 'number' && isFinite(x) && x > 0 ? x : 0);
+    const LIMIT = 1e12;
+    if (m.turnover > LIMIT || m.points > LIMIT){ m.turnover = 0; m.points = 0; }
     m.points = num(m.points);
     m.turnover = num(m.turnover);
     const cap = prog.mopPerPoint ? m.turnover / prog.mopPerPoint : Infinity;

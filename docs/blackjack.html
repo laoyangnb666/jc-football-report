@@ -11,7 +11,7 @@
 <link rel="icon" href="assets/favicon.ico" sizes="any">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <link rel="stylesheet" href="assets/site.css">
-<link rel="stylesheet" href="assets/bj-mall.css?v=20261113b">
+<link rel="stylesheet" href="assets/bj-mall.css?v=20261114d">
 <style>
 :root{
   --gold:#C9A227; --gold-lt:#EBD98F; --cream:#F4EDDB;
@@ -1249,7 +1249,7 @@ body.fsmode .deck-panel .dp-read.dp-bank b.neg{color:#FCA5A5}
 <script src="assets/i18n.js"></script>
 <script src="assets/i18n-bj.js"></script>
 <script src="assets/bj-casinos.js"></script>
-<script src="assets/bj-wallet.js?v=20261113b"></script>
+<script src="assets/bj-wallet.js?v=20261114d"></script>
 <script src="assets/bj-core.js"></script>
 <script>
 /* ============================================================
@@ -1386,6 +1386,8 @@ const BJ = (() => {
     if (m.card > maxCard) m.card = maxCard;   // 官方档位减少时，旧档位向下归位
     /* 钱包自愈：NaN / 负数 / 超过流水可换上限的脏数据一律归位，避免界面上出现天文数字 */
     const num = x => (typeof x === 'number' && isFinite(x) && x > 0 ? x : 0);
+    const LIMIT = 1e12;   // 万亿流水/积分在模拟里不可能出现，视作脏数据直接清零
+    if (m.turnover > LIMIT || m.points > LIMIT){ m.turnover = 0; m.points = 0; m.maxStake = 0; }
     m.points = num(m.points);
     m.turnover = num(m.turnover);
     m.maxStake = num(m.maxStake);
