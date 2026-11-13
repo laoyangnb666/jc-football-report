@@ -122,7 +122,7 @@ I18N.extend({
     'idx.c3foot': 'actual hit rate vs implied probability',
 
     'idx.fxSub': 'Click any match to carry its odds and model probabilities into the simulator and work out the edge yourself. Levels: strong pick / small stake / watch.',
-    'idx.fxNote': 'Snapshot 2026-11-08 21:30 (Beijing time, Sunday, 22 matches). Since v6 the report is split into Data Analysis and Per-match Forecasts; only 1 of 22 matches showed positive EV, the rest were explicitly not recommended.',
+    'idx.fxNote': 'Snapshot 2026-11-13 16:30 (Beijing time, Friday, 22 matches). v6 consensus-λ model (16+ live odds books, adaptive blend weight); this round: 10 small stakes / 11 watch / 1 avoid — with a 13.9% commission most matches are negative EV, and not betting is a valid decision.',
 
     'idx.methodSub': 'Every step maps to a function in the script, and every number in the report can be traced back along this chain.',
     'idx.methodTitle': 'Five steps,<br>from odds to plan.',

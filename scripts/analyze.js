@@ -1,19 +1,19 @@
-// 竞彩足球分析内核 v2
-// 去水 / Dixon-Coles / 独立强度模型（比率法+收缩）/ 融合 / 逐场综合预测 / 回测校准 / 串关
+// 竞彩足球分析内核 v6
+// 去水 / Dixon-Coles / 共识 λ（v6：16+ 家即时欧赔均值拟合，对齐 SKILL v5 L1）/ 独立强度模型（比率法+收缩）/ 自适应融合权重 / 逐场综合预测 / 回测校准 / 串关
 // 零依赖，可直接 node 运行（内置自检样例）；也可整段粘进 Exec 沙盒执行。
 //
-// v2 相对 v1 的变化（依据上一轮 33 场回测）：
-//  1. 新增「独立强度模型」：用捷报的主客分离得失球做比率法评级，产出与盘口无关的概率。
-//     v1 的模型是把总进球赔率反解回胜平负，本质是复述盘口，因此偏差恒 <1.5pp，没有预测力。
-//  2. 新增「融合」：λ = (1-k)·λ市场 + k·λ独立，k 随样本量收缩。
-//  3. 新增 predictMatch：一次性输出 比分分布 / 总进球桶 / 胜平负 / 让球 / 双方进球 / 半全场。
-//  4. 比分只输出 top-N 排名分布，不再给「最可能比分」单值——回测 top1 命中 0/7。
-//  5. 判定规则按回测修正：冷端/热端不构成独立下注理由；分歧场次采信去水方向。
-//  6. 新增 backtest：逐市场命中率与「实际 vs 盘口隐含」对比。
+// v6 相对 v2 的变化（对齐 SKILL v5）：
+//  1. 新增「共识 λ」（L1）：用捷报 16+ 家即时欧赔均值去水拟合 λ 与偏斜（fitFromConsensus）。
+//     竞彩赔率只做价格与 EV 基准，不再单独拟合 λ——对齐 SKILL v5「竞彩只做价格与 EV 基准」。
+//  2. 新增「自适应融合权重 k」：k 随共识庄家数收缩——n < 10 时 k 向市场模型收缩（fit2D 回退），
+//     n ≥ 16 时全额 k=0.35。无共识欧赔时回退 v2 的 fitFromZJQ/fit2D。
+//  3. 保留 v2 的独立强度模型（比率法+收缩）、纪律层（v5.1 红牌风险）、回测校准、串关。
+//  4. 保留 v2 相对 v1 的全部变化：独立强度模型、融合、predictMatch、比分 top-N、判定规则、backtest。
 
 const RHO = -0.10;      // Dixon-Coles 低比分相关修正
 const K_SHRINK = 8;     // 强度评级收缩常数：p/(p+K)
-const K_BLEND = 0.35;   // 独立模型与市场模型的默认融合权重
+const K_BLEND = 0.35;   // 独立模型与共识模型的默认融合权重
+const K_SHRINK_BOOKS = 10; // 共识庄家数低于此值时 k 向市场模型收缩
 const SIDE = ['主胜', '平局', '客胜'];
 
 function factorial(n) { let f = 1; for (let i = 2; i <= n; i++) f *= i; return f; }
@@ -128,6 +128,31 @@ function fitFromZJQ(zjqOdds, spfOdds) {
   return { lambdaTotal, w: best.w, sse: best.sse, grid: best.g, source: 'market' };
 }
 
+// v6 L1 共识 λ：16+ 家即时欧赔均值去水后拟合 λ 与偏斜（对齐 SKILL v5）
+// consEU: [h,d,a] 均赔；consP: [h,d,a] 去水概率（可选，缺省由 consEU 去水）
+// w 由比分网格对 consP 的 SSE 最小化；λ 由总进球网格 + consP 联合拟合（2D 搜索）
+function fitFromConsensus(consEU, consP) {
+  if (!consEU) return null;
+  const target = consP ? consP.slice() : devig(consEU).p;
+  let best = { lambdaTotal: 2.6, w: 0.5, sse: Infinity, g: null };
+  for (let lt = 1.2; lt <= 5.6; lt += 0.02) {
+    for (let w = 0.15; w <= 0.85; w += 0.005) {
+      const g = grid(lt, w), s = summarize(g);
+      const sse = (s.H - target[0]) ** 2 + (s.D - target[1]) ** 2 + (s.A - target[2]) ** 2;
+      if (sse < best.sse) best = { lambdaTotal: lt, w, sse, g };
+    }
+  }
+  return { ...best, source: 'consensus' };
+}
+
+// v6 自适应融合权重：k 随共识庄家数收缩
+// n < 10 → k×0.5；10 ≤ n < 16 → k×0.75；n ≥ 16 → 全额 k
+function adaptiveK(nBooks, base = K_BLEND) {
+  if (!nBooks || nBooks < K_SHRINK_BOOKS) return base * 0.5;
+  if (nBooks < 16) return base * 0.75;
+  return base;
+}
+
 function fit2D(spfOdds) {
   const target = devig(spfOdds).p;
   let best = { lambdaTotal: 2.8, w: 0.5, sse: Infinity, g: null };
@@ -234,6 +259,7 @@ function disciplineLayer(disc) {
 //   no, lg, home, away, kickoff, hc,
 //   spf:[h,d,a] | null, rq:[h,d,a] | null, supSPF:[h,d,a] | null,
 //   zjq:[8] | null, open:[h,d,a] | null,
+//   consEU:[h,d,a] | null, consP:[h,d,a] | null, nBooks:int | null,   // v6 共识欧赔
 //   team:{home:{home:{gf,ga,p}, away:{gf,ga,p}}, away:{...}, form:{home,away}} | null,
 //   panlu:{home:{...}, away:{...}} | null,
 //   bookAvg:{ euOpen, euLive, rqOpen:{h,line,a}, rqLive, ouOpen:{line}, ouLive } | null,
@@ -241,11 +267,15 @@ function disciplineLayer(disc) {
 // }
 function predictMatch(row) {
   const out = { no: row.no, lg: row.lg, home: row.home, away: row.away, hc: row.hc, kickoff: row.kickoff };
-  const mk = row.spf && row.zjq ? fitFromZJQ(row.zjq, row.spf)
+  // v6：优先共识 λ（L1），无共识时回退竞彩拟合（v2 行为）
+  const mk = row.consEU ? fitFromConsensus(row.consEU, row.consP)
+    : row.spf && row.zjq ? fitFromZJQ(row.zjq, row.spf)
     : row.spf ? fit2D(row.spf) : null;
   const tm = row.team ? teamStrength(row.team.home, row.team.away, row.team.form) : null;
-  const bl = blendModels(mk, tm, row.blendK === undefined ? K_BLEND : row.blendK);
-  if (!bl) return { ...out, ok: false, reason: '缺少胜平负与总进球赔率，无法拟合 λ' };
+  // v6：k 随共识庄家数自适应收缩
+  const kBase = row.blendK === undefined ? adaptiveK(row.nBooks) : row.blendK;
+  const bl = blendModels(mk, tm, kBase);
+  if (!bl) return { ...out, ok: false, reason: '缺少共识欧赔与胜平负赔率，无法拟合 λ' };
 
   // v3：伤停修正（人工情报裁定，报告必须披露依据）
   const adj = row.injuryAdj || { home: 0, away: 0 };
@@ -267,6 +297,10 @@ function predictMatch(row) {
     injuryAdj: adj,
     discipline: disc,
     blendK: bl.blendK, modelSource: bl.source,
+    // v6：共识层（L1）与市场层（竞彩）分开标注
+    consLambda: row.consEU ? (mk && mk.source === 'consensus' ? mk.lambdaTotal : null) : null,
+    consW: row.consEU ? (mk && mk.source === 'consensus' ? mk.w : null) : null,
+    consEU: row.consEU || null, consP: row.consP || null, nBooks: row.nBooks || 0,
     marketLambda: mk ? mk.lambdaTotal : null, marketW: mk ? mk.w : null,
     teamLambda: tm ? tm.lambdaTotal : null, teamW: tm ? tm.w : null,
     teamComponents: tm ? tm.components : null, teamSample: tm ? tm.sample : null,
@@ -589,6 +623,13 @@ if (typeof module !== 'undefined' && require.main === module) {
     '| λ总', p0.lambdaTotal.toFixed(3), '→', pd.lambdaTotal.toFixed(3),
     '| 高摩擦', pd.discipline.hot);
 
+  // v6 共识 λ 自检：16 家即时欧赔 → fitFromConsensus；k 自适应
+  const demoCons = { ...demo, consEU: [2.10, 3.50, 3.40], consP: [0.452, 0.271, 0.277], nBooks: 18 };
+  const pc = predictMatch(demoCons);
+  console.log('== 共识 λ ==', '来源', pc.modelSource, 'k', pc.blendK.toFixed(2),
+    '| 共识λ', pc.consLambda && pc.consLambda.toFixed(2), '融合λ', pc.lambdaTotal.toFixed(2),
+    '| 胜平负', [pc.probs.H, pc.probs.D, pc.probs.A].map((x) => (x * 100).toFixed(1) + '%').join(' / '));
+
   const bt = backtest([p], { '示例A': [2, 1] });
   console.log('== 回测 ==', JSON.stringify(bt.hit));
   console.log('去吧', devig([2.0, 3.4, 4.0]).m.toFixed(4),
@@ -596,9 +637,9 @@ if (typeof module !== 'undefined' && require.main === module) {
 }
 
 module.exports = {
-  RHO, K_SHRINK, K_BLEND, SIDE,
+  RHO, K_SHRINK, K_BLEND, K_SHRINK_BOOKS, SIDE,
   devig, grid, summarize, topScores, goalBuckets, goalIntervals, rqProb, hafu,
-  fitFromZJQ, fit2D, teamStrength, blendModels, disciplineLayer,
+  fitFromZJQ, fit2D, fitFromConsensus, adaptiveK, teamStrength, blendModels, disciplineLayer,
   predictMatch, buildForecast, verdictFromPrediction, buildRecommendation,
   backtest, ev, combo,
 };
