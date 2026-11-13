@@ -413,41 +413,41 @@ body.fsmode .betpanel,body.fsmode .curve-card,body.fsmode .data-stack{display:no
 .vip-invite .iv-idle{font-size:9.5px;color:#9A927F}
 
 /* ================= 贵宾奢华度：随贵宾卡等级逐级增强 ================= */
-:root{--lux:.18}
+:root{--lux:.18;--brand:#C9A227;--brand-deep:#2A1113}
 body.lux-1,body.lux-2,body.lux-3,body.lux-4{transition:background-color 1.4s ease}
-/* 1 · 香槟金：基础贵宾卡 */
-body.lux-1{background:#F6ECD8}
+/* 1 · 浅色品牌金：基础贵宾卡 */
+body.lux-1{background:color-mix(in srgb,var(--brand) 8%,#F6ECD8)}
 body.lux-1::before{background:
-  radial-gradient(680px 520px at 82% -6%,rgba(235,205,130,.5),transparent 62%),
+  radial-gradient(680px 520px at 82% -6%,color-mix(in srgb,var(--brand) 38%,transparent),transparent 62%),
   radial-gradient(560px 460px at 6% 8%,rgba(252,243,222,.92),transparent 66%),
-  radial-gradient(900px 600px at 50% 110%,rgba(232,214,176,.5),transparent 70%)}
-body.lux-1 .bjkicker{color:#A67C00}
-body.lux-1 .tablewrap{box-shadow:0 30px 64px -30px rgba(8,18,12,.7),0 0 0 1px rgba(201,162,39,.22),
-  0 0 calc(18px + var(--lux) * 46px) rgba(201,162,39,.2)}
-/* 2 · 祖母绿 + 金：私人贵宾卡 */
-body.lux-2{background:#0B1A13}
+  radial-gradient(900px 600px at 50% 110%,color-mix(in srgb,var(--brand) 26%,transparent),transparent 70%)}
+body.lux-1 .bjkicker{color:color-mix(in srgb,var(--brand) 72%,#5E4400)}
+body.lux-1 .tablewrap{box-shadow:0 30px 64px -30px rgba(8,18,12,.7),0 0 0 1px color-mix(in srgb,var(--brand) 26%,transparent),
+  0 0 calc(18px + var(--lux) * 46px) color-mix(in srgb,var(--brand) 24%,transparent)}
+/* 2 · 品牌深色：私人贵宾卡 */
+body.lux-2{background:color-mix(in srgb,var(--brand) 7%,var(--brand-deep,#0B1A13))}
 body.lux-2::before{background:
-  radial-gradient(720px 540px at 82% -6%,rgba(201,162,39,.34),transparent 64%),
-  radial-gradient(620px 500px at 6% 10%,rgba(24,84,57,.55),transparent 68%),
-  radial-gradient(1000px 640px at 50% 110%,rgba(10,42,28,.7),transparent 72%)}
-body.lux-2 .tablewrap{box-shadow:0 30px 64px -30px rgba(0,0,0,.85),0 0 0 1px rgba(201,162,39,.28),
-  0 0 calc(22px + var(--lux) * 60px) rgba(201,162,39,.24)}
-/* 3 · 深蓝黑 + 金：主席卡 */
-body.lux-3{background:#080C14}
+  radial-gradient(720px 540px at 82% -6%,color-mix(in srgb,var(--brand) 42%,transparent),transparent 64%),
+  radial-gradient(620px 500px at 6% 10%,color-mix(in srgb,var(--brand) 18%,var(--brand-deep)),transparent 68%),
+  radial-gradient(1000px 640px at 50% 110%,rgba(0,0,0,.55),transparent 72%)}
+body.lux-2 .tablewrap{box-shadow:0 30px 64px -30px rgba(0,0,0,.85),0 0 0 1px color-mix(in srgb,var(--brand) 32%,transparent),
+  0 0 calc(22px + var(--lux) * 60px) color-mix(in srgb,var(--brand) 28%,transparent)}
+/* 3 · 品牌深色加深：主席卡 */
+body.lux-3{background:color-mix(in srgb,var(--brand) 6%,color-mix(in srgb,var(--brand-deep) 55%,#05070C))}
 body.lux-3::before{background:
-  radial-gradient(760px 560px at 82% -6%,rgba(201,162,39,.38),transparent 64%),
-  radial-gradient(660px 520px at 6% 10%,rgba(30,44,78,.6),transparent 68%),
-  radial-gradient(1000px 640px at 50% 110%,rgba(8,14,26,.8),transparent 72%)}
-body.lux-3 .tablewrap{box-shadow:0 30px 64px -30px rgba(0,0,0,.9),0 0 0 1px rgba(201,162,39,.34),
-  0 0 calc(26px + var(--lux) * 72px) rgba(201,162,39,.3)}
-/* 4 · 纯黑金：超级贵宾卡 */
-body.lux-4{background:#060504}
+  radial-gradient(760px 560px at 82% -6%,color-mix(in srgb,var(--brand) 46%,transparent),transparent 64%),
+  radial-gradient(660px 520px at 6% 10%,color-mix(in srgb,var(--brand) 14%,var(--brand-deep)),transparent 68%),
+  radial-gradient(1000px 640px at 50% 110%,rgba(0,0,0,.7),transparent 72%)}
+body.lux-3 .tablewrap{box-shadow:0 30px 64px -30px rgba(0,0,0,.9),0 0 0 1px color-mix(in srgb,var(--brand) 38%,transparent),
+  0 0 calc(26px + var(--lux) * 72px) color-mix(in srgb,var(--brand) 34%,transparent)}
+/* 4 · 黑金：超级贵宾卡 */
+body.lux-4{background:color-mix(in srgb,var(--brand) 6%,color-mix(in srgb,var(--brand-deep) 28%,#060504))}
 body.lux-4::before{background:
-  radial-gradient(820px 600px at 82% -6%,rgba(235,205,130,.44),transparent 62%),
-  radial-gradient(700px 560px at 6% 10%,rgba(92,70,22,.62),transparent 66%),
-  radial-gradient(1100px 680px at 50% 110%,rgba(40,30,10,.88),transparent 74%)}
-body.lux-4 .tablewrap{box-shadow:0 30px 64px -30px rgba(0,0,0,.95),0 0 0 1px rgba(235,217,143,.45),
-  0 0 calc(30px + var(--lux) * 90px) rgba(201,162,39,.38),0 0 140px rgba(201,162,39,.18)}
+  radial-gradient(820px 600px at 82% -6%,color-mix(in srgb,var(--brand) 56%,transparent),transparent 62%),
+  radial-gradient(700px 560px at 6% 10%,color-mix(in srgb,var(--brand) 22%,var(--brand-deep)),transparent 66%),
+  radial-gradient(1100px 680px at 50% 110%,rgba(0,0,0,.8),transparent 74%)}
+body.lux-4 .tablewrap{box-shadow:0 30px 64px -30px rgba(0,0,0,.95),0 0 0 1px color-mix(in srgb,var(--brand) 55%,transparent),
+  0 0 calc(30px + var(--lux) * 90px) color-mix(in srgb,var(--brand) 45%,transparent),0 0 140px color-mix(in srgb,var(--brand) 20%,transparent)}
 /* 深色背景（2–4）下的页头与页脚 */
 body:is(.lux-2,.lux-3,.lux-4) .bjhead h1{color:#F2E8D0}
 body:is(.lux-2,.lux-3,.lux-4) .bjhead h1 em{color:#EBD98F}
@@ -462,25 +462,41 @@ body:is(.lux-2,.lux-3,.lux-4) footer{color:#8E8676!important;border-top-color:#2
 .lux-aura{position:fixed;inset:0;z-index:-1;pointer-events:none;transition:opacity .9s;
   opacity:calc(.12 + var(--lux) * .5);
   background:
-    radial-gradient(620px 440px at 78% 4%,rgba(235,205,130,.3),transparent 65%),
-    radial-gradient(520px 420px at 12% 18%,rgba(201,162,39,.18),transparent 68%),
-    radial-gradient(900px 520px at 50% 108%,rgba(201,162,39,.15),transparent 72%);
+    radial-gradient(620px 440px at 78% 4%,color-mix(in srgb,var(--brand) 32%,transparent),transparent 65%),
+    radial-gradient(520px 420px at 12% 18%,color-mix(in srgb,var(--brand) 18%,transparent),transparent 68%),
+    radial-gradient(900px 520px at 50% 108%,color-mix(in srgb,var(--brand) 16%,transparent),transparent 72%);
   animation:auraBreath 7s ease-in-out infinite alternate}
+.lux-aura:before{content:"";position:absolute;inset:0;opacity:.4}
 body.lux-2 .lux-aura{background:
-  radial-gradient(680px 480px at 80% 0%,rgba(235,205,130,.3),transparent 66%),
-  radial-gradient(560px 460px at 8% 14%,rgba(47,122,79,.35),transparent 70%),
-  radial-gradient(980px 560px at 50% 112%,rgba(201,162,39,.2),transparent 74%)}
+  radial-gradient(680px 480px at 80% 0%,color-mix(in srgb,var(--brand) 34%,transparent),transparent 66%),
+  radial-gradient(560px 460px at 8% 14%,color-mix(in srgb,var(--brand) 26%,var(--brand-deep)),transparent 70%),
+  radial-gradient(980px 560px at 50% 112%,color-mix(in srgb,var(--brand) 22%,transparent),transparent 74%)}
 body.lux-3 .lux-aura{background:
-  radial-gradient(700px 500px at 80% 0%,rgba(235,205,130,.32),transparent 66%),
-  radial-gradient(580px 480px at 8% 14%,rgba(46,92,138,.32),transparent 70%),
-  radial-gradient(1000px 580px at 50% 112%,rgba(201,162,39,.24),transparent 74%)}
+  radial-gradient(700px 500px at 80% 0%,color-mix(in srgb,var(--brand) 38%,transparent),transparent 66%),
+  radial-gradient(580px 480px at 8% 14%,color-mix(in srgb,var(--brand) 20%,var(--brand-deep)),transparent 70%),
+  radial-gradient(1000px 580px at 50% 112%,color-mix(in srgb,var(--brand) 26%,transparent),transparent 74%)}
 body.lux-4 .lux-aura{background:
-  radial-gradient(720px 520px at 80% 0%,rgba(255,240,190,.36),transparent 64%),
-  radial-gradient(600px 500px at 8% 14%,rgba(201,162,39,.3),transparent 70%),
-  radial-gradient(1040px 620px at 50% 112%,rgba(201,162,39,.3),transparent 74%)}
+  radial-gradient(720px 520px at 80% 0%,color-mix(in srgb,var(--brand) 48%,transparent),transparent 64%),
+  radial-gradient(600px 500px at 8% 14%,color-mix(in srgb,var(--brand) 30%,var(--brand-deep)),transparent 70%),
+  radial-gradient(1040px 620px at 50% 112%,color-mix(in srgb,var(--brand) 32%,transparent),transparent 74%)}
 body.lux-4 .lux-aura:after{content:"";position:absolute;inset:-20%;
-  background:conic-gradient(from 0deg,transparent 0 14deg,rgba(235,217,143,.05) 14deg 16deg,transparent 16deg 34deg);
+  background:conic-gradient(from 0deg,transparent 0 14deg,color-mix(in srgb,var(--brand) 8%,transparent) 14deg 16deg,transparent 16deg 34deg);
   animation:raysSpin 24s linear infinite}
+/* 不同公司 / 娱乐场的底纹母题 */
+body.motif-grid .lux-aura:before{background:
+  repeating-linear-gradient(90deg,color-mix(in srgb,var(--brand) 10%,transparent) 0 1px,transparent 1px 34px),
+  repeating-linear-gradient(0deg,color-mix(in srgb,var(--brand) 8%,transparent) 0 1px,transparent 1px 34px)}
+body.motif-diamond .lux-aura:before{background:
+  repeating-linear-gradient(45deg,color-mix(in srgb,var(--brand) 9%,transparent) 0 1px,transparent 1px 26px),
+  repeating-linear-gradient(-45deg,color-mix(in srgb,var(--brand) 9%,transparent) 0 1px,transparent 1px 26px)}
+body.motif-arch .lux-aura:before{background:
+  repeating-radial-gradient(circle at 50% 130%,color-mix(in srgb,var(--brand) 12%,transparent) 0 1px,transparent 1px 56px)}
+body.motif-wave .lux-aura:before{background:
+  repeating-linear-gradient(112deg,color-mix(in srgb,var(--brand) 8%,transparent) 0 2px,transparent 2px 38px)}
+body.motif-fan .lux-aura:before{background:
+  repeating-conic-gradient(from 200deg at 50% 125%,color-mix(in srgb,var(--brand) 10%,transparent) 0 2deg,transparent 2deg 11deg)}
+body.motif-bloom .lux-aura:before{background:
+  repeating-conic-gradient(from 0deg at 50% 30%,color-mix(in srgb,var(--brand) 9%,transparent) 0 3deg,transparent 3deg 15deg)}
 @keyframes auraBreath{from{transform:scale(1)}to{transform:scale(1.07)}}
 
 /* 持卡闪金：卡面与贵宾卡条持续扫光 */
@@ -498,51 +514,80 @@ body.lux-4 .mc-shine:after{animation-duration:1.9s}
   animation:mcShine 4.6s ease-in-out infinite;pointer-events:none}
 body.lux-2 .vip-held::after{animation-duration:3s}
 
-/* 获卡高级动效：金色光柱 / 火花 / 卡面揭示 */
+/* 获卡高级动效：品牌光柱 / 火花 / 卡面揭示（每个公司一套母题） */
 .vip-fx{position:fixed;inset:0;z-index:300;display:flex;align-items:center;justify-content:center;
   pointer-events:none;opacity:0;transition:opacity .4s;
-  background:radial-gradient(circle at 50% 45%,rgba(201,162,39,.2),transparent 62%)}
-.vip-fx.lv2{background:radial-gradient(circle at 50% 45%,rgba(201,162,39,.34),rgba(4,3,2,.55) 72%)}
+  background:radial-gradient(circle at 50% 45%,color-mix(in srgb,var(--fx,#C9A227) 24%,transparent),transparent 62%)}
+.vip-fx.lv2{background:radial-gradient(circle at 50% 45%,color-mix(in srgb,var(--fx,#C9A227) 34%,transparent),rgba(4,3,2,.55) 72%)}
+.vip-fx.lv3{background:radial-gradient(circle at 50% 45%,color-mix(in srgb,var(--fx,#C9A227) 36%,transparent),rgba(3,4,8,.62) 72%)}
+.vip-fx.lv4{background:radial-gradient(circle at 50% 45%,color-mix(in srgb,var(--fx,#C9A227) 44%,transparent),rgba(2,1,1,.72) 70%)}
 .vip-fx.on{opacity:1}
 .vip-fx.out{opacity:0;transition:opacity .7s}
 .vfx-rays{position:absolute;width:min(88vw,780px);height:min(88vw,780px);border-radius:50%;
-  background:conic-gradient(from 0deg,transparent 0 7deg,rgba(235,217,143,.16) 7deg 9deg,transparent 9deg 20deg);
+  background:conic-gradient(from 0deg,transparent 0 7deg,color-mix(in srgb,var(--fx,#C9A227) 28%,transparent) 7deg 9deg,transparent 9deg 20deg);
   animation:raysSpin 9s linear infinite;opacity:.85}
-.vip-fx.lv2 .vfx-rays{opacity:1;filter:drop-shadow(0 0 18px rgba(201,162,39,.4));animation-duration:6s}
+.vip-fx.lv2 .vfx-rays{opacity:1;filter:drop-shadow(0 0 18px color-mix(in srgb,var(--fx,#C9A227) 45%,transparent));animation-duration:6s}
+.vip-fx.lv3 .vfx-rays{animation-duration:6s;filter:drop-shadow(0 0 20px color-mix(in srgb,var(--fx,#C9A227) 42%,transparent))}
+.vip-fx.lv4 .vfx-rays{animation-duration:4.5s;filter:drop-shadow(0 0 28px color-mix(in srgb,var(--fx,#C9A227) 60%,transparent))}
 @keyframes raysSpin{to{transform:rotate(360deg)}}
 .vfx-sparks{position:absolute;inset:0;overflow:hidden}
 .vfx-sparks i{position:absolute;left:50%;top:50%;width:var(--s);height:var(--s);border-radius:50%;
-  background:radial-gradient(circle,#FFF6CE,#C9A227);opacity:0;
+  background:radial-gradient(circle,#FFF6CE,var(--fx,#C9A227));opacity:0;
   animation:sparkFly 2.5s ease-out var(--dl) forwards}
 .vip-fx.lv2 .vfx-sparks i{animation-duration:3.1s}
 @keyframes sparkFly{0%{opacity:0;transform:translate(-50%,-50%) rotate(var(--a)) translateX(0) scale(.4)}
   14%{opacity:1}100%{opacity:0;transform:translate(-50%,-50%) rotate(var(--a)) translateX(var(--d)) scale(.9)}}
 .vfx-card{position:relative;min-width:262px;max-width:74vw;padding:24px 32px;border-radius:16px;text-align:center;
-  background:linear-gradient(150deg,#1C2A20,#0A1710 55%,#112018);border:1px solid #C9A227;overflow:hidden;
-  box-shadow:0 30px 80px -30px rgba(0,0,0,.85),0 0 0 1px rgba(235,217,143,.2),0 0 70px rgba(201,162,39,.35);
+  background:linear-gradient(150deg,color-mix(in srgb,var(--fx,#C9A227) 22%,#0A1710),#0A0703 58%,color-mix(in srgb,var(--fx,#C9A227) 12%,#050403));
+  border:1px solid var(--fx,#C9A227);overflow:hidden;
+  box-shadow:0 30px 80px -30px rgba(0,0,0,.85),0 0 0 1px color-mix(in srgb,var(--fx,#C9A227) 30%,transparent),
+    0 0 74px color-mix(in srgb,var(--fx,#C9A227) 40%,transparent);
   transform:scale(.82);opacity:0;animation:cardIn .8s cubic-bezier(.2,.9,.25,1) .12s forwards}
-.vip-fx.lv2 .vfx-card{background:linear-gradient(150deg,#241B08,#0C0903 55%,#1A1204);
-  box-shadow:0 30px 90px -28px rgba(0,0,0,.9),0 0 0 1px rgba(235,217,143,.32),0 0 100px rgba(201,162,39,.5)}
-.vip-fx.lv3{background:radial-gradient(circle at 50% 45%,rgba(201,162,39,.34),rgba(3,6,12,.6) 72%)}
-.vip-fx.lv3 .vfx-card{background:linear-gradient(150deg,#101A2E,#070C16 55%,#0C1424);color:#EBD98F;
-  box-shadow:0 30px 96px -26px rgba(0,0,0,.92),0 0 0 1px rgba(235,217,143,.34),0 0 110px rgba(201,162,39,.48)}
-.vip-fx.lv3 .vfx-rays{animation-duration:6s;filter:drop-shadow(0 0 20px rgba(201,162,39,.35))}
-.vip-fx.lv4{background:radial-gradient(circle at 50% 45%,rgba(255,228,150,.42),rgba(2,1,1,.72) 70%)}
-.vip-fx.lv4 .vfx-card{background:linear-gradient(150deg,#2A2008,#0A0703 55%,#1C1404);color:#EBD98F;
-  border-color:#EBD98F;box-shadow:0 34px 110px -24px rgba(0,0,0,.95),0 0 0 1px rgba(255,246,206,.4),0 0 140px rgba(201,162,39,.6)}
-.vip-fx.lv4 .vfx-rays{animation-duration:4.5s;filter:drop-shadow(0 0 28px rgba(235,205,130,.55))}
-.vip-fx.lv4 .vfx-card b{color:#FFF3C4}
+.vip-fx.lv2 .vfx-card{background:linear-gradient(150deg,color-mix(in srgb,var(--fx,#C9A227) 26%,#0C0903),#0C0903 55%,color-mix(in srgb,var(--fx,#C9A227) 14%,#050403))}
+.vip-fx.lv3 .vfx-card{background:linear-gradient(150deg,color-mix(in srgb,var(--fx,#C9A227) 22%,#070C16),#070C16 55%,color-mix(in srgb,var(--fx,#C9A227) 14%,#0B101C));color:#EBD98F}
+.vip-fx.lv4 .vfx-card{background:linear-gradient(150deg,color-mix(in srgb,var(--fx,#C9A227) 30%,#0A0703),#0A0703 55%,color-mix(in srgb,var(--fx,#C9A227) 18%,#1C1404));color:#EBD98F;
+  border-color:color-mix(in srgb,var(--fx,#C9A227) 70%,#FFF6CE);
+  box-shadow:0 34px 110px -24px rgba(0,0,0,.95),0 0 0 1px color-mix(in srgb,var(--fx,#C9A227) 45%,transparent),0 0 140px color-mix(in srgb,var(--fx,#C9A227) 55%,transparent)}
 .vfx-card:after{content:"";position:absolute;top:-25%;left:-65%;width:44%;height:150%;transform:skewX(-18deg);
-  background:linear-gradient(100deg,transparent,rgba(255,240,190,.5),transparent);
+  background:linear-gradient(100deg,transparent,rgba(255,246,206,.42),transparent);
   animation:cardShine 2.8s ease-in-out .4s infinite}
 @keyframes cardShine{0%,50%{left:-65%}85%,100%{left:130%}}
 @keyframes cardIn{to{transform:scale(1);opacity:1}}
-.vfx-kicker{display:block;font-size:8.5px;letter-spacing:3.4px;color:#C9A227;margin-bottom:8px}
+@keyframes cardTurn{from{transform:rotate(-7deg) scale(.78);opacity:0}to{transform:rotate(0) scale(1);opacity:1}}
+@keyframes cardRise{from{transform:translateY(38px) scale(.9);opacity:0}to{transform:translateY(0) scale(1);opacity:1}}
+@keyframes cardSlide{from{transform:translateX(-46px) scale(.92);opacity:0}to{transform:translateX(0) scale(1);opacity:1}}
+@keyframes cardUnfold{from{transform:scaleY(.35) scaleX(.9);opacity:0}to{transform:scaleY(1) scaleX(1);opacity:1}}
+@keyframes cardBloom{from{transform:rotate(10deg) scale(.6);opacity:0}to{transform:rotate(0) scale(1);opacity:1}}
+.vfx-kicker{display:block;font-size:8.5px;letter-spacing:3.4px;color:var(--fx,#C9A227);margin-bottom:8px}
 .vfx-card b{display:block;font-family:"Noto Serif SC",serif;font-size:clamp(20px,2.6vw,26px);
   font-weight:600;color:#F4EDDB;letter-spacing:1px;line-height:1.35}
 .vfx-card small{display:block;font-size:9.5px;color:#B9B199;margin-top:6px;letter-spacing:.6px}
 .vfx-card em{display:inline-block;font-style:normal;margin-top:12px;font-size:10px;color:#1A1306;
-  background:linear-gradient(135deg,#F3E3A4,#C9A227);padding:3px 12px;border-radius:999px;font-weight:700;letter-spacing:.5px}
+  background:linear-gradient(135deg,#F5E8B8,var(--fx,#C9A227));padding:3px 12px;border-radius:999px;font-weight:700;letter-spacing:.5px}
+
+/* —— 公司母题：光柱 / 火花形状 / 入场方式各不相同 —— */
+/* 金沙中国：拱廊，圆形火花，缩放揭示 */
+.vip-fx.mot-arch .vfx-rays{background:conic-gradient(from 0deg,transparent 0 8deg,color-mix(in srgb,var(--fx,#C9A227) 28%,transparent) 8deg 10deg,transparent 10deg 20deg)}
+/* 银河：菱形切割，方形火花，旋转揭示 */
+.vip-fx.mot-diamond .vfx-rays{background:conic-gradient(from 45deg,transparent 0 12deg,color-mix(in srgb,var(--fx,#C9A227) 32%,transparent) 12deg 17deg,transparent 17deg 30deg)}
+.vip-fx.mot-diamond .vfx-sparks i{clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%);border-radius:0}
+.vip-fx.mot-diamond .vfx-card{animation-name:cardTurn}
+/* 新濠：Art Deco 细线网格，矩形火花，上升揭示 */
+.vip-fx.mot-grid .vfx-rays{background:conic-gradient(from 0deg,transparent 0 4deg,color-mix(in srgb,var(--fx,#C9A227) 30%,transparent) 4deg 5deg,transparent 5deg 10deg)}
+.vip-fx.mot-grid .vfx-sparks i{border-radius:0;width:calc(var(--s) * 1.5)}
+.vip-fx.mot-grid .vfx-card{animation-name:cardRise}
+/* 美高梅：狮王扇面，三角火花，展开揭示 */
+.vip-fx.mot-fan .vfx-rays{background:conic-gradient(from 0deg,color-mix(in srgb,var(--fx,#C9A227) 24%,transparent) 0 3deg,transparent 3deg 14deg)}
+.vip-fx.mot-fan .vfx-sparks i{clip-path:polygon(0 100%,50% 0,100% 100%);border-radius:0}
+.vip-fx.mot-fan .vfx-card{animation-name:cardUnfold}
+/* 永利：水波，椭圆柔光火花，横移揭示 */
+.vip-fx.mot-wave .vfx-rays{background:conic-gradient(from 0deg,transparent 0 16deg,color-mix(in srgb,var(--fx,#C9A227) 30%,transparent) 16deg 28deg,transparent 28deg 52deg)}
+.vip-fx.mot-wave .vfx-sparks i{width:calc(var(--s) * 1.4);height:calc(var(--s) * .7);filter:blur(.4px)}
+.vip-fx.mot-wave .vfx-card{animation-name:cardSlide}
+/* 澳娱：莲花绽放，花瓣火花，绽放揭示 */
+.vip-fx.mot-bloom .vfx-rays{background:conic-gradient(from 0deg,color-mix(in srgb,var(--fx,#C9A227) 22%,transparent) 0 4deg,transparent 4deg 12deg)}
+.vip-fx.mot-bloom .vfx-sparks i{border-radius:60% 20% 60% 20%}
+.vip-fx.mot-bloom .vfx-card{animation-name:cardBloom}
 
 /* 会员卡申请 */
 .apply-box{margin-top:4px}
@@ -1143,6 +1188,34 @@ const BJ = (() => {
   const CATALOG = window.BJ_CASINOS;
   const PROGRAMS = CATALOG.programs;
   const CASINOS = CATALOG.casinos;
+
+  /* 各公司会员卡/贵宾厅的品牌皮肤：主色 + 深色底 + 动效母题 */
+  const BRAND = {
+    sands:  { accent: '#D9B45A', deep: '#2A1113', motif: 'arch',    label: 'SANDS' },
+    galaxy: { accent: '#C8A15A', deep: '#241708', motif: 'diamond', label: 'GALAXY' },
+    melco:  { accent: '#2FBFA0', deep: '#06201B', motif: 'grid',    label: 'MELCO' },
+    mgm:    { accent: '#E3A66F', deep: '#2B1327', motif: 'fan',     label: 'MGM' },
+    wynn:   { accent: '#E7C979', deep: '#2A0F12', motif: 'wave',    label: 'WYNN' },
+    sjm:    { accent: '#C9A227', deep: '#0E2E22', motif: 'bloom',   label: 'SJM' }
+  };
+  /* 同公司不同娱乐场再给一层主色差：威尼斯人金、巴黎人玫红、伦敦人古铜…… */
+  const VENUE_ACCENT = {
+    venetian: '#D9B45A', parisian: '#D05A8C', londoner: '#B08D57', sands: '#A8232A', plaza: '#9B7BC4',
+    galaxy: '#C8A15A', starworld: '#B8860B', broadway: '#C0392B',
+    wynn: '#E7C979', 'wynn-palace': '#C94040',
+    mgm: '#E3A66F', 'mgm-cotai': '#D98B8B',
+    cod: '#2FBFA0', studio: '#2E86C1', altira: '#7E6BC4',
+    'grand-lisboa': '#C9A227', 'lisboa-palace': '#A67C00', lisboa: '#B71C1C',
+    larc: '#7E57C2', oceanus: '#2E9E8F', ponte16: '#8D6E63'
+  };
+  function brandOf(){
+    const c = curCasino();
+    const b = BRAND[c.prog] || BRAND.sands;
+    return {
+      ...b, accent: VENUE_ACCENT[c.id] || b.accent,
+      casino: c.name, id: c.id, prog: c.prog
+    };
+  }
   const bankFor = r => {
     const rank = r.rank == null ? 1 : r.rank;
     if (rank >= 6) return Math.max(3000000, r.max * 4);
@@ -1235,6 +1308,13 @@ const BJ = (() => {
     const t = CORE.tierOf(m.points, prog);
     const tierRatio = t.count > 1 ? Math.min(1, t.idx / (t.count - 1)) : 0;
     const lvl = Math.max(0, Math.min(4, m.card || 0));
+    const b = brandOf();
+    document.body.dataset.prog = b.prog;
+    document.body.dataset.casino = b.id;
+    document.body.style.setProperty('--brand', b.accent);
+    document.body.style.setProperty('--brand-deep', b.deep);
+    ['arch', 'diamond', 'grid', 'fan', 'wave', 'bloom'].forEach(k =>
+      document.body.classList.toggle('motif-' + k, b.motif === k));
     document.body.classList.remove('lux-1', 'lux-2', 'lux-3', 'lux-4');
     if (lvl) document.body.classList.add('lux-' + lvl);
     document.documentElement.style.setProperty('--lux',
@@ -1242,18 +1322,21 @@ const BJ = (() => {
   }
 
   let vipFxTimer = null;
-  /* 获卡仪式：金色光柱 + 火花 + 卡面揭示，卡级越高越盛 */
+  /* 获卡仪式：品牌光柱 + 火花 + 卡面揭示，公司与厅级各有母题 */
   function celebrateVip(level, name){
     const lvl = Math.max(1, Math.min(4, level || 1));
+    const b = brandOf();
     document.querySelectorAll('.vip-fx').forEach(n => n.remove());   // 连续升卡时不叠层
     clearTimeout(vipFxTimer);
-    const n = 14 + lvl * 6;
+    const seed = [...b.id].reduce((a, ch) => a + ch.charCodeAt(0), 0) % 7;
+    const n = 14 + lvl * 6 + seed;
     const sparks = Array.from({ length: n }, (_, i) => {
       const a = Math.round(i * 360 / n + (Math.random() * 10 - 5));
       const d = Math.round(120 + lvl * 45 + Math.random() * (90 + lvl * 55));
       return `<i style="--a:${a}deg;--d:${d}px;--dl:${Math.round(Math.random() * 720)}ms;--s:${(2 + Math.random() * 3).toFixed(1)}px"></i>`;
     }).join('');
-    const kicker = ['', 'VIP · INVITATION', 'PRIVATE · INVITATION', 'CHAIRMAN · INVITATION', 'SOVEREIGN · INVITATION'][lvl];
+    const tierKick = ['', 'VIP · INVITATION', 'PRIVATE · INVITATION', 'CHAIRMAN · INVITATION', 'SOVEREIGN · INVITATION'][lvl];
+    const kicker = `${b.casino} · ${tierKick}`;
     const unlock = [
       '',
       EN ? 'VIP room unlocked' : '贵宾厅已解锁',
@@ -1262,23 +1345,24 @@ const BJ = (() => {
       EN ? 'Super VIP room unlocked' : '超级贵宾厅已解锁'
     ][lvl];
     const ov = document.createElement('div');
-    ov.className = 'vip-fx lv' + lvl;
+    ov.className = 'vip-fx lv' + lvl + ' mot-' + b.motif;
+    ov.style.setProperty('--fx', b.accent);
+    ov.style.setProperty('--fx-deep', b.deep);
     ov.innerHTML = `
       <div class="vfx-rays"></div>
       <div class="vfx-sparks">${sparks}</div>
       <div class="vfx-card">
         <span class="vfx-kicker">${kicker}</span>
         <b>${name || '—'}</b>
-        <small>${EN ? 'VIP card · approved and retained' : '贵宾厅会员卡 · 已获批并保留'}</small>
+        <small>${b.label} · ${EN ? 'VIP card · approved and retained' : '贵宾厅会员卡 · 已获批并保留'}</small>
         <em>${unlock}</em>
       </div>`;
     document.body.appendChild(ov);
     requestAnimationFrame(() => ov.classList.add('on'));
-    clearTimeout(vipFxTimer);
     vipFxTimer = setTimeout(() => {
       ov.classList.add('out');
       setTimeout(() => ov.remove(), 760);
-    }, 2600 + lvl * 450);
+    }, 2600 + lvl * 450 + seed * 40);
   }
   let flyKeys = new Set();   // 需要播放飞入动画的牌 key
 
