@@ -411,6 +411,139 @@ body.fsmode .betpanel,body.fsmode .curve-card,body.fsmode .data-stack{display:no
 .vip-invite .iv.no{color:#B3202A}
 .vip-invite .iv-sub{display:block;font-size:9px;color:#8A8272;margin-top:2px}
 .vip-invite .iv-idle{font-size:9.5px;color:#9A927F}
+
+/* ================= 贵宾奢华度：随贵宾卡等级逐级增强 ================= */
+:root{--lux:.18}
+body.lux-1,body.lux-2,body.lux-3,body.lux-4{transition:background-color 1.4s ease}
+/* 1 · 香槟金：基础贵宾卡 */
+body.lux-1{background:#F6ECD8}
+body.lux-1::before{background:
+  radial-gradient(680px 520px at 82% -6%,rgba(235,205,130,.5),transparent 62%),
+  radial-gradient(560px 460px at 6% 8%,rgba(252,243,222,.92),transparent 66%),
+  radial-gradient(900px 600px at 50% 110%,rgba(232,214,176,.5),transparent 70%)}
+body.lux-1 .bjkicker{color:#A67C00}
+body.lux-1 .tablewrap{box-shadow:0 30px 64px -30px rgba(8,18,12,.7),0 0 0 1px rgba(201,162,39,.22),
+  0 0 calc(18px + var(--lux) * 46px) rgba(201,162,39,.2)}
+/* 2 · 祖母绿 + 金：私人贵宾卡 */
+body.lux-2{background:#0B1A13}
+body.lux-2::before{background:
+  radial-gradient(720px 540px at 82% -6%,rgba(201,162,39,.34),transparent 64%),
+  radial-gradient(620px 500px at 6% 10%,rgba(24,84,57,.55),transparent 68%),
+  radial-gradient(1000px 640px at 50% 110%,rgba(10,42,28,.7),transparent 72%)}
+body.lux-2 .tablewrap{box-shadow:0 30px 64px -30px rgba(0,0,0,.85),0 0 0 1px rgba(201,162,39,.28),
+  0 0 calc(22px + var(--lux) * 60px) rgba(201,162,39,.24)}
+/* 3 · 深蓝黑 + 金：主席卡 */
+body.lux-3{background:#080C14}
+body.lux-3::before{background:
+  radial-gradient(760px 560px at 82% -6%,rgba(201,162,39,.38),transparent 64%),
+  radial-gradient(660px 520px at 6% 10%,rgba(30,44,78,.6),transparent 68%),
+  radial-gradient(1000px 640px at 50% 110%,rgba(8,14,26,.8),transparent 72%)}
+body.lux-3 .tablewrap{box-shadow:0 30px 64px -30px rgba(0,0,0,.9),0 0 0 1px rgba(201,162,39,.34),
+  0 0 calc(26px + var(--lux) * 72px) rgba(201,162,39,.3)}
+/* 4 · 纯黑金：超级贵宾卡 */
+body.lux-4{background:#060504}
+body.lux-4::before{background:
+  radial-gradient(820px 600px at 82% -6%,rgba(235,205,130,.44),transparent 62%),
+  radial-gradient(700px 560px at 6% 10%,rgba(92,70,22,.62),transparent 66%),
+  radial-gradient(1100px 680px at 50% 110%,rgba(40,30,10,.88),transparent 74%)}
+body.lux-4 .tablewrap{box-shadow:0 30px 64px -30px rgba(0,0,0,.95),0 0 0 1px rgba(235,217,143,.45),
+  0 0 calc(30px + var(--lux) * 90px) rgba(201,162,39,.38),0 0 140px rgba(201,162,39,.18)}
+/* 深色背景（2–4）下的页头与页脚 */
+body:is(.lux-2,.lux-3,.lux-4) .bjhead h1{color:#F2E8D0}
+body:is(.lux-2,.lux-3,.lux-4) .bjhead h1 em{color:#EBD98F}
+body:is(.lux-2,.lux-3,.lux-4) .bjhead p{color:#B7AD96}
+body:is(.lux-2,.lux-3,.lux-4) .bjkicker{color:#D8B84E}
+body:is(.lux-2,.lux-3,.lux-4) .stagebar .sg{background:#3A3326}
+body:is(.lux-2,.lux-3,.lux-4) .stagebar .sg.on{background:#C9A227}
+body:is(.lux-2,.lux-3,.lux-4) .stagebar .sg.done{background:#8F6E14}
+body:is(.lux-2,.lux-3,.lux-4) .stagebar span{color:#9A927F}
+body:is(.lux-2,.lux-3,.lux-4) footer{color:#8E8676!important;border-top-color:#2A2519!important}
+/* 环境光：强度由 --lux 连续控制，卡级越高越亮 */
+.lux-aura{position:fixed;inset:0;z-index:-1;pointer-events:none;transition:opacity .9s;
+  opacity:calc(.12 + var(--lux) * .5);
+  background:
+    radial-gradient(620px 440px at 78% 4%,rgba(235,205,130,.3),transparent 65%),
+    radial-gradient(520px 420px at 12% 18%,rgba(201,162,39,.18),transparent 68%),
+    radial-gradient(900px 520px at 50% 108%,rgba(201,162,39,.15),transparent 72%);
+  animation:auraBreath 7s ease-in-out infinite alternate}
+body.lux-2 .lux-aura{background:
+  radial-gradient(680px 480px at 80% 0%,rgba(235,205,130,.3),transparent 66%),
+  radial-gradient(560px 460px at 8% 14%,rgba(47,122,79,.35),transparent 70%),
+  radial-gradient(980px 560px at 50% 112%,rgba(201,162,39,.2),transparent 74%)}
+body.lux-3 .lux-aura{background:
+  radial-gradient(700px 500px at 80% 0%,rgba(235,205,130,.32),transparent 66%),
+  radial-gradient(580px 480px at 8% 14%,rgba(46,92,138,.32),transparent 70%),
+  radial-gradient(1000px 580px at 50% 112%,rgba(201,162,39,.24),transparent 74%)}
+body.lux-4 .lux-aura{background:
+  radial-gradient(720px 520px at 80% 0%,rgba(255,240,190,.36),transparent 64%),
+  radial-gradient(600px 500px at 8% 14%,rgba(201,162,39,.3),transparent 70%),
+  radial-gradient(1040px 620px at 50% 112%,rgba(201,162,39,.3),transparent 74%)}
+body.lux-4 .lux-aura:after{content:"";position:absolute;inset:-20%;
+  background:conic-gradient(from 0deg,transparent 0 14deg,rgba(235,217,143,.05) 14deg 16deg,transparent 16deg 34deg);
+  animation:raysSpin 24s linear infinite}
+@keyframes auraBreath{from{transform:scale(1)}to{transform:scale(1.07)}}
+
+/* 持卡闪金：卡面与贵宾卡条持续扫光 */
+.mcard .mc-shine{position:absolute;inset:0;border-radius:inherit;overflow:hidden;pointer-events:none;z-index:2}
+.mc-shine:after{content:"";position:absolute;top:-30%;left:-70%;width:36%;height:160%;
+  transform:skewX(-18deg);background:linear-gradient(100deg,transparent,rgba(255,246,206,.5),transparent);
+  animation:mcShine 4.4s ease-in-out infinite}
+body.lux-2 .mc-shine:after{animation-duration:2.8s}
+body.lux-3 .mc-shine:after{animation-duration:2.3s}
+body.lux-4 .mc-shine:after{animation-duration:1.9s}
+@keyframes mcShine{0%,55%{left:-70%}85%,100%{left:135%}}
+.vip-held{position:relative;overflow:hidden}
+.vip-held::after{content:"";position:absolute;top:-30%;left:-70%;width:34%;height:160%;
+  transform:skewX(-18deg);background:linear-gradient(100deg,transparent,rgba(255,246,206,.4),transparent);
+  animation:mcShine 4.6s ease-in-out infinite;pointer-events:none}
+body.lux-2 .vip-held::after{animation-duration:3s}
+
+/* 获卡高级动效：金色光柱 / 火花 / 卡面揭示 */
+.vip-fx{position:fixed;inset:0;z-index:300;display:flex;align-items:center;justify-content:center;
+  pointer-events:none;opacity:0;transition:opacity .4s;
+  background:radial-gradient(circle at 50% 45%,rgba(201,162,39,.2),transparent 62%)}
+.vip-fx.lv2{background:radial-gradient(circle at 50% 45%,rgba(201,162,39,.34),rgba(4,3,2,.55) 72%)}
+.vip-fx.on{opacity:1}
+.vip-fx.out{opacity:0;transition:opacity .7s}
+.vfx-rays{position:absolute;width:min(88vw,780px);height:min(88vw,780px);border-radius:50%;
+  background:conic-gradient(from 0deg,transparent 0 7deg,rgba(235,217,143,.16) 7deg 9deg,transparent 9deg 20deg);
+  animation:raysSpin 9s linear infinite;opacity:.85}
+.vip-fx.lv2 .vfx-rays{opacity:1;filter:drop-shadow(0 0 18px rgba(201,162,39,.4));animation-duration:6s}
+@keyframes raysSpin{to{transform:rotate(360deg)}}
+.vfx-sparks{position:absolute;inset:0;overflow:hidden}
+.vfx-sparks i{position:absolute;left:50%;top:50%;width:var(--s);height:var(--s);border-radius:50%;
+  background:radial-gradient(circle,#FFF6CE,#C9A227);opacity:0;
+  animation:sparkFly 2.5s ease-out var(--dl) forwards}
+.vip-fx.lv2 .vfx-sparks i{animation-duration:3.1s}
+@keyframes sparkFly{0%{opacity:0;transform:translate(-50%,-50%) rotate(var(--a)) translateX(0) scale(.4)}
+  14%{opacity:1}100%{opacity:0;transform:translate(-50%,-50%) rotate(var(--a)) translateX(var(--d)) scale(.9)}}
+.vfx-card{position:relative;min-width:262px;max-width:74vw;padding:24px 32px;border-radius:16px;text-align:center;
+  background:linear-gradient(150deg,#1C2A20,#0A1710 55%,#112018);border:1px solid #C9A227;overflow:hidden;
+  box-shadow:0 30px 80px -30px rgba(0,0,0,.85),0 0 0 1px rgba(235,217,143,.2),0 0 70px rgba(201,162,39,.35);
+  transform:scale(.82);opacity:0;animation:cardIn .8s cubic-bezier(.2,.9,.25,1) .12s forwards}
+.vip-fx.lv2 .vfx-card{background:linear-gradient(150deg,#241B08,#0C0903 55%,#1A1204);
+  box-shadow:0 30px 90px -28px rgba(0,0,0,.9),0 0 0 1px rgba(235,217,143,.32),0 0 100px rgba(201,162,39,.5)}
+.vip-fx.lv3{background:radial-gradient(circle at 50% 45%,rgba(201,162,39,.34),rgba(3,6,12,.6) 72%)}
+.vip-fx.lv3 .vfx-card{background:linear-gradient(150deg,#101A2E,#070C16 55%,#0C1424);color:#EBD98F;
+  box-shadow:0 30px 96px -26px rgba(0,0,0,.92),0 0 0 1px rgba(235,217,143,.34),0 0 110px rgba(201,162,39,.48)}
+.vip-fx.lv3 .vfx-rays{animation-duration:6s;filter:drop-shadow(0 0 20px rgba(201,162,39,.35))}
+.vip-fx.lv4{background:radial-gradient(circle at 50% 45%,rgba(255,228,150,.42),rgba(2,1,1,.72) 70%)}
+.vip-fx.lv4 .vfx-card{background:linear-gradient(150deg,#2A2008,#0A0703 55%,#1C1404);color:#EBD98F;
+  border-color:#EBD98F;box-shadow:0 34px 110px -24px rgba(0,0,0,.95),0 0 0 1px rgba(255,246,206,.4),0 0 140px rgba(201,162,39,.6)}
+.vip-fx.lv4 .vfx-rays{animation-duration:4.5s;filter:drop-shadow(0 0 28px rgba(235,205,130,.55))}
+.vip-fx.lv4 .vfx-card b{color:#FFF3C4}
+.vfx-card:after{content:"";position:absolute;top:-25%;left:-65%;width:44%;height:150%;transform:skewX(-18deg);
+  background:linear-gradient(100deg,transparent,rgba(255,240,190,.5),transparent);
+  animation:cardShine 2.8s ease-in-out .4s infinite}
+@keyframes cardShine{0%,50%{left:-65%}85%,100%{left:130%}}
+@keyframes cardIn{to{transform:scale(1);opacity:1}}
+.vfx-kicker{display:block;font-size:8.5px;letter-spacing:3.4px;color:#C9A227;margin-bottom:8px}
+.vfx-card b{display:block;font-family:"Noto Serif SC",serif;font-size:clamp(20px,2.6vw,26px);
+  font-weight:600;color:#F4EDDB;letter-spacing:1px;line-height:1.35}
+.vfx-card small{display:block;font-size:9.5px;color:#B9B199;margin-top:6px;letter-spacing:.6px}
+.vfx-card em{display:inline-block;font-style:normal;margin-top:12px;font-size:10px;color:#1A1306;
+  background:linear-gradient(135deg,#F3E3A4,#C9A227);padding:3px 12px;border-radius:999px;font-weight:700;letter-spacing:.5px}
+
 /* 会员卡申请 */
 .apply-box{margin-top:4px}
 .apply-top{display:flex;justify-content:space-between;font-size:10px;font-weight:600;color:#2A3B31;margin-bottom:4px}
@@ -609,6 +742,7 @@ body.fsmode .deck-panel .dp-read.dp-bank b.neg{color:#FCA5A5}
 </head>
 <body>
 <script>document.documentElement.className += ' js';</script>
+<div class="lux-aura" aria-hidden="true"></div>
 
 <div class="nav-wrap">
   <nav class="nav">
@@ -1093,6 +1227,59 @@ const BJ = (() => {
     BJWallet.trim(mem());
     BJWallet.save(WALLET);
   }
+
+  /* 奢华度：贵宾卡级（1–4）+ 中场卡等级共同决定背景与光效强度 */
+  function syncLux(){
+    const m = mem();
+    const prog = PROGRAMS[curCasino().prog];
+    const t = CORE.tierOf(m.points, prog);
+    const tierRatio = t.count > 1 ? Math.min(1, t.idx / (t.count - 1)) : 0;
+    const lvl = Math.max(0, Math.min(4, m.card || 0));
+    document.body.classList.remove('lux-1', 'lux-2', 'lux-3', 'lux-4');
+    if (lvl) document.body.classList.add('lux-' + lvl);
+    document.documentElement.style.setProperty('--lux',
+      Math.min(1, 0.18 + 0.20 * lvl + 0.12 * tierRatio).toFixed(2));
+  }
+
+  let vipFxTimer = null;
+  /* 获卡仪式：金色光柱 + 火花 + 卡面揭示，卡级越高越盛 */
+  function celebrateVip(level, name){
+    const lvl = Math.max(1, Math.min(4, level || 1));
+    document.querySelectorAll('.vip-fx').forEach(n => n.remove());   // 连续升卡时不叠层
+    clearTimeout(vipFxTimer);
+    const n = 14 + lvl * 6;
+    const sparks = Array.from({ length: n }, (_, i) => {
+      const a = Math.round(i * 360 / n + (Math.random() * 10 - 5));
+      const d = Math.round(120 + lvl * 45 + Math.random() * (90 + lvl * 55));
+      return `<i style="--a:${a}deg;--d:${d}px;--dl:${Math.round(Math.random() * 720)}ms;--s:${(2 + Math.random() * 3).toFixed(1)}px"></i>`;
+    }).join('');
+    const kicker = ['', 'VIP · INVITATION', 'PRIVATE · INVITATION', 'CHAIRMAN · INVITATION', 'SOVEREIGN · INVITATION'][lvl];
+    const unlock = [
+      '',
+      EN ? 'VIP room unlocked' : '贵宾厅已解锁',
+      EN ? 'Private room unlocked' : '私人厅已解锁',
+      EN ? 'Chairman room unlocked' : '主席厅已解锁',
+      EN ? 'Super VIP room unlocked' : '超级贵宾厅已解锁'
+    ][lvl];
+    const ov = document.createElement('div');
+    ov.className = 'vip-fx lv' + lvl;
+    ov.innerHTML = `
+      <div class="vfx-rays"></div>
+      <div class="vfx-sparks">${sparks}</div>
+      <div class="vfx-card">
+        <span class="vfx-kicker">${kicker}</span>
+        <b>${name || '—'}</b>
+        <small>${EN ? 'VIP card · approved and retained' : '贵宾厅会员卡 · 已获批并保留'}</small>
+        <em>${unlock}</em>
+      </div>`;
+    document.body.appendChild(ov);
+    requestAnimationFrame(() => ov.classList.add('on'));
+    clearTimeout(vipFxTimer);
+    vipFxTimer = setTimeout(() => {
+      ov.classList.add('out');
+      setTimeout(() => ov.remove(), 760);
+    }, 2600 + lvl * 450);
+  }
   let flyKeys = new Set();   // 需要播放飞入动画的牌 key
 
   /* 资金曲线数据 */
@@ -1273,6 +1460,7 @@ const BJ = (() => {
     renderMemberCard();
     renderCurve();
     renderButtons();
+    syncLux();
     syncFs();
     attachFly();
   }
@@ -1527,6 +1715,7 @@ const BJ = (() => {
       `<i class="${i < pipsOn ? 'on' : ''}"></i>`).join('');
 
     const drawnHTML = `
+      ${m.card >= 1 ? '<span class="mc-shine"></span>' : ''}
       <div class="mc-row">
         <div class="mc-brand">${prog.brand}</div>
         <span class="mc-type">${typeLabel}</span>
@@ -1698,6 +1887,7 @@ const BJ = (() => {
           m.cardRound = st.rounds;
           persistWallet();
           updateRoomSelect();
+          celebrateVip(m.card, now.next.name);
           flash(EN
             ? `<b>${now.next.name}</b> approved and written to your card; rooms unlocked.`
             : `<b>${now.next.name}</b> 已批准并写入贵宾卡，对应厅房已解锁。`);
