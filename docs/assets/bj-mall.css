@@ -74,7 +74,8 @@
 .mallentry a:hover{background:#175B41;border-color:#175B41}
 
 /* ---------- 子页面外壳 ---------- */
-.mallpage{padding:26px 0 70px}
+.mallpage{padding:132px 0 70px}
+@media(max-width:860px){.mallpage{padding:112px 0 56px}}
 .mallhero{max-width:1240px;margin:0 auto;padding:0 24px}
 .mallcrumb{font-size:10.5px;letter-spacing:1.4px;color:#9A7C1A;display:flex;align-items:center;gap:8px}
 .mallcrumb a{color:#0C3A28;text-decoration:none}
