@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>积分商城 · 21 点会员权益 · jc-football-report</title>
+<meta name="description" content="澳门 21 点会员积分商城：用有效投注累计的积分兑换餐饮、住宿、表演、水疗、接送与零售礼遇，按四家会籍的官方权益目录定价。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Serif+SC:wght@400;600&display=swap" rel="stylesheet">
+<link rel="icon" href="assets/favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="stylesheet" href="assets/site.css">
+<link rel="stylesheet" href="assets/bj-mall.css">
+</head>
+<body>
+<script>document.documentElement.className += ' js';</script>
+
+<div class="nav-wrap">
+  <nav class="nav">
+    <a class="brand" href="index.html">
+      <img class="logo-mark" src="assets/logo.png" alt="jc-football-report" width="32" height="32">
+      <span><b>jc-football-report</b><small>Macau Blackjack</small></span>
+    </a>
+    <div class="nav-links">
+      <a href="index.html">首页</a>
+      <a href="skill.html">Skill 文档</a>
+      <a href="simulator.html">模拟投注</a>
+      <a href="blackjack.html" class="on">21 点</a>
+      <a href="index.html#backtest">回测</a>
+      <a href="https://github.com/laoyangnb666/jc-football-report" target="_blank" rel="noopener">仓库</a>
+    </div>
+    <a class="btn btn-dark" href="https://github.com/laoyangnb666/jc-football-report" target="_blank" rel="noopener">GitHub 仓库</a>
+  </nav>
+</div>
+
+<main class="mallpage" id="mallPage" data-i18n="bj.mallPage">
+  <div class="mallhero">
+    <div class="mallcrumb"><a href="blackjack.html">21 点</a><i>/</i><span>积分商城</span></div>
+    <h1>把积分换成<em>看得见的东西</em>。</h1>
+    <p>积分按当前卡系的有效投注累积，兑换目录取自金沙会、新濠皇会、银河优越与澳娱至尊卡四份官方权益：餐饮、住宿、表演、水疗、接送与零售。牌桌上每打一局都会实时写入这里，换页不会丢。</p>
+    <div class="mallbar">
+      <label for="progSel">会员体系</label>
+      <select id="progSel"></select>
+      <a class="mallback" href="blackjack.html">← 返回牌桌</a>
+    </div>
+  </div>
+
+  <section class="mallwrap">
+    <div class="mallhead">
+      <div>
+        <div class="mallkick">Redeem · 会员礼遇兑换</div>
+        <h2>会员积分可兑换项目</h2>
+        <p class="mallsub">同一件礼遇在不同场积分数字不同、所需流水一致 —— 因为每分对应的流水不同。</p>
+      </div>
+      <div class="mallbal">
+        <small>可用积分</small>
+        <b id="mallPts">0</b>
+        <span id="mallRate">≈ MOP 0 礼遇价值</span>
+        <em id="mallProg">—</em>
+      </div>
+    </div>
+
+    <div class="malltabs" id="mallTabs"></div>
+    <div class="mallgrid" id="mallGrid"></div>
+
+    <div class="mallfoot">
+      <div class="mallnote" id="mallNote"></div>
+      <div class="mallorders">
+        <h4>兑换记录 <span>最近 8 笔</span></h4>
+        <div id="mallOrders"><p class="mo-empty">还没有兑换记录，先回牌桌打几局攒积分。</p></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer style="border-top:1px solid #E2DACA;padding:24px 0 44px;text-align:center;color:#6B6355;font-size:11px;line-height:1.85">
+  <p style="max-width:860px;margin:0 auto 7px" data-i18n="bj.footWarn">概率教学模拟，虚拟资金，不连接任何真实账户。真实赌场禁止计数，长期期望为负。未成年人禁止参与赌博。</p>
+  <p>礼遇目录整理自各娱乐场公开会籍页，兑换为模拟流程，不产生任何真实权益。</p>
+</footer>
+
+<script src="assets/i18n.js"></script>
+<script src="assets/i18n-bj.js"></script>
+<script src="assets/bj-casinos.js"></script>
+<script src="assets/bj-wallet.js"></script>
+<script src="assets/bj-mall.js"></script>
+<script src="assets/bj-core.js"></script>
+<script>
+(function () {
+  const EN = !!(window.I18N && window.I18N.lang === 'en');
+  const CASINOS = window.BJ_CASINOS.casinos;
+  const PROGRAMS = window.BJ_CASINOS.programs;
+  const MALL = window.BJ_MALL;
+  const W = window.BJWallet.load();
+
+  const $ = id => document.getElementById(id);
+  const el = {};
+  ['progSel','mallPts','mallRate','mallProg','mallTabs','mallGrid','mallOrders','mallNote']
+    .forEach(k => { el[k] = $(k); });
+
+  /* 默认沿用牌桌最后所在的场馆，保证两个页面看的是同一个卡系 */
+  let progId = (CASINOS[W.venue] || CASINOS[0]).prog;
+  let cat = 'all';
+
+  if (EN){
+    const page = $('mallPage');
+    page.querySelector('.mallcrumb').innerHTML = '<a href="blackjack.html">Blackjack</a><i>/</i><span>Rewards shop</span>';
+    page.querySelector('h1').innerHTML = 'Turn points into <em>something real</em>.';
+    page.querySelector('.mallhero p').textContent =
+      'Points accrue on the effective turnover of your current programme. The catalogue mirrors the official benefit lists of Sands Rewards, Melco Club, Galaxy Privilege and SJM Supreme: dining, stays, shows, spa, transfers and retail. Every round you play on the table is written here instantly and survives page changes.';
+    page.querySelector('.mallbar label').textContent = 'Programme';
+    page.querySelector('.mallback').textContent = '← Back to table';
+    page.querySelector('.mallhead h2').textContent = 'What your points can buy';
+    page.querySelector('.mallsub').textContent =
+      'The same benefit shows a different point price at each club but always takes the same amount of play — because the turnover behind one point differs.';
+    page.querySelector('.mallorders h4').innerHTML = 'Redemptions <span>last 8</span>';
+  }
+
+  function mem() { return window.BJWallet.memOf(W, progId); }
+
+  /* 会员体系下拉 */
+  el.progSel.innerHTML = Object.keys(PROGRAMS).map(id => {
+    const p = PROGRAMS[id];
+    return `<option value="${id}"${id === progId ? ' selected' : ''}>${EN ? p.brand : p.name}</option>`;
+  }).join('');
+  el.progSel.addEventListener('change', () => { progId = el.progSel.value; render(); });
+
+  function tierIndex(prog, need) {
+    const n = (prog.tiers || []).length;
+    return n ? Math.min(n - 1, Math.round(need * (n - 1))) : 0;
+  }
+
+  function render() {
+    const prog = PROGRAMS[progId];
+    const m = mem();
+    const pts = m.points;
+    const per = prog.mopPerPoint || 1000;
+    const now = window.BJCore ? BJCore.tierOf(pts, prog) : { idx: 0, tier: '—', next: null, need: null };
+
+    el.mallPts.textContent = Math.round(pts).toLocaleString();
+    el.mallRate.textContent = EN
+      ? `≈ MOP ${Math.round(pts * per * MALL.RETURN_RATE).toLocaleString()} in benefits`
+      : `≈ MOP ${Math.round(pts * per * MALL.RETURN_RATE).toLocaleString()} 礼遇价值`;
+    el.mallProg.textContent = `${EN ? prog.brand : prog.name} · ${now.tier}`;
+
+    if (!el.mallTabs.__built) {
+      el.mallTabs.__built = 1;
+      el.mallTabs.innerHTML = [{ id: 'all', zh: '全部', en: 'All' }].concat(MALL.CATS)
+        .map(c => `<button data-cat="${c.id}">${EN ? c.en : c.zh}</button>`).join('');
+      el.mallTabs.addEventListener('click', ev => {
+        const b = ev.target.closest('button[data-cat]');
+        if (!b) return;
+        cat = b.dataset.cat;
+        render();
+      });
+    }
+    [].forEach.call(el.mallTabs.children, b => b.classList.toggle('on', b.dataset.cat === cat));
+
+    el.mallGrid.innerHTML = MALL.ITEMS.filter(it => cat === 'all' || it.cat === cat).map(it => {
+      const price = MALL.priceOf(it, prog);
+      const needIdx = tierIndex(prog, it.need);
+      const locked = it.need > 0 && now.idx < needIdx;
+      const poor = pts < price;
+      const c = MALL.CATS.filter(x => x.id === it.cat)[0] || {};
+      const lockName = ((prog.tiers || [])[needIdx] || [])[0] || '';
+      let btn;
+      if (locked) btn = `<button disabled>${EN ? `Needs ${lockName}` : `需 ${lockName}`}</button>`;
+      else if (poor) btn = `<button disabled>${EN ? `${Math.ceil(price - pts).toLocaleString()} more` : `还差 ${Math.ceil(price - pts).toLocaleString()} 分`}</button>`;
+      else btn = `<button data-buy="${it.id}">${EN ? 'Redeem' : '兑换'}</button>`;
+      return `<div class="mi${locked ? ' dim' : ''}">
+        <div class="mi-top"><h5>${EN ? it.en : it.zh}</h5><span class="mi-cat">${EN ? c.en : c.zh}</span></div>
+        <div class="mi-val">${EN ? 'Worth MOP' : '价值 MOP'} ${it.value.toLocaleString()}</div>
+        <p class="mi-desc">${EN ? it.descEn : it.desc}</p>
+        <div class="mi-buy"><span class="mi-price">${price.toLocaleString()}<em>${EN ? 'pts' : '分'}</em></span>${btn}</div>
+      </div>`;
+    }).join('');
+
+    if (!el.mallGrid.__wired) {
+      el.mallGrid.__wired = 1;
+      el.mallGrid.addEventListener('click', ev => {
+        const b = ev.target.closest('button[data-buy]');
+        if (!b) return;
+        const it = MALL.ITEMS.filter(x => x.id === b.dataset.buy)[0];
+        if (it) redeem(it);
+      });
+    }
+
+    const next = now.next
+      ? (EN ? `Next tier ${now.next}${now.need != null ? `, ${Math.ceil(now.need).toLocaleString()} pts away` : ''}`
+            : `下一档 ${now.next}${now.need != null ? `，还差 ${Math.ceil(now.need).toLocaleString()} 分` : ''}`)
+      : (EN ? 'top tier reached' : '已达最高档');
+    el.mallNote.innerHTML = EN
+      ? `<b>Pricing</b> · benefits cost about 1.5% of your effective turnover. On ${prog.brand} one point equals MOP ${per.toLocaleString()} of play, so the same item shows different point prices across clubs but always takes the same amount of play. ${next}. Redemption is simulated and grants no real entitlement.`
+      : `<b>定价口径</b> · 礼遇按有效投注约 1.5% 回赠计价。${prog.name} 每 ${per.toLocaleString()} MOP 流水计 1 分，所以同一件礼遇在不同场积分数字不同、所需流水一致。${next}。兑换为模拟流程，不产生任何真实权益。`;
+
+    el.mallOrders.innerHTML = W.orders.length
+      ? W.orders.map(o =>
+          `<div class="mo-row"><span>${o.name}<i>${o.venue}</i></span><small>−${o.price.toLocaleString()}${o.round ? ' · ' + (EN ? 'R' + o.round : '第 ' + o.round + ' 局') : ''}</small></div>`).join('')
+      : `<p class="mo-empty">${EN ? 'No redemptions yet — go back and play a few rounds.' : '还没有兑换记录，先回牌桌打几局攒积分。'}</p>`;
+  }
+
+  function redeem(item) {
+    const prog = PROGRAMS[progId];
+    const m = mem();
+    const price = MALL.priceOf(item, prog);
+    const now = window.BJCore ? BJCore.tierOf(m.points, prog) : { idx: 0 };
+    if (m.points < price || now.idx < tierIndex(prog, item.need)) return;
+    m.points -= price;
+    W.orders.unshift({
+      name: EN ? item.en : item.zh, price, round: 0,
+      venue: EN ? prog.brand : prog.name
+    });
+    if (W.orders.length > 8) W.orders.pop();
+    window.BJWallet.trim(m);
+    window.BJWallet.save(W);
+    render();
+  }
+
+  render();
+})();
+</script>
+</body>
+</html>

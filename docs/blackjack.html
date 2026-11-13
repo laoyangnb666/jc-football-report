@@ -11,6 +11,7 @@
 <link rel="icon" href="assets/favicon.ico" sizes="any">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <link rel="stylesheet" href="assets/site.css">
+<link rel="stylesheet" href="assets/bj-mall.css">
 <style>
 :root{
   --gold:#C9A227; --gold-lt:#EBD98F; --cream:#F4EDDB;
@@ -965,6 +966,15 @@ body.fsmode .deck-panel .dp-read.dp-bank b.neg{color:#FCA5A5}
           附加注每局都需要重新下注，结算后自动归零 —— 否则「主注赢了但净额还是负」就是被三份附加注吃掉了。
         </div>
       </div>
+
+      <!-- 积分商城入口（完整商城在 blackjack-mall.html） -->
+      <div class="side-card">
+        <h4>积分商城 <span>会员权益</span></h4>
+        <div class="mallentry">
+          <div><b id="mallEntryPts">0</b><small>可用积分</small></div>
+          <a href="blackjack-mall.html">进入商城 →</a>
+        </div>
+      </div>
     </div>
   </div>
 </main>
@@ -982,6 +992,7 @@ body.fsmode .deck-panel .dp-read.dp-bank b.neg{color:#FCA5A5}
 <script src="assets/i18n.js"></script>
 <script src="assets/i18n-bj.js"></script>
 <script src="assets/bj-casinos.js"></script>
+<script src="assets/bj-wallet.js"></script>
 <script src="assets/bj-core.js"></script>
 <script>
 /* ============================================================
@@ -1064,7 +1075,9 @@ const BJ = (() => {
   let recent = [];
   let rc = 0;
   /* 会员与贵宾：按「会员体系」独立累计，换台/换房不会清零 */
-  const MEM = {};
+  /* 会员数据跨页共享：积分商城子页读写同一份 localStorage 钱包 */
+  const WALLET = window.BJWallet ? BJWallet.load() : { venue: 0, mem: {}, orders: [] };
+  const MEM = WALLET.mem || (WALLET.mem = {});
   function memOf(progId){
     if (!MEM[progId]) MEM[progId] = {
       points: 0, turnover: 0, maxStake: 0, dayTurnovers: [],
@@ -1073,6 +1086,13 @@ const BJ = (() => {
     return MEM[progId];
   }
   const mem = () => memOf(curCasino().prog);
+  function persistWallet(){
+    if (!window.BJWallet) return;
+    WALLET.venue = cfg.venue;
+    WALLET.mem = MEM;
+    BJWallet.trim(mem());
+    BJWallet.save(WALLET);
+  }
   let flyKeys = new Set();   // 需要播放飞入动画的牌 key
 
   /* 资金曲线数据 */
@@ -1096,6 +1116,7 @@ const BJ = (() => {
      'myZoneLabel','mySeatLabel','feltPayText','plMax','plMin','plEquip','venueHint','cfgVenue','cfgRoom','cfgSeats',
      'tableTips','vipName','vipStatus','vipRows','vipNote','fsPts','ptsInline','vipInvite','vipHeld','mcCard','mcNote','mcHint',
      'cfgMySeat','cfgEmpty','cfgBank','cfgCap','cfgUnlock','cfgApply',
+     'mallEntryPts',
      'stageTxt','sg1','sg2','sg3','sg4','sg5'
     ].forEach(k => el[k] = $(k));
   }
@@ -1372,6 +1393,7 @@ const BJ = (() => {
     const t = CORE.tierOf(m.points, prog);
     if (el.ptsVenue) el.ptsVenue.textContent = `${v.name} · ${prog.name}`;
     if (el.ptsBig) el.ptsBig.textContent = Math.round(m.points).toLocaleString();
+    if (el.mallEntryPts) el.mallEntryPts.textContent = Math.round(m.points).toLocaleString();
     if (el.ptsTier) el.ptsTier.textContent = t.tier;
     if (el.ptsInline) el.ptsInline.textContent = EN ? `${prog.name} · ${t.tier} · ${Math.round(m.points).toLocaleString()} pts` : `${prog.name} · ${t.tier} · ${Math.round(m.points).toLocaleString()} 分`;
     if (el.ptsBar) el.ptsBar.style.width = (t.pct == null ? 0 : t.pct).toFixed(1) + '%';
@@ -1674,6 +1696,7 @@ const BJ = (() => {
           if (!now.next || !now.next.met){ flash(EN ? 'Requirements not met.' : '门槛未达标。'); return; }
           m.card = now.next.card;
           m.cardRound = st.rounds;
+          persistWallet();
           updateRoomSelect();
           flash(EN
             ? `<b>${now.next.name}</b> approved and written to your card; rooms unlocked.`
@@ -2277,6 +2300,7 @@ const BJ = (() => {
         m.turnover += stakedTotal;                        // 会员累计有效投注
         if (stakedTotal > m.maxStake) m.maxStake = stakedTotal;
         m.dayTurnovers.push(stakedTotal);                 // 每局视作一个到访日
+        persistWallet();                                  // 写入共享钱包，商城子页即时可见
         // 申请制：不再每局随机发卡，只累计数据，由玩家主动申请
         const busted = s.hands.some(h => val(h.cards) > 21 && !h.special);
         const kind = (s.hands[0] && s.hands[0].natBJ) ? 'bj' : busted ? 'bust'
@@ -2910,10 +2934,16 @@ Scope: side bets excluded; splits and doubles settled OBBO.`
     flash(EN
       ? `Switched to <b>${(I18N.t(v.op) || v.op)} · ${(I18N.t(v.name) || v.name)} · ${(I18N.t(v.room) || v.room)}</b>: ${cfg.seats} boxes, you sit at box ${HUMAN + 1}, buy-in ${fmt(cfg.bank)}.`
       : `已切到 <b>${v.op} · ${v.name} · ${v.room}</b>：${cfg.seats} 门、你坐第 ${HUMAN + 1} 门、本金 ${fmt(cfg.bank)}。`);
+    persistWallet();
   }
 
   function boot(){
     initEls();
+    /* 恢复上次所在的场馆，商城子页与牌桌保持同一卡系 */
+    if (WALLET.venue >= 0 && WALLET.venue < CASINOS.length){
+      cfg.venue = WALLET.venue;
+      cfg.room = Math.min(cfg.room, CASINOS[cfg.venue].rooms.length - 1);
+    }
     initSettings();
     setupTable();
     bind();
