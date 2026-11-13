@@ -235,6 +235,7 @@
    */
   function pointsFor(turnover, prog) {
     if (!prog || !prog.mopPerPoint) return 0;
+    if (typeof turnover !== 'number' || !isFinite(turnover) || turnover <= 0) return 0;
     return turnover / prog.mopPerPoint;
   }
 

@@ -170,7 +170,30 @@
     el.mmBuy.textContent = 'Redeem';
   }
 
-  function mem() { return window.BJWallet.memOf(W, progId); }
+  function mem() {
+    const m = window.BJWallet.memOf(W, progId);
+    const prog = PROGRAMS[progId];
+    /* 与牌桌一致的钱包自愈：脏数据归零，积分不超过流水可换上限 */
+    const num = x => (typeof x === 'number' && isFinite(x) && x > 0 ? x : 0);
+    m.points = num(m.points);
+    m.turnover = num(m.turnover);
+    const cap = prog.mopPerPoint ? m.turnover / prog.mopPerPoint : Infinity;
+    if (m.points > cap) m.points = cap;
+    return m;
+  }
+  /* 大数字紧凑显示，避免把侧栏撑爆 */
+  const fmtPts = n => {
+    const a = Math.abs(n);
+    if (!isFinite(a)) return '—';
+    if (EN){
+      if (a >= 1e6) return (n / 1e6).toFixed(a >= 1e7 ? 1 : 2).replace(/\.0+$/, '') + 'M';
+      return Math.round(n).toLocaleString();
+    }
+    if (a >= 1e12) return (n / 1e8).toExponential(2) + '亿';
+    if (a >= 1e8) return (n / 1e8).toFixed(2) + '亿';
+    if (a >= 1e5) return (n / 1e4).toFixed(1).replace(/\.0$/, '') + '万';
+    return Math.round(n).toLocaleString();
+  };
   const tierOf = pts => (window.BJCore ? BJCore.tierOf(pts, PROGRAMS[progId]) : { idx: 0, tier: '—', next: null, need: null });
 
   /* 会员等级折扣：档位比例最高 12%，持贵宾卡再叠加 5% */
@@ -243,14 +266,14 @@
     el.mmTitle.textContent = EN ? it.en : it.zh;
     el.mmDesc.textContent = EN ? it.descEn : it.desc;
     const rows = [
-      [EN ? 'Benefit value' : '礼遇价值', `MOP ${it.value.toLocaleString()}`],
-      [EN ? 'List price' : '原价积分', `${base.toLocaleString()} ${EN ? 'pts' : '分'}`]
+      [EN ? 'Benefit value' : '礼遇价值', `MOP ${fmtPts(it.value)}`],
+      [EN ? 'List price' : '原价积分', `${fmtPts(base)} ${EN ? 'pts' : '分'}`]
     ];
     if (disc > 0) rows.push([EN ? 'Member discount' : '会员折扣', `−${disc}%`]);
     if (isDeal) rows.push([EN ? 'Daily pick' : '今日精选', '−15%']);
-    rows.push([EN ? 'You pay' : '实付积分', `${fin.toLocaleString()} ${EN ? 'pts' : '分'}`]);
+    rows.push([EN ? 'You pay' : '实付积分', `${fmtPts(fin)} ${EN ? 'pts' : '分'}`]);
     if (it.need > 0) rows.push([EN ? 'Requires' : '所需卡级', needName]);
-    rows.push([EN ? 'Turnover behind it' : '对应流水', `≈ MOP ${Math.round((fin * (prog.mopPerPoint || 1000)) / 1).toLocaleString()}`]);
+    rows.push([EN ? 'Turnover behind it' : '对应流水', `≈ MOP ${fmtPts(Math.round(fin * (prog.mopPerPoint || 1000)))}`]);
     el.mmRows.innerHTML = rows.map(r => `<span>${r[0]}</span><b>${r[1]}</b>`).join('');
 
     const locked = it.need > 0 && tierOf(m.points).idx < needIdx;
@@ -289,10 +312,10 @@
     const unlocked = it => (it.need || 0) <= 0 ? true : now.idx >= tierIndex(prog, it.need);
     const affordable = it => unlocked(it) && pts >= priceOf(it);
 
-    el.mallPts.textContent = Math.round(pts).toLocaleString();
+    el.mallPts.textContent = fmtPts(pts);
     el.mallRate.textContent = EN
-      ? `≈ MOP ${Math.round(pts * per * MALL.RETURN_RATE).toLocaleString()} in benefits`
-      : `≈ MOP ${Math.round(pts * per * MALL.RETURN_RATE).toLocaleString()} 礼遇价值`;
+      ? `≈ MOP ${fmtPts(Math.round(pts * per * MALL.RETURN_RATE))} in benefits`
+      : `≈ MOP ${fmtPts(Math.round(pts * per * MALL.RETURN_RATE))} 礼遇价值`;
     el.mallProg.textContent = `${EN ? prog.brand : prog.name} · ${now.tier}`;
     el.mallGroup.textContent = EN
       ? `${g.en} · ${prog.brand} · ${items.length} benefits · member discount ${discountPct(prog, m)}%`
@@ -302,10 +325,10 @@
     const totalSpent = W.orders.reduce((s, o) => s + (o.price || 0), 0);
     const spentMop = W.orders.reduce((s, o) => s + (o.value || 0), 0);
     el.mallStats.innerHTML = `
-      <div class="ms-card"><small>可用积分</small><b>${Math.round(pts).toLocaleString()}</b><span>${EN ? prog.brand : prog.name} · ${now.tier}</span></div>
+      <div class="ms-card"><small>可用积分</small><b>${fmtPts(pts)}</b><span>${EN ? prog.brand : prog.name} · ${now.tier}</span></div>
       <div class="ms-card"><small>当前可兑换</small><b>${items.filter(affordable).length}</b><span>${EN ? `of ${items.length} benefits` : `共 ${items.length} 项礼遇`}</span></div>
       <div class="ms-card"><small>已解锁礼遇</small><b>${items.filter(unlocked).length}</b><span>${EN ? 'card level reached' : '按当前卡级开放'}</span></div>
-      <div class="ms-card"><small>累计兑换</small><b>${W.orders.length}</b><span>${EN ? `${totalSpent.toLocaleString()} pts · MOP ${spentMop.toLocaleString()}` : `${totalSpent.toLocaleString()} 分 · MOP ${spentMop.toLocaleString()}`}</span></div>`;
+      <div class="ms-card"><small>累计兑换</small><b>${W.orders.length}</b><span>${EN ? `${fmtPts(totalSpent)} pts · MOP ${fmtPts(spentMop)}` : `${fmtPts(totalSpent)} 分 · MOP ${fmtPts(spentMop)}`}</span></div>`;
 
     /* 每日精选 */
     el.mallFeat.innerHTML = deals.length ? `<div class="mf-head">
@@ -320,7 +343,7 @@
           <span class="mf-tag">−15%</span>
           <h5>${EN ? it.en : it.zh}</h5>
           <p>${EN ? it.descEn : it.desc}</p>
-          <div class="mf-foot"><span class="mf-price">${fin.toLocaleString()}<s>${EN ? 'was ' : '原 '}${base.toLocaleString()}</s></span>
+          <div class="mf-foot"><span class="mf-price">${fmtPts(fin)}<s>${EN ? 'was ' : '原 '}${fmtPts(base)}</s></span>
           <button data-buy="${it.id}"${ok ? '' : ' disabled'}>${ok ? (EN ? 'Redeem' : '兑换') : (EN ? 'Not yet' : '暂不可兑')}</button></div>
         </div>`;
       }).join('')}</div>` : '';
@@ -389,9 +412,9 @@
         <button class="mi-fav${isFav(it) ? ' on' : ''}" data-fav="${it.id}" title="${EN ? 'Wishlist' : '心愿单'}" aria-label="wishlist">${isFav(it) ? '★' : '☆'}</button>
         <div class="mi-top"><h5>${EN ? it.en : it.zh}</h5><span class="mi-cat">${catLabel(it.cat)}</span></div>
         ${badges ? `<div class="mi-badges">${badges}</div>` : ''}
-        <div class="mi-val">${EN ? 'Worth MOP' : '价值 MOP'} ${it.value.toLocaleString()}</div>
+        <div class="mi-val">${EN ? 'Worth MOP' : '价值 MOP'} ${fmtPts(it.value)}</div>
         <p class="mi-desc">${EN ? it.descEn : it.desc}</p>
-        <div class="mi-buy"><span class="mi-price">${price.toLocaleString()}<em>${EN ? 'pts' : '分'}</em>${price < base ? `<s>${EN ? 'was ' : '原 '}${base.toLocaleString()}</s>` : ''}</span>${btn}</div>
+        <div class="mi-buy"><span class="mi-price">${fmtPts(price)}<em>${EN ? 'pts' : '分'}</em>${price < base ? `<s>${EN ? 'was ' : '原 '}${fmtPts(base)}</s>` : ''}</span>${btn}</div>
       </div>`;
     }).join('') : `<p class="mo-empty" style="grid-column:1/-1;padding:22px 4px">${EN ? 'No benefits match these filters.' : '没有符合当前筛选条件的礼遇。'}</p>`;
 
@@ -456,7 +479,7 @@
 
     /* 兑换记录 */
     el.mallOrderSum.textContent = W.orders.length
-      ? (EN ? `total ${totalSpent.toLocaleString()} pts` : `合计 ${totalSpent.toLocaleString()} 分`)
+      ? (EN ? `total ${fmtPts(totalSpent)} pts` : `合计 ${fmtPts(totalSpent)} 分`)
       : '';
     el.mallOrders.innerHTML = W.orders.length
       ? W.orders.map(o => {
@@ -464,7 +487,7 @@
           const stamp = t ? `${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')} ${String(t.getHours()).padStart(2, '0')}:${String(t.getMinutes()).padStart(2, '0')}` : '';
           return `<div class="mo-row"${o.id ? ` data-order="${o.id}"` : ''}>
             <span>${o.name}<i>${o.venue}</i>${stamp ? `<small class="mo-time">${stamp}</small>` : ''}</span>
-            <small>−${o.price.toLocaleString()}${o.round ? ' · ' + (EN ? 'R' + o.round : '第 ' + o.round + ' 局') : ''}</small></div>`;
+            <small>−${fmtPts(o.price)}${o.round ? ' · ' + (EN ? 'R' + o.round : '第 ' + o.round + ' 局') : ''}</small></div>`;
         }).join('')
       : `<p class="mo-empty">${EN ? 'No redemptions yet — go back and play a few rounds.' : '还没有兑换记录，先回牌桌打几局攒积分。'}</p>`;
   }

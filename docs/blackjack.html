@@ -1380,9 +1380,18 @@ const BJ = (() => {
     return MEM[progId];
   }
   const mem = () => {
+    const prog = PROGRAMS[curCasino().prog];
     const m = memOf(curCasino().prog);
-    const maxCard = ((PROGRAMS[curCasino().prog].vip || {}).tiers || []).length || 4;
+    const maxCard = ((prog.vip || {}).tiers || []).length || 4;
     if (m.card > maxCard) m.card = maxCard;   // 官方档位减少时，旧档位向下归位
+    /* 钱包自愈：NaN / 负数 / 超过流水可换上限的脏数据一律归位，避免界面上出现天文数字 */
+    const num = x => (typeof x === 'number' && isFinite(x) && x > 0 ? x : 0);
+    m.points = num(m.points);
+    m.turnover = num(m.turnover);
+    m.maxStake = num(m.maxStake);
+    m.card = num(m.card);
+    const cap = prog.mopPerPoint ? m.turnover / prog.mopPerPoint : Infinity;
+    if (m.points > cap) m.points = cap;
     return m;
   };
   function persistWallet(){
@@ -1520,6 +1529,7 @@ const BJ = (() => {
       if (a >= 1e4) return (n / 1e3).toFixed(0) + 'k';
       return Math.round(n).toLocaleString();
     }
+    if (a >= 1e12) return (n / 1e8).toExponential(2) + '亿';
     if (a >= 1e8) return (n / 1e8).toFixed(2) + '亿';
     if (a >= 1e4) return (n / 1e4).toFixed(a >= 1e6 ? 0 : 1).replace(/\.0$/, '') + '万';
     return Math.round(n).toLocaleString();
@@ -1762,10 +1772,10 @@ const BJ = (() => {
     const m = mem();
     const t = CORE.tierOf(m.points, prog);
     if (el.ptsVenue) el.ptsVenue.textContent = `${v.name} · ${prog.name}`;
-    if (el.ptsBig) el.ptsBig.textContent = Math.round(m.points).toLocaleString();
-    if (el.mallEntryPts) el.mallEntryPts.textContent = Math.round(m.points).toLocaleString();
+    if (el.ptsBig) el.ptsBig.textContent = fmtShort(m.points);
+    if (el.mallEntryPts) el.mallEntryPts.textContent = fmtShort(m.points);
     if (el.ptsTier) el.ptsTier.textContent = t.tier;
-    if (el.ptsInline) el.ptsInline.textContent = EN ? `${prog.name} · ${t.tier} · ${Math.round(m.points).toLocaleString()} pts` : `${prog.name} · ${t.tier} · ${Math.round(m.points).toLocaleString()} 分`;
+    if (el.ptsInline) el.ptsInline.textContent = EN ? `${prog.name} · ${t.tier} · ${fmtShort(m.points)} pts` : `${prog.name} · ${t.tier} · ${fmtShort(m.points)} 分`;
     if (el.ptsBar) el.ptsBar.style.width = (t.pct == null ? 0 : t.pct).toFixed(1) + '%';
     if (el.ptsNote){
       const lines = [];
@@ -1791,7 +1801,7 @@ const BJ = (() => {
       } else {
         el.ptsApply.innerHTML = `
           <div class="apply-top"><b>${EN ? 'Next: ' : '下一档：'}${cp.next}</b><span>${Math.round(cp.pct * 100)}%</span></div>
-          <div class="apply-bars"><div><span>${EN ? 'Points' : '积分'}</span><i style="width:${(cp.pct * 100).toFixed(0)}%"></i><b>${Math.round(m.points).toLocaleString()} / ${(cp.needPts || 0).toLocaleString()}</b></div></div>
+          <div class="apply-bars"><div><span>${EN ? 'Points' : '积分'}</span><i style="width:${(cp.pct * 100).toFixed(0)}%"></i><b>${fmtShort(m.points)} / ${fmtShort(cp.needPts || 0)}</b></div></div>
           <div class="room-rule">${EN
             ? 'Membership tiers upgrade automatically once points are reached.'
             : '会员卡按积分自动升级，无需申请；官方贵宾档（御匾 / 红玺 / 至尊钻石等）需在下方「贵宾候选评估」提交申请。'}</div>`;
@@ -3319,7 +3329,7 @@ Scope: side bets excluded; splits and doubles settled OBBO.`
     const v = curVenue();
     cfg.seats = Math.max(4, Math.min(8, +el.cfgSeats.value || v.seats));
     cfg.emptySeats = Math.max(0, Math.min(cfg.seats - 1, +el.cfgEmpty.value || 0));
-    cfg.bank = Math.max(1000, Math.floor(+el.cfgBank.value || v.bank));
+    cfg.bank = Math.max(1000, Math.min(1e9, Math.floor(+el.cfgBank.value || v.bank)));   // 本金上限 10 亿，避免误输入把流水推到天文数字
     cfg.noCap = el.cfgCap.value === '1';
     cfg.mySeat = Math.max(0, Math.min(+el.cfgMySeat.value || 0, cfg.seats - 1));
     humanBet = Math.max(v.min, Math.min(humanBet, cfg.bank));
@@ -3340,6 +3350,8 @@ Scope: side bets excluded; splits and doubles settled OBBO.`
     initSettings();
     setupTable();
     bind();
+    mem();              // 启动时跑一次钱包自愈，把历史脏数据写回存储
+    persistWallet();
     flash(EN
       ? `<b>${(I18N.t(curVenue().name) || curVenue().name)} · ${(I18N.t(curVenue().room) || curVenue().room)}</b>: ${cfg.seats} boxes, you sit at box ${HUMAN + 1}, buy-in ${fmt(cfg.bank)}. Click chips to build your bet.`
       : `<b>${curVenue().name} · ${curVenue().room}</b>：${cfg.seats} 门，你坐第 ${HUMAN + 1} 门，本金 ${fmt(cfg.bank)}。点筹码累加下注。`);
