@@ -28,7 +28,7 @@
       <a href="index.html" class="on">首页</a>
       <a href="skill.html">Skill 文档</a>
       <a href="simulator.html">模拟投注</a>
-      <a href="blackjack.html">21 点</a>
+      <a href="https://laoyangnb666.github.io/macau-casino-simulator/" target="_blank" rel="noopener">21 点</a>
       <a href="#backtest">回测</a>
       <a href="#sources">数据源</a>
     </div>
@@ -147,7 +147,7 @@
           <tbody></tbody>
         </table>
         <p class="sec-sub" style="margin-top:14px;font-size:12.6px" data-i18n="idx.fxNote">
-          数据快照 2026-11-13 16:30（北京时间，周五 22 场）。v6 共识 λ 模型（16+ 家即时欧赔拟合，自适应融合权重）；本轮小注 10 / 观察 11 / 回避 1，竞彩抽水 13.9% 下大多数场次为负 EV，不下注也是合理决策。
+          数据快照 2026-11-13 17:10（北京时间，周五至周日 22 场）。v7.2 共识 λ × 主客分离强度 × 联网伤停 × 红牌风险；周五 11 场逐场核对伤停/停赛，单关全部关闭，本轮 0 注可执行、4 个观察腿（均为让球盘，非胜平负）。
         </p>
       </div>
     </div>
@@ -308,7 +308,7 @@
         <a href="https://github.com/laoyangnb666/jc-football-report" target="_blank" rel="noopener">GitHub</a>
         <a href="skill.html">Skill 文档</a>
         <a href="simulator.html">模拟投注</a>
-      <a href="blackjack.html">21 点</a>
+      <a href="https://laoyangnb666.github.io/macau-casino-simulator/" target="_blank" rel="noopener">21 点</a>
         <a href="https://github.com/laoyangnb666/jc-football-report/blob/main/LICENSE" target="_blank" rel="noopener">MIT License</a>
       </div>
     </div>
@@ -421,7 +421,7 @@
     const bi = pv.indexOf(Math.max(...pv));
     const iv = [['0-1', m.buckets[0] + m.buckets[1]], ['2-3', m.buckets[2] + m.buckets[3]],
                 ['4-6', m.buckets[4] + m.buckets[5] + m.buckets[6]], ['7+', m.buckets[7]]].sort((a, b) => b[1] - a[1])[0];
-    const plan = m.plays.length ? m.plays.map(x => `${x.pick}${x.odds ? ' @' + x.odds.toFixed(2) : ''}`).join('；') : '不参与';
+    const plan = m.plays.length ? m.plays.map(x => `${x.pickLabel || x.pick}${x.odds ? ' @' + x.odds.toFixed(2) : ''}`).join('；') : '不参与';
     return `<tr class="clickable" data-i="${M.indexOf(m)}">
       <td class="num">${m.no}</td>
       <td>${m.home} vs ${m.away}</td>
