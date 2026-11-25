@@ -20,7 +20,7 @@ I18N.extend({
     '模型不能只读盘口': "A model can't just replay the line",
     '回测先于结论': 'Backtest before conclusions',
 
-    '22 场，逐场给结论。': '22 matches, one verdict each.',
+    '16 场，逐场给结论。': '16 matches, one verdict each.',
     '五步，': 'Five steps,',
     '从盘口到方案。': 'from odds to plan.',
     '先承认不准，': 'Admit where we are wrong,',
@@ -122,7 +122,7 @@ I18N.extend({
     'idx.c3foot': 'actual hit rate vs implied probability',
 
     'idx.fxSub': 'Click any match to carry its odds and model probabilities into the simulator and work out the edge yourself. Levels: strong pick / small stake / watch.',
-    'idx.fxNote': 'Snapshot 2026-11-13 16:30 (Beijing time, Friday, 22 matches). v6 consensus-λ model (16+ live odds books, adaptive blend weight); this round: 10 small stakes / 11 watch / 1 avoid — with a 13.9% commission most matches are negative EV, and not betting is a valid decision.',
+    'idx.fxNote': 'Snapshot 2026-11-21 03:40 (Beijing time, 16 matches on Sunday: K League 2, Eredivisie 2, Serie A 5, Bundesliga 2, La Liga 3, Premier League 1, Ligue 1 1). v8 uses Shin de-vigging, consensus λ, home/away-split strength, verified injury news and the discipline layer; injuries checked for 17 of 19 matches. Every single is closed — 0 executable bets. The 14-match Shengfucai issue 26168 is included with a coverage table (9 / 27 / 54 tickets).',
 
     'idx.methodSub': 'Every step maps to a function in the script, and every number in the report can be traced back along this chain.',
     'idx.methodTitle': 'Five steps,<br>from odds to plan.',

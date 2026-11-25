@@ -28,6 +28,7 @@
       <a href="index.html" class="on">首页</a>
       <a href="skill.html">Skill 文档</a>
       <a href="simulator.html">模拟投注</a>
+      <a href="http://8.137.21.61" target="_blank" rel="noopener">会员中心</a>
       <a href="https://laoyangnb666.github.io/macau-casino-simulator/" target="_blank" rel="noopener">21 点</a>
       <a href="#backtest">回测</a>
       <a href="#sources">数据源</a>
@@ -140,15 +141,14 @@
     <div class="wrap">
       <div class="rv">
         <div class="kicker"><i></i>本轮在售</div>
-        <h2 class="sec-title">22 场，逐场给结论。</h2>
-        <p class="sec-sub" data-i18n="idx.fxSub">点击任意一场，带着赔率与模型概率进入模拟投注，自己算一遍边际。级别：主推 / 小注 / 观察。</p>
-        <table class="tbl" id="fixtureTable">
-          <thead><tr><th>编号</th><th>对阵</th><th>开赛</th><th>让</th><th>λ</th><th>胜平负</th><th>总进球</th><th>级别</th><th>方案</th></tr></thead>
-          <tbody></tbody>
-        </table>
-        <p class="sec-sub" style="margin-top:14px;font-size:12.6px" data-i18n="idx.fxNote">
-          数据快照 2026-11-13 17:10（北京时间，周五至周日 22 场）。v7.2 共识 λ × 主客分离强度 × 联网伤停 × 红牌风险；周五 11 场逐场核对伤停/停赛，单关全部关闭，本轮 0 注可执行、4 个观察腿（均为让球盘，非胜平负）。
-        </p>
+        <h2 class="sec-title">数据已迁移至会员中心。</h2>
+        <p class="sec-sub">静态站不再存放任何比赛数据。查看当期 16 场竞彩与 14 场传足概率、λ、σ 与伤停来源，请登录本地会员服务。</p>
+        <div id="lockNotice" style="margin-top:26px;background:#fff;border:1px solid var(--line);border-radius:18px;padding:26px 28px;max-width:680px">
+          <b style="font-size:16px">会员 ¥8.80 / 30 天 · 报告 ¥9.90 / 次</b>
+          <p style="color:var(--muted);font-size:13.5px;margin:8px 0 16px">数据接口需要登录会话；未登录返回 401，未订阅返回 402。报告下载走一次性签名链接并写入账号水印。</p>
+          <a class="btn btn-green" href="http://8.137.21.61/login.html">登录 / 开通会员</a>
+          <a class="btn btn-ghost" href="http://8.137.21.61/" style="margin-left:8px">查看定价</a>
+        </div>
       </div>
     </div>
   </section>
@@ -271,7 +271,7 @@
           <div class="thumb"><i></i><i></i><i></i><i></i><i></i><i></i></div>
           <div class="meta">
             <h4 data-i18n="idx.rep4h">分析内核 analyze.js</h4>
-            <p data-i18n="idx.rep4p">零依赖单文件：去水、Dixon-Coles、独立强度、融合、逐场预测、购买方案、回测。</p>
+            <p data-i18n="idx.rep4p">零依赖单文件：去水（Shin / 比例双口径）、Dixon-Coles、独立强度、融合、逐场预测、购买方案、回测、传足复式优化。</p>
             <div class="tag">scripts / analyze.js</div>
           </div>
         </a>
@@ -326,6 +326,14 @@
 (function(){
   const D = window.JC_DATA;
   const M = D.matches;
+  // 静态站不再承载数据：空数据时直接渲染锁提示，避免 undefined 报错
+  if (!M || !M.length) {
+    const lock = document.getElementById('lockNotice');
+    if (lock) lock.hidden = false;
+    const hero = document.getElementById('heroCard');
+    if (hero) hero.style.display = 'none';
+    return;
+  }
   let idx = M.findIndex(m => m.recLevel === '主推');
   if (idx < 0) idx = 0;
 

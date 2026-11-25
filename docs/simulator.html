@@ -122,6 +122,15 @@
 <script>
 (function(){
   const D = window.JC_DATA, M = D.matches;
+  if (!M || !M.length) {
+    const box = document.createElement('div');
+    box.style.cssText = 'max-width:720px;margin:150px auto 60px;padding:0 24px';
+    box.innerHTML = '<h2 style="font-size:26px;margin-bottom:10px">数据已迁移至会员中心</h2>'
+      + '<p style="color:#6E7168;font-size:14px;line-height:1.7">模拟投注使用当期真实概率，静态站不再存放数据。'
+      + '登录并开通会员后可在数据中心查看：<a href="http://8.137.21.61/login.html" style="color:#14532D">前往登录</a></p>';
+    document.body.prepend(box);
+    return;
+  }
   const SIDE = ['主胜','平局','客胜'];
   const STOCK = 10000;
   const SNAP = D.snapshot;
