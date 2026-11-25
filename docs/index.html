@@ -92,26 +92,50 @@
 .params td:nth-child(2){font-family:ui-monospace,monospace;white-space:nowrap;color:var(--green)}
 @media(max-width:980px){.arch{grid-template-columns:repeat(2,1fr)}.formula-grid{grid-template-columns:1fr}}
 
-/* ===== 往期样例 / 目录 / 日志 ===== */
-.sample-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:26px}
-.s-card{background:#fff;border:1px solid var(--line);border-radius:20px;padding:22px 24px;display:flex;flex-direction:column;gap:9px}
-.s-date{font-family:ui-monospace,monospace;font-size:11px;color:var(--muted);letter-spacing:.08em}
-.s-card b{font-size:14.6px;letter-spacing:-.01em}
-.s-card p{font-size:12.5px;color:var(--muted);line-height:1.7}
-.s-metrics{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:2px 0 4px}
-.s-metrics div{background:#F7FAF6;border:1px solid #E7EFE4;border-radius:12px;padding:9px 11px}
-.s-metrics b{display:block;font-size:15.5px;color:var(--ink);letter-spacing:-.02em;line-height:1.2}
-.s-metrics span{font-size:10.6px;color:var(--muted)}
-.s-tag{align-self:flex-start;font-size:10px;padding:3px 10px;border-radius:999px;background:var(--sage-2);color:var(--green);border:1px solid #D3E0CF}
-.toc-list{display:grid;grid-template-columns:1fr 1fr;gap:0 40px;background:#fff;border:1px solid var(--line);border-radius:22px;padding:8px 26px 16px;margin-top:24px}
-.toc-list .row{display:flex;gap:12px;padding:11px 0;border-bottom:1px solid #EFEBE0;font-size:13.3px;color:#41453F}
-.toc-list .row i{font-style:normal;font-family:ui-monospace,monospace;color:#B3B7A9;font-size:11.5px;padding-top:1px}
-.toc-list .row b{font-weight:600;color:var(--ink)}
-.log-list{background:#fff;border:1px solid var(--line);border-radius:22px;padding:6px 26px 12px;margin-top:24px}
-.log-list .row{display:grid;grid-template-columns:104px 1fr;gap:18px;padding:13px 0;border-bottom:1px solid #EFEBE0;font-size:13.2px;color:#41453F}
-.log-list .row i{font-style:normal;font-family:ui-monospace,monospace;color:var(--green);font-size:12px}
-.log-list .row b{color:var(--ink)}
-@media(max-width:980px){.sample-grid{grid-template-columns:1fr}.toc-list{grid-template-columns:1fr}.log-list .row{grid-template-columns:1fr;gap:2px}}
+/* ===== 权益对照 ===== */
+.cmp{width:100%;border-collapse:separate;border-spacing:0;margin-top:26px;font-size:12.6px;background:#fff;
+  border:1px solid var(--line);border-radius:18px;overflow:hidden}
+.cmp th{font-size:9.8px;letter-spacing:.14em;text-transform:uppercase;color:#959889;text-align:left;
+  padding:14px 16px;border-bottom:1px solid #EAE5D8;font-weight:600;background:#FBFDFA}
+.cmp th:not(:first-child){text-align:center}
+.cmp td{padding:11px 16px;border-bottom:1px solid #F0ECE2;color:#41453F;vertical-align:middle}
+.cmp td:not(:first-child){text-align:center}
+.cmp tr:last-child td{border-bottom:0}
+.cmp .yes{color:var(--green);font-weight:600}
+.cmp .no{color:#B9B2A0}
+.cmp .feat{font-weight:500;color:var(--ink)}
+.cmp .feat small{display:block;font-size:11px;color:var(--muted);font-weight:400;margin-top:2px}
+
+/* ===== 报告目录 ===== */
+.toc{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:24px}
+.toc-item{display:flex;gap:12px;align-items:flex-start;background:#fff;border:1px solid var(--line);
+  border-radius:14px;padding:14px 16px}
+.toc-n{font-family:ui-monospace,monospace;font-size:11px;color:#C6A867;background:#FBF7EC;
+  border-radius:7px;padding:2px 7px;flex:none;line-height:1.7}
+.toc-item b{display:block;font-size:12.8px;font-weight:600;margin-bottom:2px}
+.toc-item span{font-size:11.5px;color:var(--muted);line-height:1.55}
+
+/* ===== FAQ ===== */
+.faq{margin-top:22px;display:grid;gap:9px}
+.faq details{background:#fff;border:1px solid var(--line);border-radius:14px;padding:0 18px;overflow:hidden}
+.faq summary{cursor:pointer;list-style:none;padding:15px 0;font-size:13.2px;font-weight:500;
+  display:flex;justify-content:space-between;align-items:center;gap:12px}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:"+";color:var(--green-mid);font-size:17px;font-weight:400;flex:none;transition:transform .2s}
+.faq details[open] summary::after{content:"−"}
+.faq details p{font-size:12.3px;color:var(--muted);line-height:1.75;padding:0 0 15px;margin:0}
+
+/* ===== 更新日志 ===== */
+.log{margin-top:22px;position:relative;padding-left:22px}
+.log::before{content:"";position:absolute;left:5px;top:6px;bottom:6px;width:1px;background:#E2DACA}
+.log-item{position:relative;padding:0 0 20px}
+.log-item::before{content:"";position:absolute;left:-21px;top:5px;width:9px;height:9px;border-radius:50%;
+  background:#fff;border:2px solid var(--green-mid)}
+.log-item:last-child{padding-bottom:0}
+.log-d{font-family:ui-monospace,monospace;font-size:10.6px;color:#959889;letter-spacing:.05em}
+.log-t{font-size:13px;font-weight:600;margin:3px 0 4px}
+.log-p{font-size:12px;color:var(--muted);line-height:1.66}
+@media(max-width:980px){.toc{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -131,7 +155,8 @@
       <a href="https://laoyangnb666.github.io/macau-casino-simulator/" target="_blank" rel="noopener">21 点</a>
       <a href="#backtest">回测</a>
       <a href="#formula">公式</a>
-      <a href="#sample">往期</a>
+      <a href="#access">权益</a>
+      <a href="#faq">FAQ</a>
       <a href="#sources">数据源</a>
     </div>
     <a class="btn btn-dark" href="https://github.com/laoyangnb666/jc-football-report" target="_blank" rel="noopener">GitHub 仓库</a>
@@ -415,101 +440,6 @@
     </div>
   </section>
 
-  <!-- SAMPLE -->
-  <section id="sample">
-    <div class="wrap">
-      <div class="rv">
-        <div class="kicker"><i></i>往期样例</div>
-        <h2 class="sec-title">已经跑过的三期，<br><span class="serif">连错题一起给你。</span></h2>
-        <p class="sec-sub">下面是已结束的三期战报。数字与结论都来自当时的报告原文，包括被闸门拦下的候选和被撤销的判断——报告的价值一半在结论，一半在它敢承认哪里错。</p>
-
-        <div class="sample-grid">
-          <div class="s-card">
-            <span class="s-date">2026-11-13 · 22 场</span>
-            <b>独立层首次全量启用的一期</b>
-            <div class="s-metrics">
-              <div><b>0 注</b><span>可执行结论</span></div>
-              <div><b>5 个</b><span>仅串关的观察腿</span></div>
-              <div><b>11 场</b><span>联网核查伤停</span></div>
-              <div><b>2 处</b><span>结论被撤销</span></div>
-            </div>
-            <p>希腊 +1 与塞尔维亚 +2 两个让球结论在联网核查后被撤销——缺阵方比对手更重。同期确立了一条规矩：让球盘必须写成「球队 + 让球数」，否则会被读成胜平负。</p>
-            <span class="s-tag">欧国联 · 日职 · 荷乙</span>
-          </div>
-
-          <div class="s-card">
-            <span class="s-date">2026-11-19 · 4 场</span>
-            <b>正 EV 为什么依然不能买</b>
-            <div class="s-metrics">
-              <div><b>+3.8%</b><span>001 让球客胜 EV</span></div>
-              <div><b>+9.4%</b><span>003 让球主胜 EV</span></div>
-              <div><b>2 个</b><span>被置信闸门拦下</span></div>
-              <div><b>0 注</b><span>最终可执行</span></div>
-            </div>
-            <p>两笔候选的模型 EV 都是正的，但概率边际小于 λ 不确定性造成的半宽，属于噪声范围。结论不是「不买」，而是「在这一档赔率上，模型没有定价优势」。</p>
-            <span class="s-tag">巴甲 · 美职季后赛</span>
-          </div>
-
-          <div class="s-card">
-            <span class="s-date">2026-11-22 · 16 + 14 场</span>
-            <b>新增传足模式的一期</b>
-            <div class="s-metrics">
-              <div><b>0 注</b><span>竞彩可执行</span></div>
-              <div><b>26168</b><span>传足期号</span></div>
-              <div><b>3 档</b><span>复式方案</span></div>
-              <div><b>4.40%</b><span>≥13 场覆盖</span></div>
-            </div>
-            <p>同期引入 Shin 去水与 σ 拆解，并把胜负彩 14 场纳入同一套概率：单选基线、9/27/54 注复式与任九方案同时给出，明确复式只提高覆盖概率、不改变负期望。</p>
-            <span class="s-tag">竞彩 16 场 · 传足 14 场</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- TOC -->
-  <section id="toc">
-    <div class="wrap">
-      <div class="rv">
-        <div class="kicker"><i></i>报告目录</div>
-        <h2 class="sec-title">每一期报告，<br><span class="serif">都是这个结构。</span></h2>
-        <p class="sec-sub">11 页、两篇式：第一篇只摆事实，第二篇只给结论。读者只看第二篇能做决策，只看第一篇能核查依据。</p>
-        <div class="toc-list">
-          <div class="row"><i>01</i><b>封面与快照</b> —— 模型版本、数据源、抓取时间</div>
-          <div class="row"><i>07</i><b>逐场卡片（下）</b> —— 竞彩 8 场 + 伤停来源</div>
-          <div class="row"><i>02</i><b>执行摘要</b> —— 结论先行，可只看这一页</div>
-          <div class="row"><i>08</i><b>全量总表</b> —— 16 场一览与执行层结论</div>
-          <div class="row"><i>03</i><b>定价引擎</b> —— 去水、λ 三来源、融合与封顶</div>
-          <div class="row"><i>09</i><b>传足 14 场概率表</b> —— 3/1/0 与分级</div>
-          <div class="row"><i>04</i><b>纪律与红牌情景</b> —— 摩擦指数与「吃红后」推演</div>
-          <div class="row"><i>10</i><b>复式覆盖与任九</b> —— 注数、覆盖概率、推荐结构</div>
-          <div class="row"><i>05</i><b>真实实力核查</b> —— 逐场伤停与来源清单</div>
-          <div class="row"><i>11</i><b>风险披露</b> —— 模型边界、源清单与合规提示</div>
-          <div class="row"><i>06</i><b>数据卫生</b> —— 缺失项与降级说明</div>
-          <div class="row"><i>—</i><b>逐场卡片（上）</b> —— 竞彩 8 场：概率、λ、σ、纪律</div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- CHANGELOG -->
-  <section id="changelog">
-    <div class="wrap">
-      <div class="rv">
-        <div class="kicker"><i></i>更新日志</div>
-        <h2 class="sec-title">每一版，<br><span class="serif">改了什么。</span></h2>
-        <p class="sec-sub">方法论不做大版本跳跃，只在能说清「哪条失效被修掉了」时才动。</p>
-        <div class="log-list">
-          <div class="row"><i>v8.2 · 11-25</i><span><b>传足模式上线</b> —— 胜负彩 14 场与任九，复式覆盖概率精确卷积；Shin 去水替代比例去水；σ 拆成市场噪声与抽样误差；静态站数据下线，改由会员服务承载。</span></div>
-          <div class="row"><i>v8.0 · 11-21</i><span><b>独立强度层恢复可用</b> —— 主客分离得失球 + 180 天半衰期 + 样本收缩 K=8，位移封顶防止跨赛事样本推翻市场。</span></div>
-          <div class="row"><i>v7.2 · 11-13</i><span><b>表述规范与真实实力</b> —— 让球盘统一写成「球队 + 让球数」；逐场联网核查伤停、停赛与首发并附来源。</span></div>
-          <div class="row"><i>v7.0 · 11-09</i><span><b>纪律层 v2</b> —— 裁判红牌率 + 球队近一年红牌率 + 球员风险，红牌情景单独披露，深盘热门侧高红牌风险直接否决。</span></div>
-          <div class="row"><i>v6.0 · 11-01</i><span><b>报告版式定型</b> —— 两篇式结构、逐场卡片、全量总表与执行层分离。</span></div>
-        </div>
-      </div>
-    </div>
-  </section>
-
   <!-- BACKTEST -->
   <section id="backtest">
     <div class="wrap">
@@ -624,6 +554,131 @@
     </div>
   </section>
 
+<!-- ACCESS COMPARE -->
+  <section id="access">
+    <div class="wrap">
+      <div class="rv">
+        <div class="kicker"><i></i>权益对照</div>
+        <h2 class="sec-title">免费能看什么，<br><span class="serif">会员多看到什么。</span></h2>
+        <p class="sec-sub">方法论、公式、回测结论、数据源口径全部免费公开；当期比赛数据与 PDF 报告属于付费内容，因为每一期都要重新抓 20 家欧赔、逐个球员核对伤停。</p>
+        <table class="cmp rv">
+          <thead>
+            <tr><th>项目</th><th>免费访客</th><th>会员 ¥8.80 / 30 天</th><th>单次报告 ¥9.90</th></tr>
+          </thead>
+          <tbody>
+            <tr><td class="feat">方法论与公式<small>四层架构、10 组算式、常量表</small></td><td class="yes">全部可见</td><td class="yes">全部可见</td><td class="yes">全部可见</td></tr>
+            <tr><td class="feat">回测校准结论<small>四轮 62 场逐市场命中率</small></td><td class="yes">全部可见</td><td class="yes">全部可见</td><td class="yes">全部可见</td></tr>
+            <tr><td class="feat">当期竞彩数据<small>16 场三选概率、λ、σ、比分分布</small></td><td class="no">需登录+订阅</td><td class="yes">完整查看</td><td class="no">不含</td></tr>
+            <tr><td class="feat">传足复式方案<small>14 场选号、覆盖概率、任九</small></td><td class="no">需登录+订阅</td><td class="yes">完整查看</td><td class="no">不含</td></tr>
+            <tr><td class="feat">伤停来源与纪律层<small>逐场可点回的新闻链接</small></td><td class="no">需登录+订阅</td><td class="yes">完整查看</td><td class="yes">报告中含</td></tr>
+            <tr><td class="feat">PDF 完整报告<small>11 页，含账号动态水印</small></td><td class="no">需单独购买</td><td class="no">需单独购买</td><td class="yes">1 次下载</td></tr>
+            <tr><td class="feat">下载凭证<small>一次性链接，10 分钟有效</small></td><td class="no">—</td><td class="no">—</td><td class="yes">可用</td></tr>
+            <tr><td class="feat">到期方式<small>不自动续费、不扣款</small></td><td class="no">—</td><td class="yes">到期自动失效</td><td class="yes">一次即止</td></tr>
+          </tbody>
+        </table>
+        <div style="margin-top:24px;display:flex;gap:10px;flex-wrap:wrap">
+          <a class="btn btn-green" href="http://8.137.21.61/login.html">登录 / 开通会员</a>
+          <a class="btn btn-ghost" href="http://8.137.21.61/" target="_blank" rel="noopener">前往会员中心</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- REPORT OUTLINE -->
+  <section id="report">
+    <div class="wrap">
+      <div class="rv">
+        <div class="kicker"><i></i>报告结构</div>
+        <h2 class="sec-title">11 页，<br><span class="serif">从定价引擎写到风险披露。</span></h2>
+        <p class="sec-sub">每期报告结构固定，方便逐期对比。传足与竞彩并在一份文件里，先看玩法再看逐场，最后是伤停核查表与风险章节。</p>
+        <div class="toc rv">
+          <div class="toc-item"><span class="toc-n">P1</span><div><b>封面与版本</b><span>模型版本、快照时间、覆盖场次、单关状态</span></div></div>
+          <div class="toc-item"><span class="toc-n">P2</span><div><b>执行摘要</b><span>本期结论、可执行注数、传足覆盖概率一览</span></div></div>
+          <div class="toc-item"><span class="toc-n">P3</span><div><b>传足 14 场总览</b><span>三选概率、稳胆/博胆分级、复式注数分配</span></div></div>
+          <div class="toc-item"><span class="toc-n">P4</span><div><b>任九与冷门雷达</b><span>9 场优选组合、模型高于市场的方向</span></div></div>
+          <div class="toc-item"><span class="toc-n">P5–9</span><div><b>竞彩逐场卡片</b><span>每场 λ、σ、比分分布、伤停核查、未过闸门原因</span></div></div>
+          <div class="toc-item"><span class="toc-n">P10</span><div><b>定价引擎与变更</b><span>v8 四处改动、Shin 与比例去水差异对照</span></div></div>
+          <div class="toc-item"><span class="toc-n">P11</span><div><b>伤停核查与风险</b><span>逐场 injuryAdj、数据源清单、四条风险披露</span></div></div>
+          <div class="toc-item"><span class="toc-n">★</span><div><b>附：可追溯性</b><span>所有数字来自脚本输出，账号水印可追泄露源</span></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section id="faq">
+    <div class="wrap">
+      <div class="rv">
+        <div class="kicker"><i></i>常见问题</div>
+        <h2 class="sec-title">你大概会问的<span class="serif">六个问题。</span></h2>
+        <div class="faq rv">
+          <details>
+            <summary>为什么数据要付费，方法论却免费？</summary>
+            <p>方法论是一次性写成的开源代码，已经放在 GitHub 上；而每期数据要重新抓 20 家欧赔、翻十多个联赛的球队赛程、逐个球员核对伤停并附来源，这部分是持续的劳动。所以公式与回测全部公开，当期数据放在会员服务里。</p>
+          </details>
+          <details>
+            <summary>8.8 的会员和 9.9 的报告有什么区别？</summary>
+            <p>会员是「看数据」：30 天内可反复查看当期竞彩与传足的完整概率、λ、σ、伤停来源与复式方案。报告是「拿文件」：一次付费换一次 PDF 下载，文件带你的账号水印。会员不包含报告下载，两者独立计价。</p>
+          </details>
+          <details>
+            <summary>会不会自动续费、偷偷扣款？</summary>
+            <p>不会。会员是固定 30 天有效期，到期自动失效，没有续费接口、没有绑定代扣。想继续用就重新买一次。</p>
+          </details>
+          <details>
+            <summary>为什么很多场次结论是「不参与」？</summary>
+            <p>竞彩单场抽水约 13.9%，大部分场次在去水之后就已是负期望。模型要求同时满足 EV ≥ 3%、边际大于不确定性、ρ 四个取值下同号，才会给出推荐。正常日子的正确答案就是「0–2 场可小注，其余不推荐」，而不是每场都给个方向。</p>
+          </details>
+          <details>
+            <summary>让球盘为什么有时和胜平负方向相反？</summary>
+            <p>让球盘看的是「让球后的结果」，不是谁赢球。主队让 1 球时，主队只赢 1 球算让球平；赢球但没赢够，买让球主胜就是输。所以报告一律写「球队 + 让球数」，比如「客胜（某队 +1）」，避免被读成胜平负。</p>
+          </details>
+          <details>
+            <summary>这些概率能保证赢钱吗？</summary>
+            <p>不能。概率是模型与盘口的推算值，误差由 σ 表达，σ 之内的一切差异都不构成投注理由。本项目的价值在于「把价格还原成概率、并诚实说出哪里没把握」，不是提供稳赢方案。</p>
+          </details>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CHANGELOG -->
+  <section id="log">
+    <div class="wrap">
+      <div class="rv">
+        <div class="kicker"><i></i>更新日志</div>
+        <h2 class="sec-title">模型是怎么长成现在这样的。</h2>
+        <p class="sec-sub">每一版都由一次具体的失败推动。下面是最近的几条关键改动。</p>
+        <div class="log rv">
+          <div class="log-item">
+            <div class="log-d">2026-11-25 · v8.1</div>
+            <div class="log-t">静态站数据下线，接入会员服务</div>
+            <div class="log-p">比赛数据与 PDF 从 GitHub Pages 撤出，改由独立服务提供登录鉴权、订阅校验、一次性签名下载与设备指纹绑定；静态站只保留方法论。</div>
+          </div>
+          <div class="log-item">
+            <div class="log-d">2026-11-21 · v8</div>
+            <div class="log-t">Shin 去水、σ 拆解、传足复式优化器</div>
+            <div class="log-p">去水改为 Shin 口径（实测 z≈0.07），把「短赔热门看起来有 EV」的假象压掉；σ 拆成市场噪声与抽样误差两项；新增传足 14 场覆盖概率与注数贪心分配。</div>
+          </div>
+          <div class="log-item">
+            <div class="log-d">2026-11-13 · v7.2</div>
+            <div class="log-t">让球表述修复 + 伤停必须联网核查</div>
+            <div class="log-p">修正「让球客胜」被误读成「客队赢球」的问题，所有让球盘改为「球队 + 让球数」；伤停不再靠历史得失球猜，逐场联网核对并附来源。</div>
+          </div>
+          <div class="log-item">
+            <div class="log-d">2026-11-13 · v7.1</div>
+            <div class="log-t">独立层恢复 + 位移封顶 + 双闸门</div>
+            <div class="log-p">修复独立强度层为空、模型退化成共识复述的失效；新增 ρ 敏感性闸门与置信区间闸门，边际落在噪声内一律不推荐。</div>
+          </div>
+          <div class="log-item">
+            <div class="log-d">更早</div>
+            <div class="log-t">v5–v6：共识 λ 与回测校准</div>
+            <div class="log-p">引入 16+ 家即时欧赔构造海外共识基准，用四轮 62 场回测校正判定阈值，确立「只有主推/小注计入战绩」的口径。</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
 </main>
 
 <footer>
@@ -653,6 +708,23 @@
 <script src="assets/i18n-index.js"></script>
 <script>
 (function(){
+  // 滚动揭示：必须在任何 early return 之前执行，否则 .rv 会停在 opacity:0（整页空白）
+  function reveal(){
+    const items = document.querySelectorAll('.rv');
+    if ('IntersectionObserver' in window) {
+      const io = new IntersectionObserver(es => es.forEach(e => {
+        if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+      }), { threshold: .08, rootMargin: '0px 0px -30px 0px' });
+      items.forEach(n => io.observe(n));
+      document.querySelectorAll('.hero .rv').forEach(n => n.classList.add('in'));
+      // 兜底：1.2s 后仍未揭示的一律显示，避免 IO 未触发导致整页空白
+      setTimeout(() => items.forEach(n => n.classList.add('in')), 1200);
+    } else {
+      items.forEach(n => n.classList.add('in'));
+    }
+  }
+  reveal();
+
   const D = window.JC_DATA;
   const M = D.matches;
   // 静态站不再承载数据：空数据时直接渲染锁提示，避免 undefined 报错
@@ -787,18 +859,6 @@
       document.getElementById('heroCard').scrollIntoView({ behavior: 'smooth', block: 'center' });
     });
   });
-
-  // 滚动揭示
-  const items = document.querySelectorAll('.rv');
-  if ('IntersectionObserver' in window) {
-    const io = new IntersectionObserver(es => es.forEach(e => {
-      if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
-    }), { threshold: .08, rootMargin: '0px 0px -30px 0px' });
-    items.forEach(n => io.observe(n));
-    window.addEventListener('load', () => document.querySelectorAll('.hero .rv').forEach(n => n.classList.add('in')));
-  } else {
-    items.forEach(n => n.classList.add('in'));
-  }
 })();
 </script>
 </body>
