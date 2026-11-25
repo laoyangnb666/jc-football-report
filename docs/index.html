@@ -66,6 +66,31 @@
 .hl-foot{position:relative;margin-top:12px;font-size:10.5px;color:#7F937F;text-align:center}
 .stage.no-data .tag-float{display:none}
 @media(max-width:980px){.member-grid{grid-template-columns:1fr}.mm-points{grid-template-columns:1fr}}
+
+/* ===== 公式墙 ===== */
+.arch{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:30px 0 44px}
+.arch-step{position:relative;background:linear-gradient(160deg,#fff,#F7FAF6);border:1px solid var(--line);border-radius:18px;padding:18px 18px 16px}
+.arch-step .l{font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:#959889}
+.arch-step b{display:block;font-size:13.6px;margin:6px 0 5px;font-weight:600}
+.arch-step p{font-size:11.8px;color:var(--muted);line-height:1.6}
+.arch-step .m{position:absolute;right:14px;top:14px;font-family:ui-monospace,monospace;font-size:10px;color:#B3B7A9}
+.arch-arrow{display:none}
+.formula-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+.f-card{background:#fff;border:1px solid var(--line);border-radius:20px;padding:22px 24px 20px;transition:transform .2s,box-shadow .2s}
+.f-card:hover{transform:translateY(-2px);box-shadow:0 18px 44px rgba(20,30,25,.08)}
+.f-tag{font-size:9.8px;letter-spacing:.16em;text-transform:uppercase;color:#959889;margin-bottom:9px}
+.f-eq{font-family:'Instrument Serif',Georgia,'Songti SC',serif;font-size:19px;line-height:1.62;color:var(--ink);margin:4px 0 11px}
+.f-eq i{font-style:italic}
+.f-eq sub,.f-eq sup{font-size:.6em;font-style:normal}
+.f-eq .mono{font-family:ui-monospace,monospace;font-size:.82em;font-style:normal}
+.f-note{font-size:12.2px;color:var(--muted);line-height:1.72}
+.f-note b{color:#41453F;font-weight:600}
+.params{width:100%;border-collapse:collapse;margin-top:20px;font-size:12.2px}
+.params th{text-align:left;font-size:9.8px;letter-spacing:.15em;text-transform:uppercase;color:#959889;padding:0 12px 9px 0;border-bottom:1.5px solid #17202A}
+.params td{padding:10px 12px 10px 0;border-bottom:1px solid #EAE5D8;color:#41453F;vertical-align:top}
+.params td:first-child{font-family:ui-monospace,monospace;color:var(--ink);white-space:nowrap}
+.params td:nth-child(2){font-family:ui-monospace,monospace;white-space:nowrap;color:var(--green)}
+@media(max-width:980px){.arch{grid-template-columns:repeat(2,1fr)}.formula-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -84,6 +109,7 @@
       <a href="http://8.137.21.61" target="_blank" rel="noopener">会员中心</a>
       <a href="https://laoyangnb666.github.io/macau-casino-simulator/" target="_blank" rel="noopener">21 点</a>
       <a href="#backtest">回测</a>
+      <a href="#formula">公式</a>
       <a href="#sources">数据源</a>
     </div>
     <a class="btn btn-dark" href="https://github.com/laoyangnb666/jc-football-report" target="_blank" rel="noopener">GitHub 仓库</a>
@@ -265,6 +291,104 @@
           <div class="step"><span class="n">04</span><div><h4 data-i18n="idx.step4h">逐场预测</h4><p data-i18n="idx.step4p">胜平负 → 总进球区间与 8 桶 → 比分 top-5 分布。永不给单值比分。</p></div><span class="m">predictMatch()</span></div>
           <div class="step"><span class="n">05</span><div><h4 data-i18n="idx.step5h">购买方案</h4><p data-i18n="idx.step5p">级别、玩法、选项、赔率、仓位、否决条件——每场写清买不买、怎么买。</p></div><span class="m">4 级判定</span></div>
         </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FORMULA -->
+  <section id="formula">
+    <div class="wrap">
+      <div class="rv">
+        <div class="kicker"><i></i>模型定义</div>
+        <h2 class="sec-title">每一个数字，<br><span class="serif">都有公式。</span></h2>
+        <p class="sec-sub">从赔率到概率不是估计，是一串写死的算式。下面是 <code class="mono">analyze.js</code> 里实际执行的数学，报告中的每个百分比都能追回其中某一行。</p>
+
+        <div class="arch">
+          <div class="arch-step"><span class="l">Layer 1</span><span class="m">consensus</span><b>共识 λ</b><p>20 家即时欧赔 → Shin 去水 → 2D 拟合总进球 λ 与强弱分配 w。</p></div>
+          <div class="arch-step"><span class="l">Layer 2</span><span class="m">independent</span><b>独立强度 λ</b><p>主客分离得失球，近因半衰期 180 天加权，样本量收缩 K=8。</p></div>
+          <div class="arch-step"><span class="l">Layer 3</span><span class="m">blend</span><b>融合与封顶</b><p>按 k 混合两层 λ，并对位移封顶，跨赛事样本不得推翻市场。</p></div>
+          <div class="arch-step"><span class="l">Layer 4</span><span class="m">intel</span><b>情报与纪律</b><p>联网伤停修正、裁判与球队红牌率、摩擦指数，全部可查源。</p></div>
+        </div>
+
+        <div class="formula-grid">
+          <div class="f-card">
+            <div class="f-tag">01 · De-vig</div>
+            <div class="f-eq">P(i) = <span class="mono">(1/o<sub>i</sub>)</span> ⁄ Σ<sub>j</sub> <span class="mono">1/o<sub>j</sub></span></div>
+            <div class="f-eq" style="font-size:17px">p<sub>i</sub> = [√(z² + 4(1−z)·π<sub>i</sub>²/S) − z] ⁄ 2(1−z)</div>
+            <div class="f-note">上行为比例去水，下行为 <b>Shin 去水</b>：把庄家报价里的内幕交易比例 z 显式建模，校正「热门被高估、冷门被低估」。本项目实测 z = 0.070–0.075，与竞彩 13.9% 抽水一致。</div>
+          </div>
+
+          <div class="f-card">
+            <div class="f-tag">02 · Score grid</div>
+            <div class="f-eq">P(X = k) = e<sup>−λ</sup> · λ<sup>k</sup> ⁄ k!</div>
+            <div class="f-note">λ 为期望总进球。模型解出 12×12 比分矩阵，胜平负、总进球区间、大小球、双方进球、比分分布全部从这张矩阵读出，不单独建模。</div>
+          </div>
+
+          <div class="f-card">
+            <div class="f-tag">03 · Dixon-Coles</div>
+            <div class="f-eq">τ(0,0) = 1 − λ<sub>h</sub>λ<sub>a</sub>ρ</div>
+            <div class="f-note">泊松独立假设低估了 0-0 / 1-1 等低比分。用 ρ = <b>−0.10</b> 修正低比分相关性，同时修正 1-0、0-1、1-1 四个格子，并按 ρ ∈ {0, −0.05, −0.10, −0.15} 做敏感性检验。</div>
+          </div>
+
+          <div class="f-card">
+            <div class="f-tag">04 · 1X2 & handicap</div>
+            <div class="f-eq">P(主胜) = Σ<sub>i&gt;j</sub> P(i,j)</div>
+            <div class="f-note">让球盘用同一张矩阵重算：净胜球 <span class="mono">net = i − j + hc</span>。因此「让球主胜」与「胜平负主胜」方向可以相反——强队赢 1 球仍可能输盘，报告必须写清球队与让球数。</div>
+          </div>
+
+          <div class="f-card">
+            <div class="f-tag">05 · Independent strength</div>
+            <div class="f-eq">att = (gf ⁄ gf̄)<sup>p/(p+K)</sup></div>
+            <div class="f-note">主客场分开统计，按场次数 p 收缩到联赛均值（K = 8），避免小样本球队被高估：<span class="mono">λ<sub>h</sub> = λ̄<sub>home</sub> · att<sub>H</sub> · def<sub>A</sub></span>。</div>
+          </div>
+
+          <div class="f-card">
+            <div class="f-tag">06 · Blend & cap</div>
+            <div class="f-eq">λ = λ<sub>共识</sub> + clamp[k·(λ<sub>独立</sub> − λ<sub>共识</sub>), ±0.35]</div>
+            <div class="f-note">k = 0.35（联赛）/ 0.25（杯赛），庄家样本少时自动收缩。位移封顶保证独立层只能温和修正市场，不会用跨赛事样本整体推翻定价。</div>
+          </div>
+
+          <div class="f-card">
+            <div class="f-tag">07 · Discipline</div>
+            <div class="f-eq">λ<sub>red</sub> = 0.45·裁判 + 0.35·球队 + 0.20·球员</div>
+            <div class="f-note">红牌期望按裁判、球队近一年红牌率与球员风险加权：<span class="mono">P(吃红) = 1 − e<sup>−λ<sub>red</sub></sup></span>。深盘热门侧 P(红) ≥ 12% 直接否决，红牌情景单独披露。</div>
+          </div>
+
+          <div class="f-card">
+            <div class="f-tag">08 · Buy gates</div>
+            <div class="f-eq">EV = p · o − 1 ≥ 3%</div>
+            <div class="f-eq" style="font-size:17px">edge &gt; ½(p<sub>max</sub> − p<sub>min</sub>)(σ)</div>
+            <div class="f-note">三道闸门同时放行才可推荐：EV ≥ 3%、边际大于 σ 造成的不确定性、EV 在 ρ 四个取值下同号；赔率 &lt; 1.35 与单关关闭一律不产出单场推荐。</div>
+          </div>
+
+          <div class="f-card">
+            <div class="f-tag">09 · Shengfucai coverage</div>
+            <div class="f-eq">T = Π|S<sub>i</sub>|</div>
+            <div class="f-note">传足复式：每场选择集合 S<sub>i</sub> 的注数为乘积；命中场次数 K 的分布用独立卷积求出，贪心把预算分配到边际提升最大的双选上，输出全中与 ≥13 场覆盖率。</div>
+          </div>
+
+          <div class="f-card">
+            <div class="f-tag">10 · Uncertainty</div>
+            <div class="f-eq">σ = σ<sub>market</sub> + σ<sub>team</sub></div>
+            <div class="f-note">λ 的不确定性拆成两项：市场噪声（0.10 + 庄家离散度）与独立层抽样误差（0.30 ⁄ √有效场次）。σ 越大，置信闸门要求的边际越高，越容易「不推荐」。</div>
+          </div>
+        </div>
+
+        <table class="params rv">
+          <thead><tr><th>常量</th><th>取值</th><th>作用</th></tr></thead>
+          <tbody>
+            <tr><td>RHO</td><td>−0.10</td><td>Dixon-Coles 低比分相关修正，同时用于 EV 的 ρ 敏感性检验</td></tr>
+            <tr><td>K_BLEND</td><td>0.35 / 0.25</td><td>独立层融合权重：联赛 0.35，杯赛与国际赛 0.25</td></tr>
+            <tr><td>cap</td><td>±0.35 球 / ±0.04</td><td>λ 与强弱份额的位移封顶，触发即标记 blendCapped</td></tr>
+            <tr><td>K_SHRINK</td><td>8</td><td>强度收缩常数，样本越少越靠近联赛均值</td></tr>
+            <tr><td>MIN_ODDS</td><td>1.35</td><td>低于此赔率在 13.9% 抽水下结构性负 EV，不做单场推荐</td></tr>
+            <tr><td>MIN_EV</td><td>3%</td><td>推荐所需的最低模型期望值</td></tr>
+            <tr><td>MIN_EDGE</td><td>2.5pp</td><td>模型概率与隐含概率的最低边际</td></tr>
+            <tr><td>half-life</td><td>180 天</td><td>近期战绩的时间衰减半衰期</td></tr>
+            <tr><td>shrink K</td><td>8</td><td>同 K_SHRINK，用于 T 样本的平滑</td></tr>
+            <tr><td>σ_market</td><td>0.10 + 离散度</td><td>λ 不确定性的市场噪声项，封顶 +0.08</td></tr>
+          </tbody>
+        </table>
       </div>
     </div>
   </section>
