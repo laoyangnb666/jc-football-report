@@ -1,6 +1,6 @@
 ---
 name: jc-football-report
-description: Build institutional-grade China sports lottery football analysis reports with de-vig pricing, an independent Dixon-Coles strength model, backtest calibration, and a per-match forecast (score / total goals / 1X2). Use when the user asks for 竞彩分析, 足球预测报告, 盘口分析, or a PDF football odds report.
+description: Build institutional-grade China sports lottery football analysis reports with de-vig pricing, an independent Dixon-Coles strength model, backtest calibration, and a per-match forecast (score / total goals / 1X2). Also supports 传足（胜负彩 14 场 / 任九）mode with exact coverage-probability optimization. Use when the user asks for 竞彩分析, 足球预测报告, 盘口分析, 传足/胜负彩/任九分析, or a PDF football odds report.
 ---
 
 # 竞彩足球机构级分析报告
@@ -12,7 +12,7 @@ description: Build institutional-grade China sports lottery football analysis re
 1. **每一场必须有综合预测。** 在售 N 场就写 N 行，顺序固定为 **比分（top-5 分布）→ 总进球（区间 + 大/小）→ 胜平负**。不允许只写焦点场。
 2. **每一场必须有判断。** 判断落到具体选项（主胜/平/客胜/让球一侧/总进球某桶/回避），理由里至少含一个数字。
 3. **比分永不给单值。** 三轮回测 top1 命中 0/34，top5 26.5%。只给带概率的排名分布和累计覆盖率。
-4. **模型必须有盘口之外的输入。** 只用盘口反解 λ 再回推概率，是复述盘口而不是预测（偏差恒 <3pp）。必须接入捷报的主客分离得失球。
+4. **模型必须有盘口之外的输入。** 只用盘口反解 λ 再回推概率，是复述盘口而不是预测（偏差恒 <3pp）。必须接入捷报的主客分离得失球（`analysisJs/data{fid}.js` 的 h_data/a_data）。**独立层缺失时不得静默 k=0**：必须输出 `degraded=true`，该场不产出 EV/推荐，报告明确写「模型=共识复述」。
 5. 报告只做定价与情报分析，不承诺收益。概率是模型与盘口的推算值。
 6. 所有数字必须来自脚本输出，不得手写估算。
 7. 每个进入模型的数字都要能追到源；不能追源的进文字并标「待验证」。
@@ -23,25 +23,33 @@ description: Build institutional-grade China sports lottery football analysis re
 12. **真实实力优先于积分排名。** 球队强弱要参考阵容质量、伤停结构、近期 xG 走势与赛程强度，不能只按联排名次换算赔率——积分榜受运气影响，阵容残缺才是当周的真实强度。
 13. **不用模型猜胜负，用价差找错价。** 五轮累计模型方向 60.9% vs 去水 60.2%，差异在噪声内。买入理由只能是「竞彩价格 vs 海外共识」的价差，不能是「模型看好」。
 14. **EV 必须过 ρ 敏感性闸门。** 同一组 λ 在 ρ ∈ {0, −0.05, −0.10, −0.15} 下复算，凡 EV 符号随 ρ 翻转的选项一律列为禁买（例：0 球档 EV 在 ρ=0 时由 +24.5% 跌至 +0.1%，即模型伪影）。
+15. **EV 还必须过置信闸门。** 模型边际（模型概率 − 隐含概率）必须大于 λ 不确定性造成的概率半宽（σ = 0.16 球 + 样本不足 + 共识离散度）。边际落在置信区间内，视为噪声，不推荐。
+16. **单关关闭（single=0）时不得给「小注/主推」。** 只能标为「串关腿」，并同时给出组合 EV 与复利抽水警告；单场推荐与串关可用性是两件事。
+17. **真实实力必须联网核查，不得只由历史得失球推断。** 每场赛前必须核对伤停/停赛/首发/换帅（官方、新浪彩票、澎湃/搜狐竞彩湃、懂球帝、PP、足协官网等），可确认的缺阵折算成 λ 修正并附来源；查不到就写「未核查/缺失」，不得用历史均值冒充真实实力。
+18. **让球盘必须写成「球队 + 让球数」。** 禁止只写「主胜/客胜」——那会被读成胜平负。让球盘与胜平负方向不同时，必须显式说明「荷兰只要赢球，买客胜就输」这类规则，避免读者误以为模型自相矛盾。
+19. **传足与竞彩共用同一套概率，不另做一套。** 传足的 3/1/0 就是胜平负概率，必须与竞彩卡片逐字一致；传足独有的非竞彩场次用共识欧赔拟合，并在报告里标注「无竞彩盘口」。
+20. **传足必须给「覆盖成本表」而不是「更准的推荐」。** 输出单选基线 + 至少 3 档复式（注数/金额/14 场选号/全中概率/≥13 场概率）+ 任九方案；必须写明复式只提高覆盖概率、不改变负期望（传足返奖率约 65%）。禁止把「买了 54 注」包装成「更容易中奖所以更划算」。
+21. **去水口径必须披露。** v8 默认 Shin 去水；与比例去水的差异 ≥2pp 的场次要在报告里列出，否则短赔热门会被误判为「有 EV」。
 
 ## 流程
 
 按顺序执行，不要跳步。
 
 1. **回测上一轮**：拿到已完赛比分，用 `backtest(preds, results)` 跑出逐市场命中率，与 [references/model-and-calibration.md](references/model-and-calibration.md) 的待验证清单核对。**这一步在采集新数据之前做。**
-2. **采集**：竞彩官网在售场次（胜平负/让球/总进球/比分/半全场 + 支持率 + 官方概率），捷报逐场（主客分离得失球、盘路、18 家初盘与即时亚盘/水位、大小球、天气、**裁判页纪律数据**），直播吧与搜索补齐伤停/动机/裁判。口径见 [references/data-collection.md](references/data-collection.md)。**v5 起必须取捷报 16+ 家即时欧赔，用来构造海外共识 λ。**
+2. **采集**：竞彩官网在售场次（胜平负/让球/总进球/比分/半全场 + 支持率 + 官方概率），捷报逐场（主客分离得失球、盘路、18 家初盘与即时亚盘/水位、大小球、天气、**裁判页纪律数据**），**逐场联网核对伤停/停赛/首发/换帅并折算 injuryAdj**（v7.2 强制，附来源）。口径见 [references/data-collection.md](references/data-collection.md)。**v5 起必须取捷报 16+ 家即时欧赔，用来构造海外共识 λ。**
 3. **建模（v5 五层）**：`scripts/analyze.js` 的 `predictMatch(row)` 一次产出 λ（共识 + 独立 + 融合）、比分分布、总进球桶与区间、胜平负、让球、双方进球、半全场、判定。数据以对象传入，字段见脚本文档头。
    - **L1 共识 λ**：16–17 家即时欧赔取均值去水，拟合 λ 与偏斜；竞彩只做价格与 EV 基准。
-   - **L2 独立 λ**：捷报主客分离得失球 + `shrink(K=8)` + 近 6 场状态（0.15）。
-   - **L3 盘口位移**：≥4 家且初盘→即时均值位移 ≥0.20 才触发 ±0.10 球。
+   - **L2 独立 λ**：捷报 `analysisJs/data{fid}.js` 的 h_data/a_data，按球队 ID 过滤本侧主/客场 + `shrink(K=8)` + 近 6 场状态（0.15）+ 近因半衰期 180 天加权 + 休息 <4 天疲劳修正。样本 <3 场回退全部比赛并标 `venueFallback`。
+   - **L3 盘口位移**：≥4 家且初盘→即时均值位移 ≥0.20 才触发 ±0.10 球；v7 起只披露方向（即时盘已含在共识内，重复计入会双重计数）。
    - **L4 裁判层**：捷报 `/info/referee/{id}.htm` 与 api-sports `referee`；未公布即标「未公布」，不进模型。
-   - **L5 纪律层（v5.1 新增）**：红牌风险自动修正 λ——裁判场均红牌与球队近 10 场场均红牌各取 0.5 权重合成 λ_red，P(吃红)=1−exp(−λ_red)，按「10 人作战 λ −40%/对方 +30%、期望作用时长 0.35」折算，封顶 ±0.12 球。黄牌/犯规只做「高摩擦场次」披露。累积黄牌停赛走 injuryAdj 通道。
-   - 融合：`λ = (1−k)·λ_共识 + k·λ_独立`，联赛 k=0.35，杯赛 k=0.25；ρ = −0.10。
+   - **L5 纪律层（v7）**：λ_red = 0.45·裁判 + 0.35·球队（样本 ≥5）+ 0.20·球员风险，按可用项归一；P(吃红)=1−exp(−λ_red)；期望修正 −0.40·T·P(己) + 0.30·T·P(对)，T=0.42，封顶 ±0.18 球。另输出红牌情景（某侧吃红后胜平负）与摩擦指数。球员「情绪」无结构化源，只作代理，有新闻源才填 `playerRisk`。
+   - 融合：`λ = λ_共识 + clamp[k·(λ_独立−λ_共识), ±cap]`，份额同法；联赛 k=0.35 / cap 0.35 球·0.04，杯赛 k=0.25 / cap 0.25 球·0.02；ρ = −0.10。
 4. **判定与方案**：`verdict` 字段给简明判定，`rec` 字段（`buildRecommendation`）给完整购买方案——级别（主推/小注/观察/回避）+ 玩法 + 选项 + 赔率 + 概率/隐含 + EV + 仓位 + 否决条件。**不要手改阈值**；规则与理由见下文与 [references/model-and-calibration.md](references/model-and-calibration.md)。
 5. **补齐逻辑**：按 [references/analysis-framework.md](references/analysis-framework.md) 八节检查表逐项过，标出进模型 / 进文字 / 因缺数据降级。
 6. **组装**：按 [references/report-template.md](references/report-template.md) 的六层 + 综合预测层写 HTML。
 7. **渲染**：`mcp_qieman_RenderHtmlToPdf`（A4、printBackground、margin 0），PowerShell 两步法下载并改中文名。若该工具不可用，用 Edge headless 兜底：`msedge --headless=new --no-pdf-header-footer --print-to-pdf=...`，再用 PyMuPDF 逐页栅格化自查版式（页数、溢出、表格列宽）。
-8. **交付**：`computer://` 链接 + 3 个核心结论。
+8. **传足模式（v8 新增，按需）**：取当期胜负彩 14 场对阵（500 彩票 `trade.500.com/sfc/?expect={期号}`，与体彩销售口径一致；体彩 `getFootBallMatchV1` 在售期为空时以 500 为准），把每场映射到竞彩编号或单独抓捷报数据 → 同一个 `predictMatch` 产出三选概率 → `sfcPlan(matches, budgets)` 输出单选基线、复式档位、任九、冷门雷达与覆盖概率。
+9. **交付**：`computer://` 链接 + 3 个核心结论。
 
 ## 逐场判定规则（v2，已按回测修正）
 
@@ -89,6 +97,7 @@ description: Build institutional-grade China sports lottery football analysis re
 | B2 | 捷报 16+ 家即时欧赔均值（v5 新增） | **海外共识 1X2 概率**：去水后拟合 L1 共识 λ | 比竞彩少约 8pp 抽水，是价差基准 |
 | C | 直播吧 `zhibo8.com` | 伤停、首发、赛程、动机线索 | 定性，需第二来源确认 |
 | D | 联网搜索 | xG/xGA、官方公告、裁判、联赛形势 | 每个数字能点回原页 |
+| E | 传足 `trade.500.com/sfc/?expect={期号}` + 体彩 `getFootBallMatchV1.qry?param=94,0` | 当期胜负彩 14 场对阵、期号、停售时间 | 以 500 与体彩销售口径交叉核对；体彩 sfcMatch 为空时用 500 |
 
 扩展源（按缺口启用）：球探 `zq.titan007.com`（盘路与标准盘/亚盘对照）、捷报资料库、500 彩票网、OddsPortal / Oddspedia（跨庄变价方向）、Betfair / Smarkets（真实成交）、FBref / Understat（xG）、Sofascore / FotMob（首发）、Transfermarkt（伤停与身价）、中国天气网。
 
@@ -101,6 +110,8 @@ description: Build institutional-grade China sports lottery football analysis re
 第一篇 数据分析：1 回测校准 → 2 定价引擎 → 3 基本面情报 → 4 市场情报 → 5 数据卫生
 第二篇 预测方案：6 逐场综合预测卡 → 7 逐场购买方案 → 8 全量总表 → 9 执行层（串关+资金管理）→ 10 风险披露
 
+**传足模式**另起一章（放在第一篇之后、逐场卡片之前或之后均可）：期号与停售时间 → 14 场三选概率与分级（稳胆/博胆/双选/全包）→ 复式覆盖成本表（注数/金额/选号/全中/≥13 场）→ 任九 → 冷门雷达 → 覆盖不等于收益的说明。
+
 全量表必须含「综合预测」与「判断」两列。表后另附逐场清单，每场一行，格式：
 
 ```
@@ -110,6 +121,19 @@ description: Build institutional-grade China sports lottery football analysis re
 ## 串关的结构性事实
 
 每腿 `p × odds` 恒等于 `1/(1+margin)`。margin 13.9% 时单腿 0.878，两串 0.771，三串 0.677。串关 EV 必然为负，倍率越高越负。报告必须列至少三组实测串关并给 EV，结论固定为「单关优先」。
+
+## 付费墙与会员站（v8.1）
+
+静态 GitHub Pages 无法承载鉴权，数据与 PDF 一律迁到 `server/` 的本地 Node 服务（零依赖，Node ≥18）。
+
+- 启动：`cd server && node server.js`，默认 `http://127.0.0.1:8788`。
+- 配置：`server/.env`（从 `.env.example` 复制）。真实收款需 `ALIPAY_APP_ID`、应用私钥、支付宝公钥；本地无回调地址时，支付返回页用 `alipay.trade.query` 主动查单确认。
+- 定价：会员 `8.80` 元/30 天（看数据）；报告 `9.90` 元/次（下载 PDF，一次付费一次额度）。
+- 权限：未登录 `401`，未订阅 `402`，指纹不一致 `403`；`/api/data` 只从 `private/` 读取，`public/` 不含任何数据。
+- 报告：`/api/pdf/ticket` 生成 10 分钟一次性凭证 → `/download/:token` 输出带「账号 + 时间」水印的 PDF。
+- 反爬：浏览器 UA/语言校验、爬虫 UA 黑名单、IP 与账号双限流、设备指纹、注册/登录算术验证码、蜜罐字段、一次性签名下载、`no-store` + `noindex`、`robots.txt` 全禁。
+- 联调：`DEV_GRANT=1` + `DEV_GRANT_KEY` 可用 `/api/dev/grant` 给自己加会员/额度（**公网必须关闭**）。
+- 边界：任何公开网站都无法保证 100% 不可抓；付费用户本身有权查看数据，反爬只能提高成本并留下审计轨迹。
 
 ## 交付前自检
 
@@ -122,4 +146,7 @@ description: Build institutional-grade China sports lottery football analysis re
 - [ ] 串关全部标注 EV，结论为单关优先
 - [ ] 数据卫生八条逐项有状态，缺项写明原因
 - [ ] 尾页含源清单、访问时间（分钟级）、缺失字段、风险披露
+- [ ] 传足模式：14 场与竞彩概率逐字一致；复式注数 = Π 每场选择数；覆盖概率与 `sfcCoverage` 输出一致
+- [ ] 传足模式：明确写出「复式只提高覆盖概率、不改变负期望」，未把注数多包装成更划算
+- [ ] Shin 与比例去水差异 ≥2pp 的场次已披露
 - [ ] PDF 已落到工作区，链接可用

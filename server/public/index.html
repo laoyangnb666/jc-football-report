@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow,noarchive,nosnippet">
+<title>jc-football-report · 会员数据中心</title>
+<link rel="icon" href="/assets/logo.png">
+<link rel="stylesheet" href="/assets/site.css">
+<style>
+  .pay-hero{padding-top:132px;padding-bottom:40px}
+  .pay-hero h1{font-size:clamp(34px,4.2vw,56px);line-height:1.08;letter-spacing:-.04em;font-weight:500;margin-bottom:14px}
+  .pay-hero p{color:var(--muted);font-size:15.5px;max-width:620px}
+  .plans{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-top:34px}
+  .plan{background:#fff;border:1px solid var(--line);border-radius:var(--r-lg);padding:26px 26px 22px;display:flex;flex-direction:column;gap:10px;position:relative}
+  .plan.hot{border-color:#BFD4BC;box-shadow:0 16px 40px rgba(20,83,45,.08)}
+  .plan .tagline{font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+  .plan .price{font-size:40px;letter-spacing:-.03em;font-weight:600;line-height:1}
+  .plan .price small{font-size:13px;color:var(--muted);font-weight:400;letter-spacing:0}
+  .plan ul{list-style:none;margin:6px 0 14px;display:grid;gap:7px;font-size:13.6px;color:#41453F}
+  .plan li::before{content:"·";color:var(--green-mid);font-weight:700;margin-right:8px}
+  .plan .btn{justify-content:center}
+  .note-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:46px}
+  .note-grid div{background:rgba(255,255,255,.62);border:1px solid var(--line);border-radius:var(--r-md);padding:16px 18px;font-size:13px;color:#41453F}
+  .note-grid b{display:block;font-size:13.5px;color:var(--ink);margin-bottom:5px}
+  .foot{padding:40px 0 60px;color:var(--muted);font-size:12px}
+  @media(max-width:820px){.plans,.note-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="nav-wrap">
+  <div class="nav">
+    <a class="brand" href="/">
+      <img class="logo-mark" src="/assets/logo.png" alt="jc-football-report" width="32" height="32">
+      <span><b>jc-football-report</b><small>Member data center</small></span>
+    </a>
+    <div class="nav-links">
+      <a href="/">首页</a>
+      <a href="#plans">价格</a>
+      <a href="/app.html">数据中心</a>
+    </div>
+    <a class="btn btn-dark" id="navCta" href="/login.html">登录 / 注册</a>
+  </div>
+</div>
+
+<section class="hero pay-hero">
+  <div class="wrap">
+    <div class="kicker"><i></i>付费会员 · 数据受控</div>
+    <h1>先登录，<br>再看数据。</h1>
+    <p>2026-11-22 期竞彩 16 场 + 传足胜负彩 26168 期 14 场，含模型概率、λ、σ、伤停核查与复式覆盖表。数据与报告都不再公开挂载，只对已登录且已付费的账号开放，接口按账号签名与限流。</p>
+
+    <div class="plans" id="plans">
+      <div class="plan hot">
+        <div class="tagline">会员订阅</div>
+        <div class="price">¥8.80 <small>/ 30 天</small></div>
+        <ul>
+          <li>查看当期全部 16 场竞彩数据</li>
+          <li>查看传足 14 场概率与复式方案</li>
+          <li>含模型 λ、σ、伤停来源、冷门雷达</li>
+          <li>到期自动失效，不自动续费</li>
+        </ul>
+        <button class="btn btn-green" data-buy="sub">开通会员</button>
+      </div>
+      <div class="plan">
+        <div class="tagline">单次报告</div>
+        <div class="price">¥9.90 <small>/ 次</small></div>
+        <ul>
+          <li>下载当期完整 PDF 报告（11 页）</li>
+          <li>动态水印：写入账号与下载时间</li>
+          <li>一次付费对应一次下载</li>
+          <li>会员不包含报告下载</li>
+        </ul>
+        <button class="btn btn-dark" data-buy="pdf">购买报告</button>
+      </div>
+    </div>
+
+    <div class="note-grid">
+      <div><b>登录后才能读数据</b>数据接口需要有效会话；未登录返回 401，未订阅返回 402，前端拿不到任何概率。</div>
+      <div><b>按账号与设备校验</b>会话绑定设备指纹，复制 Cookie 到别的浏览器会失效；异常请求记录审计日志。</div>
+      <div><b>下载走一次性凭证</b>支付后生成 10 分钟有效、仅能使用一次的下载链接，PDF 内嵌账号水印，便于追溯泄露。</div>
+    </div>
+  </div>
+</section>
+
+<div class="wrap foot">
+  <p>本页只提供付费访问入口，不构成投注建议。数据与报告内容仅在登录并付费后可见。未满 18 岁禁止购彩。</p>
+</div>
+
+<script src="/assets/app.js"></script>
+<script>
+(async function () {
+  const cta = document.getElementById('navCta');
+  try {
+    const r = await JC.api('/api/me');
+    if (r.ok) {
+      cta.textContent = '进入数据中心';
+      cta.href = '/app.html';
+    } else {
+      cta.textContent = '登录 / 注册';
+      cta.href = '/login.html';
+    }
+  } catch (e) { /* 未登录时 /api/me 会 401，属正常 */ }
+
+  document.querySelectorAll('[data-buy]').forEach((b) => {
+    b.addEventListener('click', async () => {
+      const plan = b.dataset.buy;
+      b.disabled = true;
+      const old = b.textContent;
+      b.textContent = '正在创建订单…';
+      const r = await JC.api('/api/order', { method: 'POST', body: { plan } });
+      b.disabled = false;
+      if (r.status === 401) { location.href = '/login.html?next=buy'; return; }
+      if (!r.ok) {
+        b.textContent = old;
+        alert(r.data.error === 'ALIPAY_NOT_CONFIGURED'
+          ? '支付宝商户参数尚未配置：请在 server/.env 填写 ALIPAY_APP_ID / 私钥 / 支付宝公钥后重启服务。'
+          : '下单失败：' + (r.data.error || r.status));
+        return;
+      }
+      location.href = r.data.payUrl;
+    });
+  });
+})();
+</script>
+</body>
+</html>

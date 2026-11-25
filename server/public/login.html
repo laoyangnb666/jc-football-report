@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow,noarchive,nosnippet">
+<title>登录 / 注册 · jc-football-report</title>
+<link rel="icon" href="/assets/logo.png">
+<link rel="stylesheet" href="/assets/site.css">
+<style>
+  .auth{min-height:100vh;display:grid;place-items:center;padding:120px 20px 60px}
+  .card{width:100%;max-width:430px;background:#fff;border:1px solid var(--line);border-radius:var(--r-lg);
+    box-shadow:0 24px 60px rgba(20,30,25,.09);padding:30px 30px 26px}
+  .card h1{font-size:24px;letter-spacing:-.02em;font-weight:600;margin-bottom:6px}
+  .card p.sub{color:var(--muted);font-size:13px;margin-bottom:20px}
+  .tabs{display:flex;gap:6px;background:var(--sage-2);border-radius:999px;padding:4px;margin-bottom:20px}
+  .tabs button{flex:1;border:0;background:transparent;padding:8px;border-radius:999px;font-family:inherit;font-size:13.5px;cursor:pointer;color:#41453F}
+  .tabs button.on{background:#fff;box-shadow:0 2px 8px rgba(20,30,25,.08);font-weight:600;color:var(--ink)}
+  label{display:block;font-size:12px;color:var(--muted);margin:12px 0 5px}
+  input[type=email],input[type=password],input[type=text]{width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:12px;
+    font-family:inherit;font-size:14px;background:#FBFAF6;outline:none}
+  input:focus{border-color:#9FB89B;background:#fff}
+  .cap{display:flex;gap:10px;align-items:center}
+  .cap .q{flex:1;background:var(--sage-2);border:1px solid #D3E0CF;border-radius:12px;padding:10px 12px;font-family:ui-monospace,monospace;
+    font-size:14px;letter-spacing:.06em;user-select:none}
+  .cap button{border:1px solid var(--line);background:#fff;border-radius:12px;padding:10px 12px;cursor:pointer;font-family:inherit;font-size:12.5px}
+  .hp{position:absolute;left:-9999px;top:-9999px;height:0;overflow:hidden}
+  .submit{width:100%;margin-top:20px;justify-content:center}
+  .msg{margin-top:12px;font-size:13px;min-height:18px}
+  .msg.err{color:var(--red)}
+  .msg.ok{color:var(--green)}
+  .fine{font-size:11.5px;color:var(--muted);margin-top:16px;line-height:1.6}
+  .back{display:inline-block;margin-top:18px;font-size:12.5px;color:var(--muted);text-decoration:none}
+</style>
+</head>
+<body>
+<div class="auth">
+  <div class="card">
+    <h1 id="title">登录</h1>
+    <p class="sub">数据仅对已登录账号开放；未登录接口返回 401。</p>
+
+    <div class="tabs">
+      <button id="tabLogin" class="on" type="button">登录</button>
+      <button id="tabReg" type="button">注册</button>
+    </div>
+
+    <form id="form" autocomplete="on" novalidate>
+      <label for="email">邮箱</label>
+      <input id="email" type="email" name="email" autocomplete="username" required>
+
+      <label for="password">密码</label>
+      <input id="password" type="password" name="password" autocomplete="current-password" required minlength="8">
+
+      <label>人机验证</label>
+      <div class="cap">
+        <div class="q" id="capQ">加载中…</div>
+        <button type="button" id="capRefresh">换一题</button>
+      </div>
+      <input id="captcha" type="text" name="captcha" inputmode="numeric" placeholder="填写答案" required>
+
+      <div class="hp" aria-hidden="true">
+        <label>Website</label>
+        <input id="hp" type="text" name="website" tabindex="-1" autocomplete="off">
+      </div>
+
+      <button class="btn btn-green submit" id="submitBtn" type="submit">登录</button>
+      <div class="msg" id="msg"></div>
+    </form>
+
+    <div class="fine">登录后会绑定当前浏览器指纹；换设备需重新登录。接口有频率限制，连续失败会临时锁定。</div>
+    <a class="back" href="/">← 返回首页</a>
+  </div>
+</div>
+
+<script src="/assets/app.js"></script>
+<script>
+(function () {
+  let mode = 'login';
+  let capId = '';
+  const $ = (id) => document.getElementById(id);
+  const msg = (t, cls) => { const m = $('msg'); m.textContent = t || ''; m.className = 'msg ' + (cls || ''); };
+
+  async function refreshCaptcha() {
+    const r = await JC.api('/api/captcha');
+    if (r.ok) { capId = r.data.id; $('capQ').textContent = r.data.question; }
+    else { $('capQ').textContent = '验证码加载失败'; }
+  }
+
+  function setMode(m) {
+    mode = m;
+    $('tabLogin').classList.toggle('on', m === 'login');
+    $('tabReg').classList.toggle('on', m === 'register');
+    $('title').textContent = m === 'login' ? '登录' : '注册';
+    $('submitBtn').textContent = m === 'login' ? '登录' : '创建账号并登录';
+    $('password').autocomplete = m === 'login' ? 'current-password' : 'new-password';
+    msg('');
+  }
+
+  $('tabLogin').onclick = () => setMode('login');
+  $('tabReg').onclick = () => setMode('register');
+  $('capRefresh').onclick = refreshCaptcha;
+
+  $('form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if ($('hp').value) return; // 蜜罐命中：静默丢弃
+    const email = $('email').value.trim();
+    const password = $('password').value;
+    const captcha = $('captcha').value;
+    if (!email || !password || !captcha) { msg('请填写完整', 'err'); return; }
+    const btn = $('submitBtn');
+    btn.disabled = true;
+    const old = btn.textContent;
+    btn.textContent = '提交中…';
+    const path = mode === 'login' ? '/api/login' : '/api/register';
+    const r = await JC.api(path, { method: 'POST', body: { email, password, captchaId: capId, captcha, hp: $('hp').value } });
+    btn.disabled = false;
+    btn.textContent = old;
+
+    if (r.ok) {
+      msg('成功，正在进入数据中心…', 'ok');
+      const next = new URLSearchParams(location.search).get('next');
+      location.href = next === 'buy' ? '/index.html#plans' : '/app.html';
+      return;
+    }
+    const map = {
+      CREDENTIALS: '邮箱或密码错误',
+      EXISTS: '该邮箱已注册，请直接登录',
+      CAPTCHA: '验证码错误或已过期',
+      EMAIL: '邮箱格式不正确',
+      PASSWORD: '密码需 8–72 位',
+      RATE_LIMIT: '尝试过于频繁，请稍后再试',
+      BOT: '请求被拒绝',
+      BAD_ORIGIN: '来源校验失败',
+    };
+    msg(map[r.data.error] || ('失败：' + (r.data.error || r.status)), 'err');
+    refreshCaptcha();
+    $('captcha').value = '';
+  });
+
+  refreshCaptcha();
+})();
+</script>
+</body>
+</html>

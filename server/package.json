@@ -1,0 +1,13 @@
+{
+  "name": "jc-paywall",
+  "version": "1.0.0",
+  "private": true,
+  "description": "jc-football-report 付费墙：登录、订阅、单次报告下载、支付宝网关",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

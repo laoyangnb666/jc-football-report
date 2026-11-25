@@ -11,6 +11,11 @@ snapshots/
 output/
 *.local.json
 
+# Paywall service: secrets and runtime state
+server/.env
+server/data/
+server/private/
+
 # Editor & OS
 .DS_Store
 Thumbs.db

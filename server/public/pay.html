@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow,noarchive,nosnippet">
+<title>支付确认 · jc-football-report</title>
+<link rel="icon" href="/assets/logo.png">
+<link rel="stylesheet" href="/assets/site.css">
+<style>
+  .pay{min-height:100vh;display:grid;place-items:center;padding:120px 20px 60px}
+  .box{width:100%;max-width:460px;background:#fff;border:1px solid var(--line);border-radius:var(--r-lg);padding:32px;text-align:center;
+    box-shadow:0 24px 60px rgba(20,30,25,.09)}
+  .box h1{font-size:22px;margin-bottom:8px;letter-spacing:-.02em}
+  .box p{color:var(--muted);font-size:13.5px;margin-bottom:18px}
+  .spin{width:34px;height:34px;border-radius:50%;border:3px solid #E6E1D4;border-top-color:var(--green);margin:8px auto 18px;animation:r 1s linear infinite}
+  @keyframes r{to{transform:rotate(360deg)}}
+  .ord{font-family:ui-monospace,monospace;font-size:12px;color:#6E7168;background:#FBFAF6;border:1px solid var(--line);
+    border-radius:10px;padding:9px 12px;word-break:break-all;margin-bottom:16px}
+  .row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+</style>
+</head>
+<body>
+<div class="pay">
+  <div class="box">
+    <div class="spin" id="spin"></div>
+    <h1 id="title">正在确认支付</h1>
+    <p id="desc">已向支付宝查询订单状态，请不要关闭页面。</p>
+    <div class="ord" id="ord">—</div>
+    <div class="row">
+      <button class="btn btn-green" id="recheck">重新查询</button>
+      <a class="btn btn-ghost" href="/app.html">返回数据中心</a>
+    </div>
+  </div>
+</div>
+<script src="/assets/app.js"></script>
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const q = new URLSearchParams(location.search);
+  const id = q.get('order') || '';
+  $('ord').textContent = id || '（无订单号）';
+  let tries = 0, timer = null;
+
+  function done(msg) {
+    $('spin').style.display = 'none';
+    $('title').textContent = '支付已确认';
+    $('desc').textContent = msg || '权限已更新，正在进入数据中心…';
+    clearInterval(timer);
+    setTimeout(() => { location.href = '/app.html?paid=1'; }, 900);
+  }
+
+  async function check() {
+    if (!id) return;
+    tries++;
+    const r = await JC.api('/api/order/status?id=' + encodeURIComponent(id));
+    if (r.ok && r.data.status === 'paid') return done();
+    if (r.status === 401) { location.href = '/login.html'; return; }
+    if (tries >= 20) {
+      $('spin').style.display = 'none';
+      $('title').textContent = '尚未确认到支付';
+      $('desc').textContent = '如果你已完成付款，支付宝有时需要几十秒同步；可点「重新查询」，或返回数据中心刷新。';
+      clearInterval(timer);
+    }
+  }
+
+  $('recheck').onclick = () => { $('spin').style.display = 'block'; $('title').textContent = '正在重新查询'; check(); };
+  check();
+  timer = setInterval(check, 4000);
+})();
+</script>
+</body>
+</html>
