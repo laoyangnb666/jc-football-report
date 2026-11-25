@@ -124,10 +124,16 @@
   const D = window.JC_DATA, M = D.matches;
   if (!M || !M.length) {
     const box = document.createElement('div');
-    box.style.cssText = 'max-width:720px;margin:150px auto 60px;padding:0 24px';
-    box.innerHTML = '<h2 style="font-size:26px;margin-bottom:10px">数据已迁移至会员中心</h2>'
-      + '<p style="color:#6E7168;font-size:14px;line-height:1.7">模拟投注使用当期真实概率，静态站不再存放数据。'
-      + '登录并开通会员后可在数据中心查看：<a href="http://8.137.21.61/login.html" style="color:#14532D">前往登录</a></p>';
+    box.style.cssText = 'max-width:580px;margin:150px auto 80px;padding:0 24px';
+    box.innerHTML = '<div style="background:linear-gradient(150deg,#133C25,#0B2115);border-radius:24px;'
+      + 'padding:34px 34px 30px;color:#EEF4EC;box-shadow:0 26px 60px rgba(12,36,23,.26)">'
+      + '<div style="font-size:10px;letter-spacing:.17em;text-transform:uppercase;color:#C6A867;margin-bottom:14px">Members only</div>'
+      + '<h2 style="font-size:24px;font-weight:500;letter-spacing:-.02em;margin-bottom:10px">模拟投注需要会员数据</h2>'
+      + '<p style="color:#A8BAA9;font-size:13.6px;line-height:1.7;margin-bottom:22px">静态站不再存放比赛数据。'
+      + '登录并开通会员后，可在数据中心用当期真实概率进行模拟。</p>'
+      + '<a href="http://8.137.21.61/login.html" style="display:inline-flex;align-items:center;text-decoration:none;'
+      + 'padding:11px 22px;border-radius:999px;background:#C6A867;color:#1B1307;font-size:13.5px;font-weight:500">前往登录</a>'
+      + '</div>';
     document.body.prepend(box);
     return;
   }

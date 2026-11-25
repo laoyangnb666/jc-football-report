@@ -14,6 +14,59 @@
 <link rel="icon" href="assets/favicon.ico" sizes="any">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <link rel="stylesheet" href="assets/site.css">
+<style>
+/* ===== 会员中心（静态站） ===== */
+.member-grid{display:grid;grid-template-columns:1.12fr .88fr;gap:20px;align-items:stretch;margin-top:30px}
+.member-main{position:relative;overflow:hidden;background:linear-gradient(148deg,#133C25 0%,#0C2417 56%,#0A1B11 100%);
+  border-radius:26px;padding:34px 36px 30px;color:#EEF4EC;box-shadow:0 26px 64px rgba(12,36,23,.26)}
+.member-main::after{content:"";position:absolute;right:-110px;top:-120px;width:320px;height:320px;border-radius:50%;
+  background:radial-gradient(circle,rgba(198,168,103,.30),transparent 66%);pointer-events:none}
+.member-main::before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.35;
+  background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);
+  background-size:46px 46px;mask-image:radial-gradient(circle at 78% 18%,#000 0%,transparent 62%)}
+.mm-badge{position:relative;display:inline-flex;align-items:center;gap:7px;font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;
+  color:#C6A867;border:1px solid rgba(198,168,103,.42);border-radius:999px;padding:6px 13px;margin-bottom:20px}
+.mm-badge i{width:5px;height:5px;border-radius:50%;background:#C6A867;display:block}
+.member-main h2{position:relative;font-size:clamp(23px,2.5vw,31px);line-height:1.16;letter-spacing:-.025em;font-weight:500;margin-bottom:10px}
+.member-main h2 em{font-style:normal;color:#C6A867}
+.member-main p{position:relative;color:#A8BAA9;font-size:13.8px;line-height:1.75;max-width:440px}
+.mm-points{position:relative;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:24px 0 26px}
+.mm-point{background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.09);border-radius:15px;padding:12px 14px}
+.mm-point b{display:block;font-size:12.8px;color:#EEF4EC;margin-bottom:4px;font-weight:600}
+.mm-point span{font-size:11.3px;color:#8FA38F;line-height:1.55;display:block}
+.mm-cta{position:relative;display:flex;gap:10px;flex-wrap:wrap}
+.btn-gold{background:#C6A867;color:#1B1307}
+.btn-gold:hover{background:#D9BC80;transform:translateY(-1px);box-shadow:0 12px 26px rgba(198,168,103,.30)}
+.btn-line{background:transparent;color:#DCE7DA;border:1px solid rgba(255,255,255,.22)}
+.btn-line:hover{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.34)}
+.mm-foot{position:relative;margin-top:22px;font-size:11px;color:#7F937F;display:flex;gap:14px;flex-wrap:wrap}
+.mm-foot span::before{content:"·";margin-right:6px;color:#C6A867}
+
+.member-side{display:grid;gap:14px}
+.price-card{background:#fff;border:1px solid var(--line);border-radius:22px;padding:22px 24px;display:flex;flex-direction:column}
+.price-card.hot{border-color:#BFD4BC;box-shadow:0 16px 38px rgba(20,83,45,.09)}
+.pc-tag{font-size:10.3px;letter-spacing:.15em;text-transform:uppercase;color:#959889;margin-bottom:7px}
+.pc-num{font-size:33px;font-weight:600;letter-spacing:-.03em;line-height:1;color:var(--ink)}
+.pc-num small{font-size:12px;font-weight:400;color:var(--muted);letter-spacing:0}
+.pc-list{list-style:none;margin:12px 0 14px;display:grid;gap:5px;font-size:12.5px;color:#4A4F48}
+.pc-list li::before{content:"·";color:var(--green-mid);font-weight:700;margin-right:7px}
+.price-card .btn{justify-content:center;margin-top:auto}
+
+.hero-lock{position:relative;background:linear-gradient(150deg,#133C25,#0B2115);border-radius:22px;padding:26px 26px 22px;
+  color:#EEF4EC;box-shadow:0 22px 52px rgba(12,36,23,.28);overflow:hidden}
+.hero-lock::after{content:"";position:absolute;right:-70px;top:-80px;width:220px;height:220px;border-radius:50%;
+  background:radial-gradient(circle,rgba(198,168,103,.26),transparent 68%)}
+.hl-tag{position:relative;font-size:10px;letter-spacing:.17em;text-transform:uppercase;color:#C6A867;margin-bottom:12px}
+.hero-lock h3{position:relative;font-size:19px;font-weight:500;margin-bottom:8px;letter-spacing:-.01em}
+.hero-lock p{position:relative;font-size:12.6px;color:#9DB0A0;line-height:1.68;margin-bottom:16px}
+.hl-price{position:relative;display:flex;align-items:baseline;gap:8px;margin-bottom:16px}
+.hl-price b{font-size:30px;letter-spacing:-.03em}
+.hl-price span{font-size:12px;color:#93A793}
+.hero-lock .btn{position:relative;width:100%;justify-content:center}
+.hl-foot{position:relative;margin-top:12px;font-size:10.5px;color:#7F937F;text-align:center}
+.stage.no-data .tag-float{display:none}
+@media(max-width:980px){.member-grid{grid-template-columns:1fr}.mm-points{grid-template-columns:1fr}}
+</style>
 </head>
 <body>
 <script>document.documentElement.className += ' js';</script>
@@ -140,14 +193,49 @@
   <section id="fixtures" style="padding-top:20px">
     <div class="wrap">
       <div class="rv">
-        <div class="kicker"><i></i>本轮在售</div>
-        <h2 class="sec-title">数据已迁移至会员中心。</h2>
-        <p class="sec-sub">静态站不再存放任何比赛数据。查看当期 16 场竞彩与 14 场传足概率、λ、σ 与伤停来源，请登录本地会员服务。</p>
-        <div id="lockNotice" style="margin-top:26px;background:#fff;border:1px solid var(--line);border-radius:18px;padding:26px 28px;max-width:680px">
-          <b style="font-size:16px">会员 ¥8.80 / 30 天 · 报告 ¥9.90 / 次</b>
-          <p style="color:var(--muted);font-size:13.5px;margin:8px 0 16px">数据接口需要登录会话；未登录返回 401，未订阅返回 402。报告下载走一次性签名链接并写入账号水印。</p>
-          <a class="btn btn-green" href="http://8.137.21.61/login.html">登录 / 开通会员</a>
-          <a class="btn btn-ghost" href="http://8.137.21.61/" style="margin-left:8px">查看定价</a>
+        <div class="kicker"><i></i>会员中心</div>
+        <h2 class="sec-title">数据留在服务端，<span class="serif">只对会员开放。</span></h2>
+        <p class="sec-sub">静态站不再存放任何比赛数据。当期 16 场竞彩与 14 场传足的概率、λ、σ、伤停核查与复式方案，登录后可见；报告下载走一次性签名链接。</p>
+
+        <div class="member-grid">
+          <div class="member-main">
+            <div class="mm-badge"><i></i>Members only</div>
+            <h2>先登录，<em>再看数据</em>。</h2>
+            <p>竞彩与传足共用同一套概率。数据中心会给出每场三选概率、λ 与 σ、比分分布、伤停来源与纪律层风险；传足另附 14 场复式覆盖表与任九方案。</p>
+            <div class="mm-points">
+              <div class="mm-point"><b>接口鉴权</b><span>未登录 401，未订阅 402，前端拿不到概率</span></div>
+              <div class="mm-point"><b>设备绑定</b><span>会话绑定浏览器指纹，复制 Cookie 即失效</span></div>
+              <div class="mm-point"><b>可追溯下载</b><span>PDF 写入账号水印，一次性凭证 10 分钟</span></div>
+            </div>
+            <div class="mm-cta">
+              <a class="btn btn-gold" href="http://8.137.21.61/login.html">登录 / 开通会员</a>
+              <a class="btn btn-line" href="http://8.137.21.61/" target="_blank" rel="noopener">查看完整定价</a>
+            </div>
+            <div class="mm-foot"><span>8.80 元 / 30 天</span><span>9.90 元 / 单次报告</span><span>不自动续费</span></div>
+          </div>
+
+          <div class="member-side">
+            <div class="price-card hot">
+              <div class="pc-tag">Membership</div>
+              <div class="pc-num">¥8.80 <small>/ 30 天</small></div>
+              <ul class="pc-list">
+                <li>当期全部竞彩与传足数据</li>
+                <li>λ、σ、伤停来源、冷门雷达</li>
+                <li>到期自动失效，不扣款</li>
+              </ul>
+              <a class="btn btn-green btn-sm" href="http://8.137.21.61/login.html">开通会员</a>
+            </div>
+            <div class="price-card">
+              <div class="pc-tag">Single report</div>
+              <div class="pc-num">¥9.90 <small>/ 次</small></div>
+              <ul class="pc-list">
+                <li>完整 PDF 报告（11 页）</li>
+                <li>动态水印 + 一次性链接</li>
+                <li>会员不包含，需单独购买</li>
+              </ul>
+              <a class="btn btn-ghost btn-sm" href="http://8.137.21.61/login.html">购买报告</a>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -328,10 +416,19 @@
   const M = D.matches;
   // 静态站不再承载数据：空数据时直接渲染锁提示，避免 undefined 报错
   if (!M || !M.length) {
-    const lock = document.getElementById('lockNotice');
-    if (lock) lock.hidden = false;
+    const stage = document.querySelector('.stage');
+    if (stage) stage.classList.add('no-data');
     const hero = document.getElementById('heroCard');
-    if (hero) hero.style.display = 'none';
+    if (hero) {
+      hero.outerHTML = '<div class="hero-lock" id="heroCard">'
+        + '<div class="hl-tag">Members only</div>'
+        + '<h3>数据已上锁</h3>'
+        + '<p>16 场竞彩 + 14 场传足的三选概率、λ、σ 与伤停核查，登录并对会员开放。</p>'
+        + '<div class="hl-price"><b>¥8.80</b><span>/ 30 天 · 报告 ¥9.90 / 次</span></div>'
+        + '<a class="btn btn-gold" href="http://8.137.21.61/login.html">登录 / 开通会员</a>'
+        + '<div class="hl-foot">接口鉴权 · 设备指纹 · 一次性下载凭证</div>'
+        + '</div>';
+    }
     return;
   }
   let idx = M.findIndex(m => m.recLevel === '主推');
